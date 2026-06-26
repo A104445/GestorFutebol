@@ -5,15 +5,25 @@ const routes = [
     component: () => import('layouts/MainLayout.vue'),
     meta: { requiresAuth: true },
     children: [
-      { path: '', component: () => import('pages/IndexPage.vue') }
+      { path: '', redirect: '/selector' },
+      { path: 'selector', component: () => import('pages/ClubSelector.vue') },
+      { path: 'club/:id', component: () => import('pages/ClubDashboard.vue'), props: true },
+      { path: 'club/:id/players', component: () => import('pages/ClubPlayers.vue'), props: true },
+      { path: 'club/:id/stats', component: () => import('pages/ClubStats.vue'), props: true } // NOVA ROTA
     ]
   },
 
-  // 2. Rota Pública (Login isolado)
+  // 2. Rotas Públicas
   { 
     path: '/login', 
     name: 'login', 
     component: () => import('pages/LoginPage.vue') 
+  },
+  { 
+    path: '/join/:id', 
+    name: 'join-club', 
+    component: () => import('pages/JoinClub.vue'), 
+    props: true 
   },
 
   // 3. Página 404

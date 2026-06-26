@@ -4,7 +4,7 @@ import { supabase } from 'boot/supabase'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
-  const profile = ref(null) // <-- Novo: guarda nome e role do utilizador
+  const profile = ref(null)
   const loading = ref(false)
   const error = ref(null)
 
@@ -26,23 +26,33 @@ export const useAuthStore = defineStore('auth', () => {
       error.value = err.message
     } else {
       user.value = data.user
-      await fetchProfile(data.user.id) // Carrega o perfil logo após o login
+      await fetchProfile(data.user.id) 
     }
     loading.value = false
     return !err
   }
 
-  async function register(email, password) {
+  async function register(email, password, name) {
     loading.value = true
     error.value = null
-    const { data, error: err } = await supabase.auth.signUp({ email, password })
+    const { data, error: err } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: { data: { full_name: name } }
+    })
     
     if (err) {
       error.value = err.message
     } else {
       user.value = data.user
-      // Aguarda 1 segundo para dar tempo ao Trigger do Postgres criar o perfil
+      // Aguarda 1 segundo para dar tempo ao Trigger do Postgres criar o perfil base
       await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Atualiza explicitamente o nome na tabela profiles
+      if (name) {
+        await supabase.from('profiles').update({ name: name }).eq('id', data.user.id)
+      }
+      
       await fetchProfile(data.user.id)
     }
     loading.value = false
@@ -55,5 +65,6 @@ export const useAuthStore = defineStore('auth', () => {
     profile.value = null
   }
 
-  return { user, profile, loading, error, login, register, logout }
+  // A LINHA QUE FALTAVA PARA RESOLVER O ERRO DO ESLINT:
+  return { user, profile, loading, error, login, register, logout, fetchProfile }
 })

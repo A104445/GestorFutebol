@@ -28,18 +28,56 @@ export default defineRouter((/* { store, ssrContext } */) => {
 
   // Guarda de Navegação Global (Proteção de Rotas)
   Router.beforeEach(async (to, from, next) => {
-    // Importamos a store dinamicamente para garantir que o Pinia já está inicializado
     const { useAuthStore } = await import('stores/useAuthStore')
     const authStore = useAuthStore()
+    const { supabase } = await import('boot/supabase')
 
-    // Verifica se a rota destino tem o meta 'requiresAuth'
+    // 1. CORREÇÃO CRÍTICA GOOGLE AUTH (QUASAR HASH MODE GLITCH)
+    // Intercetar o URL de retorno do Google OAuth antes que cause erro 404
+    if (window.location.hash && window.location.hash.includes('access_token=')) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        authStore.user = user
+        await authStore.fetchProfile(user.id)
+        
+        const lastClub = localStorage.getItem('last_club_id')
+        if (lastClub) {
+          next({ path: `/club/${lastClub}` })
+        } else {
+          next({ path: '/' })
+        }
+        return
+      }
+    }
+
+    // 2. REIDRATAÇÃO EM REFRESH (ANTI-F5)
+    if (!authStore.user) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        authStore.user = user
+        await authStore.fetchProfile(user.id)
+      }
+    }
+
     const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
 
-    // Se exige autenticação e o utilizador não está logado, bloqueia e manda para o login
     if (requiresAuth && !authStore.user) {
       next({ name: 'login' })
     } else {
-      // Caso contrário, deixa a navegação prosseguir normalmente
+      if (authStore.user) {
+        // 3. ENTRAR LOGO NO ÚLTIMO CLUBE ABERTO
+        // Redireciona se houver um ID gravado e o destino for a raiz ou o seletor
+        const lastClubId = localStorage.getItem('last_club_id')
+        if (lastClubId && (to.path === '/' || to.path === '/selector')) {
+          next({ path: `/club/${lastClubId}` })
+          return
+        }
+
+        if (to.name === 'login') {
+          next({ path: '/' })
+          return
+        }
+      }
       next()
     }
   })

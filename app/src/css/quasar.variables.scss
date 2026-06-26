@@ -1,25 +1,14 @@
-// Quasar Sass (& SCSS) Variables
-// --------------------------------------------------
-// To customize the look and feel of this app, you can override
-// the Sass/SCSS variables found in Quasar's source Sass/SCSS files.
+// Cores Principais - Tema Futebol
+$primary   : #2E7D32; // Verde Relvado (Main)
+$secondary : #81C784; // Verde Claro (Acentos)
+$accent    : #FFB300; // Amarelo Dourado (Destaques)
 
-// Check documentation for full list of Quasar variables
-
-// Your own variables (that are declared here) and Quasar's own
-// ones will be available out of the box in your .vue/.scss/.sass files
-
-// It's highly recommended to change the default colors
-// to match your app's branding.
-// Tip: Use the "Theme Builder" on Quasar's documentation website.
-
-$primary   : #1976D2;
-$secondary : #26A69A;
-$accent    : #9C27B0;
-
+// Tons Escuros
 $dark      : #1D1D1D;
 $dark-page : #121212;
 
-$positive  : #21BA45;
-$negative  : #C10015;
-$info      : #31CCEC;
-$warning   : #F2C037;
+// Alertas e Estados
+$positive  : #388E3C; // Verde Sucesso
+$negative  : #D32F2F; // Vermelho Cartão
+$info      : #0288D1; // Azul
+$warning   : #FBC02D; // Amarelo Cartão

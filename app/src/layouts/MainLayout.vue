@@ -1,102 +1,85 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+  <q-layout view="lHh lpr lFf">
+    
+    <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
-
-        <q-toolbar-title>
-          Quasar App
+        <q-icon name="sports_soccer" size="md" class="q-mr-sm" />
+        
+        <q-toolbar-title class="text-weight-bold text-ellipsis" style="font-size: 1.2rem;">
+          {{ clubStore.currentClub ? clubStore.currentClub.name : 'Gestor de Futebol' }}
         </q-toolbar-title>
+        
+        <q-btn 
+          v-if="clubStore.currentClub && route.path !== '/selector'" 
+          flat round dense icon="swap_horiz" 
+          class="q-mr-sm" 
+          to="/selector" 
+          @click="clearCurrentClub"
+        >
+          <q-tooltip>Mudar de Clube</q-tooltip>
+        </q-btn>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <q-btn flat round dense icon="logout" @click="handleLogout">
+          <q-tooltip>Sair</q-tooltip>
+        </q-btn>
       </q-toolbar>
     </q-header>
-
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-    >
-      <q-list>
-        <q-item-label
-          header
-        >
-          Essential Links
-        </q-item-label>
-
-        <EssentialLink
-          v-for="link in linksList"
-          :key="link.title"
-          v-bind="link"
-        />
-      </q-list>
-    </q-drawer>
 
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <q-footer v-if="clubStore.currentClub && route.path !== '/selector'" elevated class="bg-white text-grey-8 shadow-up-2">
+      <q-tabs
+        v-model="tab"
+        active-color="primary"
+        indicator-color="transparent"
+        class="text-grey-6"
+        align="justify"
+      >
+      <q-route-tab name="games" icon="calendar_month" label="Jogos" :to="clubLink" exact />
+      <q-route-tab name="players" icon="badge" label="Plantel" :to="playersLink" exact />
+      <q-route-tab name="stats" icon="leaderboard" label="Ranking" :to="statsLink" exact />
+      </q-tabs>
+    </q-footer>
+    
   </q-layout>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import EssentialLink from 'components/EssentialLink.vue'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from 'stores/useAuthStore'
+import { useClubStore } from 'stores/useClubStore'
 
-const linksList = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev'
-  },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework'
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev'
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev'
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev'
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev'
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev'
-  }
-]
+const router = useRouter()
+const route = useRoute() // Permite saber em que rota estamos no momento
+const authStore = useAuthStore()
+const clubStore = useClubStore()
 
-const leftDrawerOpen = ref(false)
+const tab = ref('games')
 
-function toggleLeftDrawer () {
-  leftDrawerOpen.value = !leftDrawerOpen.value
+const clubLink = computed(() => {
+  return clubStore.currentClub ? `/club/${clubStore.currentClub.id}` : '/selector'
+})
+
+const playersLink = computed(() => {
+  return clubStore.currentClub ? `/club/${clubStore.currentClub.id}/players` : '/selector'
+})
+
+const statsLink = computed(() => {
+  return clubStore.currentClub ? `/club/${clubStore.currentClub.id}/stats` : '/selector'
+})
+
+function clearCurrentClub() {
+  // Limpa o clube ativo quando clicamos em "Mudar de Clube" 
+  // para garantir que a barra inferior desaparece suavemente
+  clubStore.setClub(null)
+}
+
+async function handleLogout() {
+  await authStore.logout()
+  clubStore.setClub(null)
+  router.push('/login')
 }
 </script>
