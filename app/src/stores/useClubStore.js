@@ -17,6 +17,7 @@ export const useClubStore = defineStore('club', () => {
       .from('club_members')
       .select('role, is_owner, can_manage_finances, can_manage_teams, can_manage_matches, clubs(id, name, invite_code)')
       .eq('profile_id', authStore.user.id)
+      .eq('status', 'approved')
 
     if (!error && data) {
       userClubs.value = data.map(item => ({

@@ -135,8 +135,17 @@
           </div>
         </q-card-section>
 
-        <q-card-actions align="center" class="q-pa-md" style="background: #111;">
+        <q-card-actions class="q-pa-md column q-gutter-y-sm" style="background: #111;">
           <q-btn label="Gravar Alterações" color="amber" text-color="dark" class="full-width text-weight-bolder" unelevated size="lg" :loading="saving" @click="savePlayerStats" />
+          
+          <q-btn 
+            label="Despedir Jogador (Remover)" 
+            color="negative" 
+            flat 
+            class="full-width text-weight-bold" 
+            :loading="saving" 
+            @click="removePlayer" 
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -262,6 +271,52 @@ async function savePlayerStats() {
     await fetchAllMembers()
   }
   saving.value = false
+}
+
+async function removePlayer() {
+  // Proteção máxima: Não se pode despedir o dono do clube!
+  if (selectedPlayer.value.is_owner) {
+    $q.notify({ type: 'warning', icon: 'security', message: 'Impossível remover o Dono do clube.' })
+    return
+  }
+
+  $q.dialog({
+    title: 'Remover Jogador',
+    message: `Tens a certeza que queres expulsar o ${selectedPlayer.value.name} do plantel? Esta ação não pode ser desfeita.`,
+    persistent: true,
+    color: 'negative',
+    ok: { label: 'Sim, Remover', color: 'negative', unelevated: true },
+    cancel: { label: 'Cancelar', flat: true }
+  }).onOk(async () => {
+    saving.value = true
+    let deleteError = null
+
+    // Verifica se é um jogador virtual ou uma conta real
+    if (selectedPlayer.value.is_virtual) {
+      const { error } = await supabase
+        .from('virtual_players')
+        .delete()
+        .eq('id', selectedPlayer.value.id)
+      deleteError = error
+    } else {
+      const { error } = await supabase
+        .from('club_members')
+        .delete()
+        .eq('club_id', props.id)
+        .eq('profile_id', selectedPlayer.value.id)
+      deleteError = error
+    }
+
+    // Lida com a resposta do Supabase
+    if (deleteError) {
+      $q.notify({ type: 'negative', message: 'Erro de permissões ao remover: ' + deleteError.message })
+    } else {
+      $q.notify({ type: 'positive', icon: 'person_remove', message: 'Jogador removido do plantel!' })
+      showEditModal.value = false
+      await fetchAllMembers() // Atualiza as cartas FUT no ecrã
+    }
+    saving.value = false
+  })
 }
 
 function getSectionIcon(s) { return s==='Guarda-Redes'?'pan_tool':s==='Defesas'?'security':s==='Médios'?'explore':'sports_score' }

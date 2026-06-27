@@ -25,13 +25,30 @@
 
           </div>
           <div class="row q-gutter-xs">
+            
+            <q-btn 
+              v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" 
+              flat round icon="person_add" color="dark" @click="showRequestsModal = true"
+            >
+              <q-badge v-if="pendingRequests.length > 0" color="negative" floating rounded>
+                {{ pendingRequests.length }}
+              </q-badge>
+              <q-tooltip>Pedidos de Adesão</q-tooltip>
+            </q-btn>
+
+            <q-btn 
+              v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" 
+              flat round icon="manage_accounts" color="dark" @click="openStaffManager"
+            >
+              <q-tooltip>Gerir Permissões (Equipa Técnica)</q-tooltip>
+            </q-btn>
+
             <q-btn 
               v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" 
               flat round icon="content_copy" color="primary" @click="copyInviteCode"
             >
               <q-tooltip>Copiar Código do Clube</q-tooltip>
             </q-btn>
-            <q-btn flat round icon="arrow_back" color="grey-7" to="/selector" />
           </div>
         </div>
     
@@ -319,6 +336,77 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="showStaffModal">
+      <q-card style="min-width: 350px; max-width: 500px; width: 100%; border-radius: 12px;">
+        <q-card-section class="row items-center bg-dark text-white">
+          <div class="text-subtitle1 text-weight-bold">Equipa Técnica & Permissões</div>
+          <q-space /><q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pa-none" style="max-height: 60vh; overflow-y: auto;">
+          <div v-if="loadingStaff" class="text-center q-pa-lg"><q-spinner color="primary" size="30px" /></div>
+          
+          <q-list v-else separator>
+            <q-item v-for="member in staffList" :key="member.profile_id" class="q-py-md">
+              <q-item-section>
+                <q-item-label class="text-weight-bold">{{ member.profiles?.name || 'Sem Nome' }}</q-item-label>
+                <q-item-label caption v-if="member.is_owner" class="text-amber-9 text-weight-bold">Dono do Clube</q-item-label>
+                <q-item-label caption v-else>Membro do Plantel</q-item-label>
+              </q-item-section>
+
+              <q-item-section side v-if="!member.is_owner">
+                <div class="column q-gutter-y-xs">
+                  <q-toggle dense size="sm" v-model="member.can_manage_matches" color="primary" label="Gerir Jogos" @update:model-value="val => updatePermission(member.profile_id, 'can_manage_matches', val)" />
+                  <q-toggle dense size="sm" v-model="member.can_manage_teams" color="amber" label="Gerir Plantel" @update:model-value="val => updatePermission(member.profile_id, 'can_manage_teams', val)" />
+                  <q-toggle dense size="sm" v-model="member.can_manage_finances" color="positive" label="Tesoureiro" @update:model-value="val => updatePermission(member.profile_id, 'can_manage_finances', val)" />
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="showRequestsModal">
+      <q-card style="min-width: 350px; border-radius: 16px;">
+        <q-card-section class="row items-center bg-dark text-white">
+          <div class="text-subtitle1 text-weight-bold row items-center">
+            <q-icon name="person_add" size="sm" class="q-mr-sm text-primary" /> 
+            Pedidos de Entrada
+          </div>
+          <q-space /><q-btn icon="close" flat round dense color="grey-5" v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pa-none bg-grey-1" style="max-height: 50vh; overflow-y: auto;">
+          <q-list v-if="pendingRequests.length > 0" separator>
+            <q-item v-for="req in pendingRequests" :key="req.profile_id" class="q-py-md bg-white shadow-1 q-mb-xs">
+              <q-item-section avatar>
+                <q-avatar color="grey-3" text-color="dark" icon="person" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-bold">{{ req.profiles?.name || 'Sem Nome' }}</q-item-label>
+                <q-item-label caption>Quer juntar-se ao plantel</q-item-label>
+              </q-item-section>
+              <q-item-section side class="row q-gutter-sm">
+                <div>
+                  <q-btn round dense color="negative" icon="close" flat @click="handleRequest(req.profile_id, 'rejected')">
+                    <q-tooltip>Rejeitar</q-tooltip>
+                  </q-btn>
+                  <q-btn round dense color="positive" icon="check" unelevated class="q-ml-sm" @click="handleRequest(req.profile_id, 'approved')">
+                    <q-tooltip>Aprovar</q-tooltip>
+                  </q-btn>
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+          <div v-else class="text-center q-pa-xl text-grey-6">
+            <q-icon name="check_circle_outline" size="3em" class="q-mb-md text-grey-4" />
+            <div>Não há pedidos pendentes.</div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   
   </q-page>
 </template>
@@ -376,6 +464,7 @@ onMounted(async () => {
   }
   
   await fetchMatches()
+  await fetchPendingRequests()
 
   realtimeChannel = supabase
     .channel('presences-channel')
@@ -400,6 +489,47 @@ onUnmounted(() => {
     supabase.removeChannel(realtimeChannel)
   }
 })
+
+const showRequestsModal = ref(false)
+const pendingRequests = ref([])
+
+async function fetchPendingRequests() {
+  if (!clubStore.currentClub?.can_manage_teams && !clubStore.currentClub?.is_owner) return
+  
+  const { data, error } = await supabase
+    .from('club_members')
+    .select('profile_id, profiles(name)') // Removido o 'id' que não existe
+    .eq('club_id', props.id)
+    .eq('status', 'pending')
+    
+  if (error) {
+    $q.notify({ type: 'negative', message: 'Erro ao carregar pedidos: ' + error.message })
+  } else if (data) {
+    pendingRequests.value = data
+  }
+}
+
+async function handleRequest(profileId, action) {
+  if (action === 'approved') {
+    const { error } = await supabase
+      .from('club_members')
+      .update({ status: 'approved' })
+      .eq('club_id', props.id)      // Identifica o Clube
+      .eq('profile_id', profileId)  // Identifica o Jogador
+      
+    if (!error) $q.notify({ type: 'positive', message: 'Jogador aceite no plantel!' })
+  } else {
+    const { error } = await supabase
+      .from('club_members')
+      .delete()
+      .eq('club_id', props.id)      // Identifica o Clube
+      .eq('profile_id', profileId)  // Identifica o Jogador
+      
+    if (!error) $q.notify({ type: 'info', message: 'Pedido rejeitado.' })
+  }
+  
+  await fetchPendingRequests()
+}
 
 async function fetchMatches() {
   if (!clubStore.currentClub) return
@@ -767,9 +897,59 @@ async function removePresence(presence) {
     $q.notify({ type: 'info', message: 'Jogador removido do jogo.' })
   }
 }
+
+// VARIÁVEIS DA EQUIPA TÉCNICA
+const showStaffModal = ref(false)
+const staffList = ref([])
+const loadingStaff = ref(false)
+
+async function openStaffManager() {
+  showStaffModal.value = true
+  loadingStaff.value = true
+  
+  const { data, error } = await supabase
+    .from('club_members')
+    .select('profile_id, role, is_owner, can_manage_matches, can_manage_teams, can_manage_finances, profiles(name)')
+    .eq('club_id', props.id)
+    .eq('status', 'approved') // <-- ADICIONA ESTA LINHA PARA ESCONDER OS PENDENTES
+    .order('is_owner', { ascending: false })
+    
+  if (error) {
+    $q.notify({ type: 'negative', message: 'Erro: ' + error.message, timeout: 5000 })
+  } else if (data) {
+    staffList.value = data
+  }
+  
+  loadingStaff.value = false
+}
+
+async function updatePermission(profileId, field, value) {
+  const updateData = {}
+  updateData[field] = value
+  
+  const { data, error } = await supabase
+    .from('club_members')
+    .update(updateData)
+    .eq('club_id', props.id)
+    .eq('profile_id', profileId)
+    .select() // O select obriga a base de dados a devolver o resultado ou o erro real
+    
+  if (error) {
+    // Agora vai mostrar o erro exato do Supabase!
+    $q.notify({ type: 'negative', message: 'ERRO: ' + error.message, timeout: 6000 })
+    await openStaffManager() 
+  } else if (!data || data.length === 0) {
+    // Se não houver erro mas o data vier vazio, é o RLS (Segurança) a bloquear
+    $q.notify({ type: 'negative', message: 'ERRO RLS: Não tens permissões na Base de Dados para alterar isto.', timeout: 6000 })
+    await openStaffManager()
+  } else {
+    $q.notify({ type: 'positive', message: 'Permissões atualizadas!' })
+  }
+}
   
 async function refreshPage(done) {
   await fetchMatches()
+  await fetchPendingRequests()
   done()
 }
 </script>

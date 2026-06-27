@@ -197,34 +197,34 @@ async function joinClubByCode() {
     return
   }
 
-  // 2. Tentar inserir o utilizador no clube
+  // 2. Tentar inserir o utilizador no clube (COM STATUS PENDING)
   const { error: joinError } = await supabase
     .from('club_members')
     .insert([{
       club_id: club.id,
       profile_id: authStore.user.id,
       role: 'member', 
-      is_owner: false
+      is_owner: false,
+      status: 'pending' // <-- OBRIGA A FICAR PENDENTE
     }])
 
   if (joinError) {
-    // Código de erro Postgres para chave duplicada (já é membro)
+    // Código de erro Postgres para chave duplicada (já é membro ou já pediu para entrar)
     if (joinError.code === '23505') {
-      $q.notify({ type: 'info', message: `Já fazes parte do clube ${club.name}!` })
-      clubStore.setClub(club)
-      router.push(`/club/${club.id}`)
+      $q.notify({ type: 'info', message: `Já fazes parte ou já tens um pedido pendente no clube ${club.name}!` })
+      // Tenta atualizar a lista de clubes para ver se já está aprovado
+      await clubStore.fetchUserClubs() 
     } else {
       $q.notify({ type: 'negative', message: 'Erro ao entrar no clube: ' + joinError.message })
     }
   } else {
+    // SEGUNDA ALTERAÇÃO: Não redirecionamos para o clube, mostramos apenas a mensagem!
     $q.notify({ 
       type: 'positive', 
-      icon: 'sports_soccer', 
-      message: `Bem-vindo ao ${club.name}! Teu contrato foi assinado.` 
+      icon: 'hourglass_empty', 
+      message: `Pedido de adesão enviado para o ${club.name}! Aguarda aprovação da equipa técnica.` 
     })
     inviteCode.value = ''
-    clubStore.setClub(club)
-    router.push(`/club/${club.id}`)
   }
 
   joining.value = false

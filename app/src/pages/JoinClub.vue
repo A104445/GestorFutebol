@@ -36,16 +36,24 @@
   })
   
   async function joinClubLogic(clubId, userId) {
-    const { error } = await supabase
-      .from('club_members')
-      .insert([{ club_id: clubId, profile_id: userId, role: 'member' }])
-  
-    if (error && error.code !== '23505') { // Descartar erro caso ele já seja membro (duplicado)
-      $q.notify({ type: 'negative', message: 'Erro ao entrar no clube: ' + error.message })
-      router.push('/selector')
-    } else {
-      $q.notify({ type: 'positive', message: 'Bem-vindo ao clube!' })
-      router.push(`/club/${clubId}`)
-    }
+  const { error } = await supabase
+    .from('club_members')
+    .insert([{ 
+      club_id: clubId, 
+      profile_id: userId, 
+      role: 'member',
+      status: 'pending' // <-- TAMBÉM FICA PENDENTE AQUI
+    }])
+
+  if (error && error.code !== '23505') { 
+    $q.notify({ type: 'negative', message: 'Erro ao enviar pedido: ' + error.message })
+  } else if (error && error.code === '23505') {
+    $q.notify({ type: 'info', message: 'Já tens um pedido pendente ou já estás neste clube.' })
+  } else {
+    $q.notify({ type: 'positive', icon: 'hourglass_empty', message: 'Pedido de adesão enviado com sucesso! Aguarda aprovação.' })
   }
+  
+  // Em vez de entrar no clube, volta para o ecrã inicial
+  router.push('/selector')
+}
   </script>
