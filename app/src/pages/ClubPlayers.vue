@@ -34,7 +34,7 @@
               
               <div 
                 class="fut-card shadow-15" 
-                :class="[getCardTier(member.overall), (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner) ? 'cursor-pointer hover-lift' : '']"
+                :class="[isIcon(member) ? 'card-icon' : getCardTier(member.overall), (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner) ? 'cursor-pointer hover-lift' : '']"
                 @click="openEditModal(member)"
               >
                 <div class="fut-card-shine"></div>
@@ -42,10 +42,9 @@
                   <div class="fut-top-info">
                     <div class="fut-rating">{{ member.overall }}</div>
                     <div class="fut-position">{{ getShortPosition(member.position) }}</div>
-                    <div class="fut-flag">🇵🇹</div>
                   </div>
 
-                  <q-icon v-if="member.is_virtual" name="construction" color="amber" size="xs" class="absolute-top-right q-ma-sm" style="opacity: 0.8;">
+                  <q-icon v-if="member.is_virtual" name="construction" :color="isIcon(member) ? 'dark' : 'amber'" size="xs" class="absolute-top-right q-ma-sm" style="opacity: 0.8;">
                     <q-tooltip>Jogador Virtual Manual</q-tooltip>
                   </q-icon>
 
@@ -53,7 +52,8 @@
                     <q-icon name="person" size="5rem" class="silhouette" />
                   </div>
 
-                  <div class="fut-name text-ellipsis">
+                  <div class="fut-name text-ellipsis row items-center justify-center">
+                    <q-icon v-if="isIcon(member)" name="workspace_premium" size="xs" class="q-mr-xs" />
                     {{ member.name?.split(' ')[0] || 'Jogador' }}
                   </div>
 
@@ -72,8 +72,9 @@
                     </div>
                   </div>
                   
-                  <div class="fut-bottom-bar">
-                    <q-icon name="sports_soccer" size="10px" class="q-mr-xs" /> {{ member.is_virtual ? 'VIRTUAL' : 'PRO' }}
+                  <div class="fut-bottom-bar text-uppercase">
+                    <q-icon name="sports_soccer" size="10px" class="q-mr-xs" /> 
+                    {{ isIcon(member) ? 'ICON' : (member.is_virtual ? 'VIRTUAL' : 'PRO') }}
                   </div>
                 </div>
               </div>
@@ -318,7 +319,9 @@ async function removePlayer() {
     saving.value = false
   })
 }
-
+function isIcon(member) {
+  return member.name && member.name.toLowerCase().includes('tiago');
+}
 function getSectionIcon(s) { return s==='Guarda-Redes'?'pan_tool':s==='Defesas'?'security':s==='Médios'?'explore':'sports_score' }
 function getCardTier(o) { return o>=80?'card-gold':o>=70?'card-silver':'card-bronze' }
 function getShortPosition(p) { return p==='Guarda-Redes'?'GR':p==='Defesa'?'DEF':p==='Médio'?'MED':'AV' }
@@ -344,4 +347,119 @@ function getShortPosition(p) { return p==='Guarda-Redes'?'GR':p==='Defesa'?'DEF'
 .fut-stats { font-size: 11px; line-height: 1.2; padding-bottom: 4px; }
 .stat-val { font-weight: 900; }
 .fut-bottom-bar { text-align: center; font-weight: 900; font-size: 10px; opacity: 0.7; margin-top: auto; padding-bottom: 4px; }
+/* =========================================
+   👑 LUMINARY ICON (TIAGO EDITION - CLARA) 👑
+   ========================================= */
+
+/* 1. O Fundo Claro e a Levitação da Carta */
+.card-icon {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow:
+    0 15px 35px rgba(0, 0, 0, 0.15),
+    0 0 25px rgba(212, 175, 55, 0.4) !important;
+  animation: levitate-light 4s ease-in-out infinite;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 2. A Aura Giratória (Borda de Plasma Branco e Ouro) */
+.card-icon::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(212, 175, 55, 0.1) 20%,
+    #d4af37 40%,
+    #ffffff 50%,
+    #d4af37 60%,
+    rgba(212, 175, 55, 0.1) 80%,
+    transparent 100%
+  );
+  animation: spin-plasma 4s linear infinite;
+  z-index: 0;
+}
+
+/* 3. O Fundo Interior (Textura Marfim Imaculado) */
+.card-icon .fut-card-inner {
+  background: radial-gradient(circle at 50% 0%, #ffffff 0%, #fdfcf9 50%, #eee6d1 100%) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.6);
+  z-index: 2;
+  box-shadow: inset 0 0 25px rgba(255, 255, 255, 0.9);
+}
+
+/* 4. O Brilho de Diamante Cortante (Reflexo Divino) */
+.card-icon::after {
+  content: '';
+  position: absolute;
+  top: -150%;
+  left: -150%;
+  width: 300%;
+  height: 300%;
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0) 45%,
+    rgba(255, 255, 255, 0.9) 48%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(255, 255, 255, 0.9) 52%,
+    rgba(255, 255, 255, 0) 55%
+  );
+  transform: rotate(45deg);
+  animation: diamond-slash 5s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* 5. Textos em Ouro Metálico (Substitui o escuro por ouro brilhante) */
+.card-icon .fut-rating, .card-icon .fut-name {
+  background: linear-gradient(to bottom, #e2c058 0%, #d4af37 40%, #aa801b 80%, #8c6a00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.15));
+  font-weight: 900;
+}
+
+/* 6. Cores dos Atributos (Para ler bem no fundo branco) */
+.card-icon .stat-val { color: #2b2517; text-shadow: 0 1px 1px rgba(255,255,255,0.8); }
+.card-icon .stat-label { color: #aa801b; font-weight: 900; }
+.card-icon .fut-divider { background: linear-gradient(to right, transparent, #d4af37, transparent); border: none; height: 1.5px; opacity: 0.5; }
+.card-icon .fut-bottom-bar { color: #aa801b; font-weight: 900; letter-spacing: 2px; }
+
+/* 7. Avatar (Sombra de ouro a pulsar) */
+.card-icon .silhouette {
+  color: #d4af37 !important;
+  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.3));
+  animation: pulse-avatar-light 2s infinite alternate ease-in-out;
+}
+
+/* Esconder o brilho normal para as lendas */
+.card-icon .fut-card-shine { display: none; }
+
+/* --- OS MOTORES DE ANIMAÇÃO 3D --- */
+@keyframes spin-plasma {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes diamond-slash {
+  0% { transform: translate(-50%, -50%) rotate(45deg); }
+  20% { transform: translate(50%, 50%) rotate(45deg); }
+  100% { transform: translate(50%, 50%) rotate(45deg); }
+}
+
+@keyframes levitate-light {
+  0% { transform: translateY(0px); box-shadow: 0 10px 20px rgba(0,0,0,0.1), 0 0 15px rgba(212,175,55,0.2); }
+  50% { transform: translateY(-6px); box-shadow: 0 15px 25px rgba(0,0,0,0.15), 0 0 25px rgba(212,175,55,0.5); }
+  100% { transform: translateY(0px); box-shadow: 0 10px 20px rgba(0,0,0,0.1), 0 0 15px rgba(212,175,55,0.2); }
+}
+
+@keyframes pulse-avatar-light {
+  0% { filter: drop-shadow(0 0 3px rgba(212, 175, 55, 0.2)); transform: scale(1); }
+  100% { filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.6)); transform: scale(1.03); }
+}
 </style>
