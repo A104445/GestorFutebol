@@ -40,15 +40,23 @@
               v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" 
               flat round icon="manage_accounts" color="dark" @click="openStaffManager"
             >
-              <q-tooltip>Gerir Permissões (Equipa Técnica)</q-tooltip>
+              <q-tooltip>Equipa Técnica</q-tooltip>
+            </q-btn>
+
+            <q-btn 
+              v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" 
+              flat round icon="settings" color="dark" @click="openClubSettings"
+            >
+              <q-tooltip>Definições do Clube</q-tooltip>
             </q-btn>
 
             <q-btn 
               v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" 
               flat round icon="content_copy" color="primary" @click="copyInviteCode"
             >
-              <q-tooltip>Copiar Código do Clube</q-tooltip>
+              <q-tooltip>Copiar Código</q-tooltip>
             </q-btn>
+            
           </div>
         </div>
     
@@ -57,27 +65,66 @@
           <div class="text-caption text-grey-6 q-mt-md">A aquecer os motores...</div>
         </div>
     
+        <!-- ECRÃ DE "SEM JOGOS" -->
         <div v-else-if="matches.length === 0" class="text-center q-pa-xl bg-white shadow-1" style="border-radius: 20px; margin-top: 2rem;">
           <q-icon name="sports_soccer" size="5em" class="text-grey-4 q-mb-md" />
           <div class="text-h6 text-weight-bold text-grey-8">Sem jogos agendados</div>
           <p class="text-body2 text-grey-6 q-px-md">Ainda não há nenhuma convocatória aberta neste clube.</p>
-          <q-btn 
-            v-if="clubStore.currentClub?.can_manage_matches" 
-            color="primary" 
-            unelevated 
-            label="Agendar Primeiro Jogo" 
-            icon="add" 
-            class="q-mt-sm" 
-            style="border-radius: 8px;"
-            @click="showCreateModal = true" 
-          />
+          <q-btn
+             v-if="clubStore.currentClub?.can_manage_matches"
+             color="primary"
+             unelevated
+             label="Agendar Primeiro Jogo"
+             icon="add"
+             class="q-mt-sm"
+             style="border-radius: 8px;"
+            @click="openCreateMatch()"
+           />
         </div>
-        
-        <div v-else class="row q-col-gutter-lg">
-          <div v-for="match in matches" :key="match.id" class="col-12 col-md-6 col-lg-4">
+
+        <!-- O V-ELSE QUE ENGLOBA O FILTRO E A LISTA JUNTOS -->
+        <div v-else>
+          
+          <!-- Filtro de Jogos Dinâmico -->
+        <div class="row justify-between items-center q-mb-md">
+          <div class="text-subtitle1 text-weight-bold text-dark row items-center q-mb-sm q-mt-sm">
+            <q-icon name="calendar_view_month" class="q-mr-sm text-primary" size="sm" />
+            Calendário
+          </div>
+          
+          <div class="row items-center q-gutter-sm">
+            <!-- Os 3 botões principais -->
+            <!-- Os botões principais -->
+            <q-btn-toggle
+              v-model="matchViewMode"
+              toggle-color="primary"
+              color="white"
+              text-color="grey-8"
+              :options="filterButtons"
+              rounded
+              unelevated
+              class="shadow-1"
+            />
             
+            <!-- O Dropdown secundário que só aparece se for "Mês" -->
+            <q-select 
+              v-if="matchViewMode === 'month'"
+              v-model="selectedMonth" 
+              :options="availableMonths" 
+              dense 
+              outlined 
+              emit-value 
+              map-options
+              bg-color="white"
+              style="min-width: 140px;"
+            />
+          </div>
+        </div>
+          
+          <!-- Lista de Cartas de Jogo -->
+          <div class="row q-col-gutter-lg">
+            <div v-for="match in filteredMatches" :key="match.id" class="col-12 col-md-6 col-lg-4">
             <q-card class="match-card shadow-4" :class="match.status === 'fechado' ? 'match-closed' : 'match-open'">
-              
               <div class="row items-center justify-between q-pa-md bg-white border-bottom">
                 <div class="row items-center text-dark text-weight-bold text-subtitle2">
                   <q-icon name="calendar_month" size="sm" color="primary" class="q-mr-sm" />
@@ -90,6 +137,23 @@
                   <q-badge :color="match.status === 'fechado' ? 'grey-7' : 'positive'" class="text-weight-bold shadow-1" style="border-radius: 6px; padding-top: 4px; padding-bottom: 4px;">
                     {{ match.status === 'fechado' ? 'Encerrado' : 'Aberto' }}
                   </q-badge>
+                  
+                  <!-- MENU DE EDITAR / APAGAR -->
+                  <q-btn v-if="clubStore.currentClub?.can_manage_matches" flat round dense icon="more_vert" color="grey-7">
+                    <q-menu auto-close>
+                      <q-list style="min-width: 120px">
+                        <q-item clickable @click="openEditMatch(match)">
+                          <q-item-section avatar><q-icon name="edit" size="sm" color="grey-8" /></q-item-section>
+                          <q-item-section>Editar</q-item-section>
+                        </q-item>
+                        <q-separator />
+                        <q-item clickable @click="deleteMatch(match)">
+                          <q-item-section avatar><q-icon name="delete" size="sm" color="negative" /></q-item-section>
+                          <q-item-section class="text-negative text-weight-bold">Apagar</q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-menu>
+                  </q-btn>
                 </div>
               </div>
 
@@ -101,9 +165,14 @@
                       <q-avatar color="blue-1" text-color="blue-9" icon="shield" size="lg" />
                       <div class="text-weight-bolder text-dark q-mt-sm" style="font-size: 11px; letter-spacing: 0.5px;">EQUIPA A</div>
                     </div>
-                    <div class="col-4 flex flex-center">
-                      <div class="bg-dark text-white q-px-md q-py-xs shadow-5" style="border-radius: 12px; font-size: 24px; font-weight: 900; letter-spacing: 1px; font-family: monospace;">
-                        {{ match.team_a_goals }} <span class="text-grey-6 q-mx-xs">:</span> {{ match.team_b_goals }}
+                    <!-- RESULTADO E EQUIPAS -->
+                    <div class="row items-center justify-center no-wrap q-gutter-x-sm q-my-md">
+                      <div class="text-h4 text-weight-bolder" style="min-width: 40px; text-align: center;">
+                        {{ match.team_a_goals ?? '-' }}
+                      </div>
+                      <div class="text-h6 text-grey-5 q-px-xs">X</div>
+                      <div class="text-h4 text-weight-bolder" style="min-width: 40px; text-align: center;">
+                        {{ match.team_b_goals ?? '-' }}
                       </div>
                     </div>
                     <div class="col-4 column items-center">
@@ -141,10 +210,10 @@
                 
                 <div class="row q-gutter-sm items-center">
                   <q-btn 
-                    v-if="(!match.status || match.status === 'aberto') && clubStore.currentClub?.can_manage_matches" 
-                    color="negative" 
-                    flat 
-                    dense
+                     v-if="(!match.status || match.status === 'aberto') && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)"
+                     color="negative" 
+                     flat 
+                     dense
                     icon="sports" 
                     @click="openCloseModal(match)" 
                   >
@@ -167,12 +236,13 @@
 
           </div>
         </div>
+      </div>
   
       </div>
     </q-pull-to-refresh>
   
     <q-page-sticky v-if="clubStore.currentClub?.can_manage_matches" position="bottom-right" :offset="[20, 20]">
-      <q-btn fab icon="add" color="accent" text-color="dark" class="shadow-5 animate-pop" @click="showCreateModal = true">
+      <q-btn fab icon="add" color="accent" text-color="dark" class="shadow-5 animate-pop" @click="openCreateMatch()">
         <q-tooltip>Agendar Pelada</q-tooltip>
       </q-btn>
     </q-page-sticky>
@@ -184,16 +254,83 @@
           <q-space /><q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
         <q-card-section class="q-pt-lg q-px-md">
-          <q-form @submit="createMatch" class="q-gutter-md">
-            <q-input rounded outlined dense v-model="newMatch.date" type="datetime-local" label="Data e Hora" stack-label :rules="[val => !!val || 'Obrigatório']" />
-            <q-input rounded outlined dense v-model="newMatch.location" label="Local / Campo" :rules="[val => !!val || 'Obrigatório']" />
-            <div class="row q-col-gutter-sm">
-              <div class="col-6"><q-input rounded outlined dense v-model.number="newMatch.max_players" type="number" label="Máx Jogadores" /></div>
-              <div class="col-6"><q-input rounded outlined dense v-model.number="newMatch.price_per_player" type="number" step="0.5" label="Preço (€)" /></div>
+          <q-form @submit="saveMatch" class="q-gutter-md">
+            <!-- NOVO: Toggle de Definições -->
+            <div class="row items-center q-mb-md bg-grey-2 q-pa-sm" style="border-radius: 8px;">
+              <q-toggle 
+                v-model="useDefaultSettings" 
+                color="primary" 
+                label="Bloquear com as definições do clube" 
+                @update:model-value="applyDefaults"
+              />
             </div>
-            <div class="row justify-end q-mt-lg q-gutter-sm">
-              <q-btn label="Cancelar" flat color="grey-6" v-close-popup style="border-radius: 8px;" />
-              <q-btn label="Publicar Jogo" type="submit" color="primary" unelevated class="q-px-md" style="border-radius: 8px;" :loading="saving" />
+
+            <q-input 
+              rounded 
+              outlined 
+              dense 
+              v-model="newMatch.date" 
+              type="datetime-local" 
+              label="Data e Hora" 
+              stack-label 
+              :disable="useDefaultSettings" 
+              :rules="[val => !!val || 'Obrigatório']" 
+            />
+
+            <q-input rounded outlined dense v-model="newMatch.location" label="Local / Campo" :disable="useDefaultSettings" :rules="[val => !!val || 'Obrigatório']" />
+            
+            <div class="row q-col-gutter-sm">
+              <div class="col-6">
+                <q-input rounded outlined dense v-model.number="newMatch.max_players" type="number" label="Máx Jogadores" :disable="useDefaultSettings" />
+              </div>
+              <div class="col-6">
+                <q-input rounded outlined dense v-model.number="newMatch.price_per_player" type="number" step="0.5" label="Preço (€)" :disable="useDefaultSettings" />
+              </div>
+            </div>
+
+            <!-- Checkbox para aplicar a todos os jogos futuros (Só aparece ao Editar) -->
+            <div v-if="newMatch.id" class="row items-center q-mb-md bg-amber-1 q-pa-sm" style="border-radius: 8px; border: 1px solid #ffe082;">
+              <q-checkbox v-model="applyToFuture" color="amber-10" label="Aplicar preço, lotação e local a todos os jogos abertos seguintes" />
+            </div>
+
+            <!-- ZONA DOS BOTÕES -->
+            <div class="row justify-between q-mt-lg items-center">
+              
+              <!-- Mostrar o "Gerar Mês" APENAS se for um jogo NOVO (sem ID) -->
+              <q-btn 
+                v-if="!newMatch.id"
+                label="Gerar Mês Inteiro" 
+                icon="auto_mode" 
+                color="amber-9" 
+                unelevated 
+                outline 
+                class="q-px-sm text-weight-bold" 
+                style="border-radius: 8px;" 
+                @click="generateMonthlyMatchesBulk" 
+                :loading="saving" 
+              >
+                <q-tooltip>Cria jogos até ao fim do mês</q-tooltip>
+              </q-btn>
+              
+              <!-- Espaçador para empurrar os botões para a direita se estiver a editar -->
+              <q-space v-else />
+
+              <!-- Lado Direito: Cancelar e Guardar/Publicar -->
+              <div class="row q-gutter-sm">
+                <q-btn label="Cancelar" flat color="grey-6" v-close-popup style="border-radius: 8px;" />
+                
+                <!-- O texto muda consoante estamos a editar ou a criar -->
+                <q-btn 
+                  :label="newMatch.id ? 'Guardar Alterações' : 'Publicar (Só 1)'" 
+                  type="submit" 
+                  color="primary" 
+                  unelevated 
+                  class="q-px-md" 
+                  style="border-radius: 8px;" 
+                  :loading="saving" 
+                />
+              </div>
+              
             </div>
           </q-form>
         </q-card-section>
@@ -268,7 +405,7 @@
                     <q-btn flat round dense icon="looks_one" size="sm" :color="presence.team === 'A' ? 'blue' : 'grey-4'" @click="assignTeam(presence, 'A')" />
                     <q-btn flat round dense icon="looks_two" size="sm" :color="presence.team === 'B' ? 'orange' : 'grey-4'" @click="assignTeam(presence, 'B')" />
                   </template>
-                  <q-btn v-if="clubStore.currentClub?.can_manage_finances" flat round dense :icon="presence.paid ? 'price_check' : 'currency_exchange'" size="sm" :color="presence.paid ? 'positive' : 'grey-4'" @click="togglePayment(presence)" />
+                  <q-btn v-if="clubStore.currentClub?.can_manage_finances || clubStore.currentClub?.is_owner" flat round dense :icon="presence.paid ? 'price_check' : 'currency_exchange'" size="sm" :color="presence.paid ? 'positive' : 'grey-4'" @click="togglePayment(presence)" />
                   <q-btn v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.can_manage_matches" flat round dense icon="person_remove" size="sm" color="negative" class="q-ml-xs" @click="removePresence(presence)" />
                 </div>
                 <div v-else class="row items-center">
@@ -355,7 +492,7 @@
                 <q-item-label caption v-else>Membro do Plantel</q-item-label>
               </q-item-section>
 
-              <q-item-section side v-if="!member.is_owner">
+              <q-item-section>
                 <div class="column q-gutter-y-xs">
                   <q-toggle dense size="sm" v-model="member.can_manage_matches" color="primary" label="Gerir Jogos" @update:model-value="val => updatePermission(member.profile_id, 'can_manage_matches', val)" />
                   <q-toggle dense size="sm" v-model="member.can_manage_teams" color="amber" label="Gerir Plantel" @update:model-value="val => updatePermission(member.profile_id, 'can_manage_teams', val)" />
@@ -407,6 +544,40 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="showSettingsModal">
+      <q-card style="min-width: 360px; border-radius: 16px;">
+        <q-card-section class="bg-primary text-white row items-center">
+          <div class="text-subtitle1 text-weight-bold row items-center">
+            <q-icon name="settings" class="q-mr-sm" /> Definições do Clube
+          </div>
+          <q-space /><q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-gutter-md q-pt-md">
+          <q-input outlined dense type="number" step="0.5" v-model.number="clubSettings.default_price" label="Preço Padrão por Jogo (€)" />
+          <q-input outlined dense type="number" step="1" v-model.number="clubSettings.monthly_fee" label="Mensalidade Padrão (€)" />
+          <q-input outlined dense v-model="clubSettings.default_location" label="Campo / Local Fixo" icon="place" />
+          <q-input outlined dense type="number" v-model.number="clubSettings.default_max_players" label="Nº Lotação Máxima" />
+
+          <div class="row q-col-gutter-sm">
+            <div class="col-7">
+              <q-select outlined dense emit-value map-options v-model="clubSettings.recurring_day_of_week" 
+                :options="[{label:'Segunda',value:1},{label:'Terça',value:2},{label:'Quarta',value:3},{label:'Quinta',value:4},{label:'Sexta',value:5},{label:'Sábado',value:6},{label:'Domingo',value:7}]" 
+                label="Dia de Jogo Fixo" />
+            </div>
+            <div class="col-5">
+              <q-input outlined dense type="time" v-model="clubSettings.recurring_time" label="Hora Fixa" />
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+          <q-btn flat label="Cancelar" v-close-popup />
+          <q-btn color="primary" label="Guardar Configurações" @click="saveClubSettings" :loading="savingSettings" unelevated />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   
   </q-page>
 </template>
@@ -429,7 +600,76 @@ const saving = ref(false)
 const showCreateModal = ref(false)
 let realtimeChannel 
 
+const matchViewMode = ref('next')
+const selectedMonth = ref(null)
+
+// 1. Conta quantos jogos passados ainda estão abertos
+const pendingMatchesCount = computed(() => {
+  const now = new Date()
+  return matches.value.filter(m => m.status !== 'fechado' && new Date(m.date) < now).length
+})
+
+// 2. Gera os botões do filtro dinamicamente (Mostra "Pendentes" se for Admin)
+const filterButtons = computed(() => {
+  const opts = [
+    { label: 'Próximo', value: 'next' },
+    { label: 'Mês', value: 'month' },
+    { label: 'Todos', value: 'all' }
+  ]
+  
+  const isManager = clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner
+  if (isManager && pendingMatchesCount.value > 0) {
+    // Insere o botão vermelho de Pendentes logo a seguir ao "Próximo"
+    opts.splice(1, 0, { label: `Pendentes (${pendingMatchesCount.value})`, value: 'pending' })
+  }
+  
+  return opts
+})
+
+// (A tua função availableMonths mantém-se igual...)
+const availableMonths = computed(() => {
+  if (matches.value.length === 0) return []
+  const months = [...new Set(matches.value.map(m => m.date.substring(0, 7)))]
+  months.sort((a, b) => b.localeCompare(a))
+  return months.map(m => {
+    const [year, month] = m.split('-')
+    const date = new Date(year, month - 1, 1)
+    const monthName = date.toLocaleString('pt-PT', { month: 'long', year: 'numeric' })
+    return { label: monthName.charAt(0).toUpperCase() + monthName.slice(1), value: m }
+  })
+})
+
+// 3. O filtro real com a nova regra do "Próximo" e dos "Pendentes"
+const filteredMatches = computed(() => {
+  if (matchViewMode.value === 'all') return matches.value
+  
+  const now = new Date()
+  
+  if (matchViewMode.value === 'next') {
+    // Procura o primeiro jogo cuja data seja maior ou igual a AGORA
+    const nextMatch = matches.value.find(m => new Date(m.date) >= now)
+    return nextMatch ? [nextMatch] : []
+  }
+  
+  if (matchViewMode.value === 'pending') {
+    // Mostra jogos não fechados e que já passaram no tempo
+    return matches.value.filter(m => m.status !== 'fechado' && new Date(m.date) < now)
+  }
+  
+  if (matchViewMode.value === 'month') {
+    if (!selectedMonth.value) return []
+    return matches.value.filter(m => m.date.startsWith(selectedMonth.value))
+  }
+  
+  return []
+})
+
 const newMatch = ref({ date: '', location: '', max_players: 14, price_per_player: 5.00 })
+
+// Adiciona isto AQUI:
+const useDefaultSettings = ref(true)
+
+
 
 onMounted(async () => {
   // ANTÍDOTO ANTI-F5: Recuperar sessão do Supabase caso a store tenha esvaziado
@@ -463,6 +703,7 @@ onMounted(async () => {
     }
   }
   
+  await fetchClubSettings()
   await fetchMatches()
   await fetchPendingRequests()
 
@@ -531,34 +772,193 @@ async function handleRequest(profileId, action) {
   await fetchPendingRequests()
 }
 
+function applyDefaults(isToggled) {
+  if (isToggled) {
+    newMatch.value.location = clubSettings.value?.default_location || ''
+    newMatch.value.max_players = clubSettings.value?.default_max_players || 14
+    newMatch.value.price_per_player = clubSettings.value?.default_price || 5.00
+    
+    // Se for um jogo novo (sem ID), preenche também a data
+    if (!newMatch.value.id) {
+      newMatch.value.date = getNextRecurringDate(clubSettings.value?.recurring_day_of_week, clubSettings.value?.recurring_time)
+    }
+  }
+}
+
+function openCreateMatch() {
+  useDefaultSettings.value = true
+  applyToFuture.value = false // Garante que a checkbox vem desmarcada
+  
+  newMatch.value = { 
+    id: null, 
+    date: getNextRecurringDate(clubSettings.value?.recurring_day_of_week, clubSettings.value?.recurring_time), 
+    location: clubSettings.value?.default_location || '', 
+    max_players: clubSettings.value?.default_max_players || 14, 
+    price_per_player: clubSettings.value?.default_price || 5.00 
+  }
+  showCreateModal.value = true
+}
+
+function openEditMatch(match) {
+  useDefaultSettings.value = false
+  applyToFuture.value = false // Reset da checkbox de edição em lote
+  
+  let localIso = ''
+  if (match.date) {
+    const d = new Date(match.date)
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+    localIso = d.toISOString().slice(0, 16)
+  }
+  
+  newMatch.value = { ...match, date: localIso }
+  showCreateModal.value = true
+}
+
+async function saveMatch() {
+  saving.value = true
+  
+  // Converter a data do input para formato local de Portugal para comparar
+  const targetDateStr = new Date(newMatch.value.date).toLocaleDateString('pt-PT')
+  
+  // Verifica se já existe um jogo nesse dia (comparando as datas já convertidas para a tua hora local)
+  const conflict = matches.value.some(m => 
+    m.id !== newMatch.value.id && 
+    new Date(m.date).toLocaleDateString('pt-PT') === targetDateStr
+  )
+  
+  if (conflict) {
+    $q.dialog({
+      title: 'Aviso: Dia Ocupado',
+      message: 'Já tens uma pelada agendada para este dia. Queres mesmo marcar outra e sobrepor jogos?',
+      cancel: { label: 'Cancelar', flat: true, color: 'grey' },
+      ok: { label: 'Sim, Marcar na mesma', color: 'negative', unelevated: true },
+      persistent: true
+    }).onOk(async () => {
+      await executeSaveMatch()
+    }).onCancel(() => {
+      saving.value = false
+    })
+  } else {
+    await executeSaveMatch()
+  }
+}
+
+async function executeSaveMatch() {
+  // A SOLUÇÃO: Converter a data do input para o formato UTC oficial antes de enviar para o Supabase
+  const dateToSave = new Date(newMatch.value.date).toISOString()
+  
+  if (newMatch.value.id) {
+    if (applyToFuture.value) {
+      await supabase.from('matches').update({
+        date: dateToSave, 
+        location: newMatch.value.location,
+        max_players: newMatch.value.max_players, 
+        price_per_player: newMatch.value.price_per_player
+      }).eq('id', newMatch.value.id)
+      
+      const { error } = await supabase.from('matches').update({
+        location: newMatch.value.location, 
+        max_players: newMatch.value.max_players, 
+        price_per_player: newMatch.value.price_per_player
+      }).eq('club_id', clubStore.currentClub.id).eq('status', 'aberto').gt('date', dateToSave)
+      
+      if (!error) $q.notify({ type: 'positive', message: 'Jogo atualizado e regras aplicadas ao calendário futuro!' })
+      else $q.notify({ type: 'negative', message: 'Erro: ' + error.message })
+    } else {
+      const { error } = await supabase.from('matches').update({
+        date: dateToSave, 
+        location: newMatch.value.location,
+        max_players: newMatch.value.max_players, 
+        price_per_player: newMatch.value.price_per_player
+      }).eq('id', newMatch.value.id)
+      
+      if (!error) $q.notify({ type: 'positive', message: 'Jogo atualizado com sucesso!' })
+      else $q.notify({ type: 'negative', message: 'Erro: ' + error.message })
+    }
+    showCreateModal.value = false
+  } else {
+    const matchToInsert = { 
+      date: dateToSave, 
+      location: newMatch.value.location,
+      max_players: newMatch.value.max_players, 
+      price_per_player: newMatch.value.price_per_player,
+      club_id: clubStore.currentClub.id, 
+      status: 'aberto' 
+    }
+    
+    const { error } = await supabase.from('matches').insert([matchToInsert])
+    if (!error) $q.notify({ type: 'positive', message: 'Pelada agendada com sucesso!' })
+    else $q.notify({ type: 'negative', message: 'Erro ao criar: ' + error.message })
+    
+    showCreateModal.value = false
+  }
+
+  await fetchMatches()
+  saving.value = false
+}
+
+async function deleteMatch(match) {
+  $q.dialog({
+    title: 'Apagar Jogo',
+    message: 'Tens a certeza? O jogo e todas as inscrições serão eliminados permanentemente.',
+    cancel: { flat: true, color: 'grey' },
+    persistent: true,
+    color: 'negative',
+    ok: { label: 'Sim, Apagar', color: 'negative', unelevated: true }
+  }).onOk(async () => {
+    
+    saving.value = true; // Mostra barra de carregamento
+
+    // 1º Limpar os jogadores primeiro
+    await supabase.from('match_presences').delete().eq('match_id', match.id);
+    
+    // 2º Apagar o jogo E pedir para confirmar o que foi apagado (.select)
+    const { data, error } = await supabase.from('matches').delete().eq('id', match.id).select();
+    
+    if (error) {
+      $q.notify({ type: 'negative', message: 'Erro ao apagar: ' + error.message });
+    } else if (data && data.length === 0) {
+      // O Supabase bloqueou silenciosamente
+      $q.notify({ type: 'warning', icon: 'security', message: 'Bloqueado por segurança! Correste o script no SQL Editor?' });
+    } else {
+      // Correu tudo bem e a linha foi mesmo apagada
+      $q.notify({ type: 'positive', icon: 'delete', message: 'Jogo apagado do calendário.' });
+      await fetchMatches(); // Atualiza a lista visualmente
+    }
+    
+    saving.value = false;
+  })
+}
+
 async function fetchMatches() {
   if (!clubStore.currentClub) return
-  
   loading.value = true
+  
   const { data, error } = await supabase
     .from('matches')
     .select('*')
     .eq('club_id', clubStore.currentClub.id)
     .order('date', { ascending: true })
-  
-  if (!error) matches.value = data
+    
+  if (!error) {
+    matches.value = data
+    
+    // AUTO-SELECT: Se ainda não houver um mês selecionado, escolhe o mais recente
+    if (data.length > 0 && !selectedMonth.value) {
+      const months = [...new Set(data.map(m => m.date.substring(0, 7)))]
+      months.sort((a, b) => b.localeCompare(a))
+      selectedMonth.value = months[0] // Ex: "2026-09"
+    }
+    
+  }
   loading.value = false
 }
 
-async function createMatch() {
-  saving.value = true
-  const matchToInsert = { ...newMatch.value, club_id: clubStore.currentClub.id, status: 'aberto' }
-  const { error } = await supabase.from('matches').insert([matchToInsert])
-
-  if (error) {
-    $q.notify({ type: 'negative', message: 'Erro: ' + error.message })
-  } else {
-    $q.notify({ type: 'positive', message: 'Pelada agendada com sucesso!' })
-    showCreateModal.value = false
-    newMatch.value = { date: '', location: '', max_players: 14, price_per_player: 5.00 }
-    await fetchMatches()
+async function fetchClubSettings() {
+  const { data, error } = await supabase.from('clubs').select('*').eq('id', props.id).single()
+  if (data && !error) {
+    clubSettings.value = { ...clubSettings.value, ...data }
   }
-  saving.value = false
 }
 
 function formatDate(isoString) {
@@ -583,44 +983,63 @@ const presences = ref([])
 const loadingPresences = ref(false)
 
 async function joinMatch(match) {
-  if (!authStore.user) {
-    $q.notify({ type: 'negative', message: 'Erro: Inicia sessão para te inscreveres.' })
-    return
+  if (!authStore.user) return
+
+  // 1. Descobrir o mês e ano do jogo para validar a mensalidade
+  const matchDate = new Date(match.date)
+  const matchMonth = matchDate.getMonth() + 1 // JS começa em 0
+  const matchYear = matchDate.getFullYear()
+
+  // 2. Verificar o modo de faturação do jogador e se tem o mês pago
+  const { data: memberStatus } = await supabase
+    .from('club_members')
+    .select('billing_mode')
+    .eq('club_id', props.id)
+    .eq('profile_id', authStore.user.id)
+    .single()
+
+  let shouldDefaultToPaid = false
+
+  if (memberStatus?.billing_mode === 'monthly') {
+    const { data: monthCheck } = await supabase
+      .from('club_monthly_payments')
+      .select('paid')
+      .eq('club_id', props.id)
+      .eq('profile_id', authStore.user.id)
+      .eq('month', matchMonth)
+      .eq('year', matchYear)
+      .maybeSingle()
+      
+    if (monthCheck?.paid === true) {
+      shouldDefaultToPaid = true // Tem o mês pago, não deve nada nesta pelada!
+    }
   }
 
-  // 1. Contagem segura com '*' para evitar erros de sintaxe no Supabase
-  const { count, error: countError } = await supabase
+  // 3. Contagem de vagas (Lógica existente)
+  const { count } = await supabase
     .from('match_presences')
     .select('*', { count: 'exact', head: true }) 
     .eq('match_id', match.id)
     .eq('status', 'confirmed')
 
-  if (countError) {
-    $q.notify({ type: 'negative', message: 'Erro ao verificar lotação: ' + countError.message })
-    return
-  }
-
-  // 2. Avaliar barreira de lotação
   const isFull = count >= match.max_players
   const insertStatus = isFull ? 'suplente' : 'confirmed'
 
-  // 3. Submeter inscrição
+  // 4. Efetuar a inscrição aplicando a nossa flag inteligente de pagamento
   const { error } = await supabase
     .from('match_presences')
-    .insert([{ match_id: match.id, profile_id: authStore.user.id, status: insertStatus }])
+    .insert([{ 
+      match_id: match.id, 
+      profile_id: authStore.user.id, 
+      status: insertStatus,
+      paid: shouldDefaultToPaid // <-- AUTOMATIZADO! true se for mensalista regularizado
+    }])
 
-  if (error) {
-    if (error.code === '23505') {
-      $q.notify({ type: 'warning', message: 'Já estás inscrito nesta pelada!' })
-    } else {
-      $q.notify({ type: 'negative', message: 'Erro: ' + error.message })
-    }
-  } else {
-    if (isFull) {
-      $q.notify({ type: 'warning', icon: 'hourglass_empty', message: 'Lotação esgotada! Ficaste em Lista de Espera.' })
-    } else {
-      $q.notify({ type: 'positive', icon: 'check_circle', message: 'Inscrição confirmada!' })
-    }
+  if (!error) {
+    $q.notify({ 
+      type: 'positive', 
+      message: shouldDefaultToPaid ? 'Inscrito! (Pago via Mensalidade)' : 'Inscrição efetuada com sucesso!' 
+    })
     await fetchMatches()
   }
 }
@@ -945,6 +1364,162 @@ async function updatePermission(profileId, field, value) {
   } else {
     $q.notify({ type: 'positive', message: 'Permissões atualizadas!' })
   }
+}
+
+const showSettingsModal = ref(false)
+const savingSettings = ref(false)
+const clubSettings = ref({ default_max_players: 14, default_price: 5, monthly_fee: 20, default_location: '', recurring_day_of_week: 2, recurring_time: '21:00' })
+
+async function openClubSettings() {
+  showSettingsModal.value = true
+  const { data } = await supabase.from('clubs').select('*').eq('id', props.id).single()
+  if (data) {
+    clubSettings.value = { ...data }
+  }
+}
+
+async function saveClubSettings() {
+  savingSettings.value = true
+  const { error } = await supabase.from('clubs').update({
+    default_max_players: clubSettings.value.default_max_players,
+    default_price: clubSettings.value.default_price,
+    monthly_fee: clubSettings.value.monthly_fee,
+    default_location: clubSettings.value.default_location,
+    recurring_day_of_week: clubSettings.value.recurring_day_of_week,
+    recurring_time: clubSettings.value.recurring_time
+  }).eq('id', props.id)
+
+  if (!error) {
+    $q.notify({ type: 'positive', message: 'Definições do clube guardadas!' })
+    showSettingsModal.value = false
+    // Atualiza o estado da store para refletir os preços novos imediatamente
+    if (clubStore.currentClub) {
+      clubStore.currentClub.default_price = clubSettings.value.default_price
+    }
+  }
+  savingSettings.value = false
+}
+
+async function generateMonthlyMatchesBulk() {
+  saving.value = true
+  
+  const { data: club } = await supabase.from('clubs').select('*').eq('id', props.id).single()
+  
+  if (!club || !club.recurring_day_of_week) {
+    $q.notify({ type: 'warning', message: 'Configura primeiro o dia e hora fixos nas Definições do clube.' })
+    saving.value = false
+    return
+  }
+  
+  const batchInserts = []
+  const conflictingDates = []
+  const today = new Date()
+  let checkDate = new Date(today.getTime())
+  let targetMonth = null
+  
+  for (let i = 0; i < 35; i++) {
+    checkDate.setDate(checkDate.getDate() + 1)
+    
+    let jsDay = checkDate.getDay()
+    let normalizedDay = jsDay === 0 ? 7 : jsDay
+    
+    if (normalizedDay === club.recurring_day_of_week) {
+      if (targetMonth === null) targetMonth = checkDate.getMonth()
+      if (checkDate.getMonth() !== targetMonth) break
+      
+      const dateString = checkDate.toISOString().split('T')[0]
+      const finalDateTime = `${dateString}T${club.recurring_time || '21:00:00'}`
+      
+      // A SOLUÇÃO: Converter a data gerada em texto para UTC verdadeiro
+      const dateToSave = new Date(finalDateTime).toISOString()
+      const targetDateStr = new Date(finalDateTime).toLocaleDateString('pt-PT')
+      
+      // Verifica se a data gerada já tem algum jogo na BD (usando formatação PT para comparar bem)
+      const conflict = matches.value.some(m => new Date(m.date).toLocaleDateString('pt-PT') === targetDateStr)
+      if (conflict) {
+        conflictingDates.push(targetDateStr)
+      }
+      
+      batchInserts.push({
+        club_id: props.id,
+        date: dateToSave,
+        location: club.default_location || 'Campo Padrão',
+        max_players: club.default_max_players || 14,
+        price_per_player: club.default_price || 5.00,
+        status: 'aberto'
+      })
+    }
+  }
+  
+  if (batchInserts.length === 0) {
+    $q.notify({ type: 'info', message: 'Não há mais dias correspondentes neste mês.' })
+    saving.value = false
+    return
+  }
+  
+  if (conflictingDates.length > 0) {
+    $q.dialog({
+      title: 'Aviso de Sobreposição',
+      message: `Já tens jogos marcados nos dias: ${conflictingDates.join(', ')}. Queres gerar estes jogos na mesma e criar duplicados no calendário?`,
+      cancel: { label: 'Cancelar', flat: true, color: 'grey' },
+      ok: { label: 'Gerar na mesma', color: 'amber-9', unelevated: true },
+      persistent: true
+    }).onOk(async () => {
+      await executeBulkInsert(batchInserts)
+    }).onCancel(() => {
+      saving.value = false
+    })
+  } else {
+    await executeBulkInsert(batchInserts)
+  }
+}
+
+async function executeBulkInsert(batchInserts) {
+  const { error } = await supabase.from('matches').insert(batchInserts)
+  if (error) {
+    $q.notify({ type: 'negative', message: 'Erro ao gerar lote: ' + error.message })
+  } else {
+    $q.notify({ type: 'positive', icon: 'auto_mode', message: `Geradas ${batchInserts.length} peladas no calendário!` })
+    await fetchMatches()
+    showCreateModal.value = false
+  }
+  saving.value = false
+}
+
+const applyToFuture = ref(false) // Controla a propagação de edição
+
+// Calcula o próximo dia e hora do jogo com base nas definições do clube
+function getNextRecurringDate(dayOfWeek, timeStr) {
+  if (!dayOfWeek || !timeStr) return ''
+  
+  const today = new Date()
+  const currentDay = today.getDay() === 0 ? 7 : today.getDay()
+  let daysUntilNext = dayOfWeek - currentDay
+  
+  if (daysUntilNext < 0) daysUntilNext += 7
+  
+  // timeStr vem da base de dados (ex: "21:00:00" ou "21:00")
+  const parts = timeStr.split(':')
+  const hours = parseInt(parts[0]) || 21
+  const minutes = parseInt(parts[1]) || 0
+  
+  if (daysUntilNext === 0) {
+    const matchTime = new Date(today)
+    matchTime.setHours(hours, minutes, 0, 0)
+    // Se hoje é o dia do jogo mas a hora já passou, atira para a próxima semana
+    if (today > matchTime) daysUntilNext += 7
+  }
+
+  const nextDate = new Date(today)
+  nextDate.setDate(today.getDate() + daysUntilNext)
+  nextDate.setHours(hours, minutes, 0, 0)
+  
+  // Truque para anular o Fuso Horário e forçar o formato YYYY-MM-DDTHH:mm
+  const localIso = new Date(nextDate.getTime() - (nextDate.getTimezoneOffset() * 60000))
+    .toISOString()
+    .slice(0, 16)
+    
+  return localIso
 }
   
 async function refreshPage(done) {

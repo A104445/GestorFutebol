@@ -148,13 +148,13 @@ export default defineConfig((/* ctx */) => {
       
       // O coração da tua App Mobile
       manifest: {
-        name: 'Gestor de Futebol',
-        short_name: 'Futebol',
-        description: 'Organiza as tuas peladas num instante.',
-        display: 'standalone', // Faz com que a app abra sem a barra de navegação do browser
+        name: 'MatchDay',             // Nome completo (aparece no ecrã de carregamento/splash screen)
+        short_name: 'MatchDay',       // Nome curto (o que fica debaixo do teu novo ícone escuro)
+        description: 'Gestão profissional de peladas e equipas de futebol.',
+        display: 'standalone',
         orientation: 'portrait',
-        background_color: '#ffffff',
-        theme_color: '#1976D2', // A cor principal da tua app (combina com o primary do Quasar)
+        background_color: '#121212',  // Mantém a cor escura para o ecrã de load
+        theme_color: '#121212',       // Pinta a barra de bateria/horas do telemóvel de escuro
         icons: [
           {
             src: 'icons/icon-128x128.png',
