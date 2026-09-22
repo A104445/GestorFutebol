@@ -3,3 +3,19 @@
 .border-radius-12 {
     border-radius: 12px !important;
   }
+
+/* --- ZOOM OUT GLOBAL PARA TELEMÓVEIS --- */
+
+/* Telemóveis normais (até 600px de largura) */
+@media (max-width: 600px) {
+  body {
+    zoom: 0.9; /* Reduz toda a aplicação para 90% do tamanho original */
+  }
+}
+
+/* Telemóveis pequenos (até 400px de largura - ex: iPhone SE) */
+@media (max-width: 400px) {
+  body {
+    zoom: 0.85; /* Reduz toda a aplicação para 85% do tamanho original */
+  }
+}
