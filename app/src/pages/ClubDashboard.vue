@@ -159,26 +159,34 @@
 
               <q-card-section class="bg-grey-1 q-pa-none">
                 
-                <div v-if="match.status === 'fechado'" class="q-py-lg flex flex-center">
-                  <div class="row items-center justify-center full-width text-center">
+                
+                <div v-if="match.status === 'fechado'" class="q-py-md flex flex-center">
+                  <!-- O segredo está no "no-wrap" e no "justify-between" -->
+                  <div class="row items-center justify-between full-width text-center no-wrap q-px-sm">
+                    
+                    <!-- EQUIPA A (Ocupa 33.3% do espaço) -->
                     <div class="col-4 column items-center">
                       <q-avatar color="blue-1" text-color="blue-9" icon="shield" size="lg" />
                       <div class="text-weight-bolder text-dark q-mt-sm" style="font-size: 11px; letter-spacing: 0.5px;">EQUIPA A</div>
                     </div>
-                    <!-- RESULTADO E EQUIPAS -->
-                    <div class="row items-center justify-center no-wrap q-gutter-x-sm q-my-md">
-                      <div class="text-h4 text-weight-bolder" style="min-width: 40px; text-align: center;">
+                    
+                    <!-- RESULTADO E EQUIPAS (Também ocupa 33.3%) -->
+                    <div class="col-4 row items-center justify-center no-wrap q-gutter-x-xs">
+                      <div class="text-h4 text-weight-bolder" style="min-width: 30px; text-align: center;">
                         {{ match.team_a_goals ?? '-' }}
                       </div>
-                      <div class="text-h6 text-grey-5 q-px-xs">X</div>
-                      <div class="text-h4 text-weight-bolder" style="min-width: 40px; text-align: center;">
+                      <div class="text-subtitle1 text-grey-5 text-weight-bold q-px-xs">X</div>
+                      <div class="text-h4 text-weight-bolder" style="min-width: 30px; text-align: center;">
                         {{ match.team_b_goals ?? '-' }}
                       </div>
                     </div>
+                    
+                    <!-- EQUIPA B (Ocupa os restantes 33.3%) -->
                     <div class="col-4 column items-center">
                       <q-avatar color="orange-1" text-color="orange-9" icon="shield" size="lg" />
                       <div class="text-weight-bolder text-dark q-mt-sm" style="font-size: 11px; letter-spacing: 0.5px;">EQUIPA B</div>
                     </div>
+
                   </div>
                 </div>
 

@@ -60,22 +60,39 @@
                   <div class="fut-divider"></div>
 
                   <div class="row fut-stats justify-center">
+                  <!-- ESTATÍSTICAS PARA GUARDA-REDES -->
+                  <template v-if="member.position === 'Guarda-Redes'">
                     <div class="col-5 column items-end q-pr-sm" style="border-right: 1px solid rgba(255,255,255,0.2);">
-                      <div><span class="stat-val">{{ member.pace }}</span> <span class="stat-label">PAC</span></div>
-                      <div><span class="stat-val">{{ member.shooting }}</span> <span class="stat-label">SHO</span></div>
-                      <div><span class="stat-val">{{ member.passing }}</span> <span class="stat-label">PAS</span></div>
+                      <div class="stat-row"><span class="stat-val">{{ member.diving || 70 }}</span><span class="stat-label">DIV</span></div>
+                      <div class="stat-row"><span class="stat-val">{{ member.handling || 70 }}</span><span class="stat-label">HAN</span></div>
+                      <div class="stat-row"><span class="stat-val">{{ member.kicking || 70 }}</span><span class="stat-label">KIC</span></div>
                     </div>
                     <div class="col-5 column items-start q-pl-sm">
-                      <div><span class="stat-val">{{ member.dribbling }}</span> <span class="stat-label">DRI</span></div>
-                      <div><span class="stat-val">{{ member.defending }}</span> <span class="stat-label">DEF</span></div>
-                      <div><span class="stat-val">{{ member.physical }}</span> <span class="stat-label">PHY</span></div>
+                      <div class="stat-row"><span class="stat-val">{{ member.reflexes || 70 }}</span><span class="stat-label">REF</span></div>
+                      <div class="stat-row"><span class="stat-val">{{ member.speed || 70 }}</span><span class="stat-label">SPD</span></div>
+                      <div class="stat-row"><span class="stat-val">{{ member.positioning || 70 }}</span><span class="stat-label">POS</span></div>
                     </div>
-                  </div>
+                  </template>
+
+                  <!-- ESTATÍSTICAS PARA JOGADORES DE CAMPO -->
+                  <template v-else>
+                    <div class="col-5 column items-end q-pr-sm" style="border-right: 1px solid rgba(255,255,255,0.2);">
+                      <div class="stat-row"><span class="stat-val">{{ member.pace || 70 }}</span><span class="stat-label">PAC</span></div>
+                      <div class="stat-row"><span class="stat-val">{{ member.shooting || 70 }}</span><span class="stat-label">SHO</span></div>
+                      <div class="stat-row"><span class="stat-val">{{ member.passing || 70 }}</span><span class="stat-label">PAS</span></div>
+                    </div>
+                    <div class="col-5 column items-start q-pl-sm">
+                      <div class="stat-row"><span class="stat-val">{{ member.dribbling || 70 }}</span><span class="stat-label">DRI</span></div>
+                      <div class="stat-row"><span class="stat-val">{{ member.defending || 70 }}</span><span class="stat-label">DEF</span></div>
+                      <div class="stat-row"><span class="stat-val">{{ member.physical || 70 }}</span><span class="stat-label">PHY</span></div>
+                    </div>
+                  </template>
+                </div>
+                </div>
                   
-                  <div class="fut-bottom-bar text-uppercase">
-                    <q-icon name="sports_soccer" size="10px" class="q-mr-xs" /> 
-                    {{ isIcon(member) ? 'ICON' : (member.is_virtual ? 'VIRTUAL' : 'PRO') }}
-                  </div>
+                <div class="fut-bottom-bar text-uppercase">
+                  <q-icon name="sports_soccer" size="10px" class="q-mr-xs" /> 
+                  {{ isIcon(member) ? 'ICON' : (member.is_virtual ? 'VIRTUAL' : 'PRO') }}
                 </div>
               </div>
 
@@ -125,15 +142,27 @@
           </div>
           
           <q-separator dark class="q-my-md" />
-
           <div class="row q-col-gutter-x-md q-col-gutter-y-sm">
+          <!-- SLIDERS PARA GUARDA-REDES -->
+          <template v-if="editForm.position === 'Guarda-Redes'">
+            <div v-for="stat in ['diving', 'handling', 'kicking', 'reflexes', 'speed', 'positioning']" :key="stat" class="col-12 col-sm-6">
+              <div class="row justify-between text-caption text-weight-bold">
+                <span class="text-capitalize">{{ stat }}</span><span class="text-amber">{{ editForm[stat] }}</span>
+              </div>
+              <q-slider v-model="editForm[stat]" :min="1" :max="99" color="amber" dense />
+            </div>
+          </template>
+
+          <!-- SLIDERS PARA JOGADORES DE CAMPO -->
+          <template v-else>
             <div v-for="stat in ['pace', 'dribbling', 'shooting', 'defending', 'passing', 'physical']" :key="stat" class="col-12 col-sm-6">
               <div class="row justify-between text-caption text-weight-bold">
                 <span class="text-capitalize">{{ stat }}</span><span class="text-amber">{{ editForm[stat] }}</span>
               </div>
               <q-slider v-model="editForm[stat]" :min="1" :max="99" color="amber" dense />
             </div>
-          </div>
+          </template>
+        </div>
         </q-card-section>
 
         <q-card-actions class="q-pa-md column q-gutter-y-sm" style="background: #111;">
@@ -172,7 +201,11 @@ const showCreateVirtualModal = ref(false)
 const selectedPlayer = ref(null)
 
 const newVirtualPlayer = ref({ name: '', position: 'Médio' })
-const editForm = ref({ position: 'Médio', pace: 70, shooting: 70, passing: 70, dribbling: 70, defending: 70, physical: 70 })
+const editForm = ref({ 
+  position: 'M dio', 
+  pace: 70, shooting: 70, passing: 70, dribbling: 70, defending: 70, physical: 70,
+  diving: 70, handling: 70, kicking: 70, reflexes: 70, speed: 70, positioning: 70 
+})
 
 const groupedMembers = computed(() => {
   const groups = { 'Guarda-Redes': [], 'Defesas': [], 'Médios': [], 'Avançados': [] }
@@ -191,10 +224,18 @@ const computedOverall = computed(() => {
   const f = editForm.value
   let overall = 70
   switch (f.position) {
-    case 'Guarda-Redes': overall = (f.defending * 0.45) + (f.physical * 0.25) + (f.passing * 0.20) + (f.pace * 0.10); break
-    case 'Defesa': overall = (f.defending * 0.40) + (f.physical * 0.30) + (f.pace * 0.15) + (f.passing * 0.10) + (f.dribbling * 0.05); break
-    case 'Médio': overall = (f.passing * 0.30) + (f.dribbling * 0.25) + (f.pace * 0.15) + (f.shooting * 0.10) + (f.defending * 0.10) + (f.physical * 0.10); break
-    case 'Avançado': overall = (f.shooting * 0.35) + (f.pace * 0.25) + (f.dribbling * 0.20) + (f.physical * 0.10) + (f.passing * 0.05) + (f.defending * 0.05); break
+    case 'Guarda-Redes': 
+      overall = (f.reflexes * 0.30) + (f.diving * 0.30) + (f.positioning * 0.20) + (f.handling * 0.10) + (f.kicking * 0.05) + (f.speed * 0.05); 
+      break
+    case 'Defesa': 
+      overall = (f.defending * 0.40) + (f.physical * 0.30) + (f.pace * 0.15) + (f.passing * 0.10) + (f.dribbling * 0.05); 
+      break
+    case 'M dio': 
+      overall = (f.passing * 0.30) + (f.dribbling * 0.25) + (f.pace * 0.15) + (f.shooting * 0.10) + (f.defending * 0.10) + (f.physical * 0.10); 
+      break
+    case 'Avan ado': 
+      overall = (f.shooting * 0.35) + (f.pace * 0.25) + (f.dribbling * 0.20) + (f.physical * 0.10) + (f.passing * 0.05) + (f.defending * 0.05); 
+      break
   }
   return Math.round(overall)
 })
@@ -207,8 +248,8 @@ async function fetchAllMembers() {
 
   // 1. Carregar utilizadores reais com conta
   const { data: realUsers } = await supabase.from('club_members')
-    .select('role, is_owner, profile_id, profiles(name, overall, position, pace, shooting, passing, dribbling, defending, physical)')
-    .eq('club_id', props.id)
+  .select('role, is_owner, profile_id, profiles(name, overall, position, pace, shooting, passing, dribbling, defending, physical, diving, handling, kicking, reflexes, speed, positioning)')
+  .eq('club_id', props.id)
 
   if (realUsers) {
     realUsers.forEach(u => {
@@ -217,6 +258,8 @@ async function fetchAllMembers() {
           id: u.profile_id, id_type: 'real', name: u.profiles.name, position: u.profiles.position, overall: u.profiles.overall || 70,
           pace: u.profiles.pace || 70, shooting: u.profiles.shooting || 70, passing: u.profiles.passing || 70,
           dribbling: u.profiles.dribbling || 70, defending: u.profiles.defending || 70, physical: u.profiles.physical || 70,
+          diving: u.profiles.diving || 70, handling: u.profiles.handling || 70, kicking: u.profiles.kicking || 70,
+          reflexes: u.profiles.reflexes || 70, speed: u.profiles.speed || 70, positioning: u.profiles.positioning || 70,
           is_virtual: false, is_owner: u.is_owner, role: u.role
         })
       }
@@ -263,7 +306,9 @@ async function savePlayerStats() {
   const { error } = await supabase.from(table).update({
     overall: computedOverall.value, position: editForm.value.position, pace: editForm.value.pace,
     shooting: editForm.value.shooting, passing: editForm.value.passing, dribbling: editForm.value.dribbling,
-    defending: editForm.value.defending, physical: editForm.value.physical
+    defending: editForm.value.defending, physical: editForm.value.physical,
+    diving: editForm.value.diving, handling: editForm.value.handling, kicking: editForm.value.kicking,
+    reflexes: editForm.value.reflexes, speed: editForm.value.speed, positioning: editForm.value.positioning
   }).eq(matchField, selectedPlayer.value.id)
 
   if (!error) {
@@ -345,7 +390,22 @@ function getShortPosition(p) { return p==='Guarda-Redes'?'GR':p==='Defesa'?'DEF'
 .fut-name { font-family: 'Arial Black', sans-serif; text-align: center; font-size: 14px; text-transform: uppercase; margin-top: auto; }
 .fut-divider { height: 1px; background: currentColor; opacity: 0.2; margin: 4px 10px; }
 .fut-stats { font-size: 11px; line-height: 1.2; padding-bottom: 4px; }
-.stat-val { font-weight: 900; }
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 4px; /* O espaço exato entre o número e a letra */
+}
+
+.stat-val {
+  font-weight: 900;
+  width: 18px; /* Congela a largura dos números */
+  text-align: right;
+}
+
+.stat-label {
+  width: 22px; /* Congela a largura das letras (o "I" passa a ocupar o mesmo que o "D") */
+  text-align: left;
+}
 .fut-bottom-bar { text-align: center; font-weight: 900; font-size: 10px; opacity: 0.7; margin-top: auto; padding-bottom: 4px; }
 /* =========================================
    👑 LUMINARY ICON (TIAGO EDITION - CLARA) 👑
