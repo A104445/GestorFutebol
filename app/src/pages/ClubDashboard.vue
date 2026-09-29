@@ -1,265 +1,229 @@
 <template>
-  <q-page class="bg-grey-2">
-    
-    <q-pull-to-refresh @refresh="refreshPage" color="primary">
-      <div class="q-pa-md q-pb-xl">
-        
-        <div class="row items-center justify-between q-mb-xl q-pa-sm bg-white shadow-1" style="border-radius: 16px; border-left: 5px solid var(--q-primary);">
-          <div class="q-pl-sm">
-            <h5 class="q-my-none text-weight-bolder text-dark" style="letter-spacing: -0.5px;">
+  <q-page class="q-pa-md page-light-premium">
+    <q-pull-to-refresh @refresh="refreshPage" color="primary" class="full-height">
+      
+      <!-- CABEÇALHO DO CLUBE (Bloco Escuro de Contraste) -->
+      <div class="row items-center justify-between q-mb-lg q-pa-md club-header-block text-white">
+        <div class="row items-center q-gutter-x-md">
+          <!-- Ícone do Clube (Caixa Branca para saltar à vista no fundo escuro) -->
+          <div class="bg-white flex flex-center shadow-2" style="width: 44px; height: 44px; border-radius: 12px;">
+            <q-icon name="sports_soccer" size="26px" color="green-9" />
+          </div>
+          <div>
+            <h5 class="q-my-none text-weight-bolder text-white" style="letter-spacing: -0.3px; font-size: 1.4rem;">
               {{ clubStore.currentClub?.name || 'Carregando...' }}
             </h5>
-            
-            <div v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" class="text-caption text-grey-7 q-mb-none row items-center q-mt-xs">
-              <q-icon name="vpn_key" color="primary" class="q-mr-xs" size="xs" />
-              Código Convite: 
-              <q-chip dense color="grey-2" class="text-weight-bold text-dark q-ml-xs" style="font-family: monospace; letter-spacing: 0.5px;">
-                {{ clubStore.currentClub?.invite_code || 'N/A' }}
-              </q-chip>
+            <div v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" class="text-caption text-grey-4 q-mt-xs text-weight-medium">
+              Código: <span class="text-green-4 text-weight-bolder">{{ clubStore.currentClub?.invite_code || 'N/A' }}</span>
             </div>
-            
-            <div v-else class="text-caption text-grey-7 q-mb-none row items-center q-mt-xs">
-              <q-icon name="group" color="primary" class="q-mr-xs" size="xs" />
-              Membro do Plantel
-            </div>
-
-          </div>
-          <div class="row q-gutter-xs">
-            
-            <q-btn 
-              v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" 
-              flat round icon="person_add" color="dark" @click="showRequestsModal = true"
-            >
-              <q-badge v-if="pendingRequests.length > 0" color="negative" floating rounded>
-                {{ pendingRequests.length }}
-              </q-badge>
-              <q-tooltip>Pedidos de Adesão</q-tooltip>
-            </q-btn>
-
-            <q-btn 
-              v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" 
-              flat round icon="manage_accounts" color="dark" @click="openStaffManager"
-            >
-              <q-tooltip>Equipa Técnica</q-tooltip>
-            </q-btn>
-
-            <q-btn 
-              v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" 
-              flat round icon="settings" color="dark" @click="openClubSettings"
-            >
-              <q-tooltip>Definições do Clube</q-tooltip>
-            </q-btn>
-
-            <q-btn 
-              v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" 
-              flat round icon="content_copy" color="primary" @click="copyInviteCode"
-            >
-              <q-tooltip>Copiar Código</q-tooltip>
-            </q-btn>
-            
           </div>
         </div>
-    
-        <div v-if="loading" class="text-center q-pa-xl">
-          <q-spinner-fluent color="primary" size="50px" />
-          <div class="text-caption text-grey-6 q-mt-md">A aquecer os motores...</div>
-        </div>
-    
-        <!-- ECRÃ DE "SEM JOGOS" -->
-        <div v-else-if="matches.length === 0" class="text-center q-pa-xl bg-white shadow-1" style="border-radius: 20px; margin-top: 2rem;">
-          <q-icon name="sports_soccer" size="5em" class="text-grey-4 q-mb-md" />
-          <div class="text-h6 text-weight-bold text-grey-8">Sem jogos agendados</div>
-          <p class="text-body2 text-grey-6 q-px-md">Ainda não há nenhuma convocatória aberta neste clube.</p>
-          <q-btn
-             v-if="clubStore.currentClub?.can_manage_matches"
-             color="primary"
-             unelevated
-             label="Agendar Primeiro Jogo"
-             icon="add"
-             class="q-mt-sm"
-             style="border-radius: 8px;"
-            @click="openCreateMatch()"
-           />
-        </div>
 
-        <!-- O V-ELSE QUE ENGLOBA O FILTRO E A LISTA JUNTOS -->
-        <div v-else>
+        <!-- Menu Discreto -->
+        <div class="row q-gutter-xs items-center">
+          <q-btn v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" flat round icon="person_add" color="grey-3" @click="showRequestsModal = true">
+            <q-badge v-if="pendingRequests.length > 0" color="primary" floating rounded>{{ pendingRequests.length }}</q-badge>
+          </q-btn>
+          <q-btn v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" flat round icon="manage_accounts" color="grey-3" @click="openStaffManager" />
+          <q-btn v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" flat round icon="settings" color="grey-3" @click="openClubSettings" />
           
-          <!-- Filtro de Jogos Dinâmico -->
-        <div class="row justify-between items-center q-mb-md">
-          <div class="text-subtitle1 text-weight-bold text-dark row items-center q-mb-sm q-mt-sm">
-            <q-icon name="calendar_view_month" class="q-mr-sm text-primary" size="sm" />
-            Calendário
-          </div>
+          <q-separator vertical class="q-mx-sm bg-grey-6" style="opacity: 0.5;" />
           
-          <div class="row items-center q-gutter-sm">
-            <!-- Os 3 botões principais -->
-            <!-- Os botões principais -->
-            <q-btn-toggle
-              v-model="matchViewMode"
-              toggle-color="primary"
-              color="white"
-              text-color="grey-8"
-              :options="filterButtons"
-              rounded
-              unelevated
-              class="shadow-1"
-            />
-            
-            <!-- O Dropdown secundário que só aparece se for "Mês" -->
-            <q-select 
-              v-if="matchViewMode === 'month'"
-              v-model="selectedMonth" 
-              :options="availableMonths" 
-              dense 
-              outlined 
-              emit-value 
-              map-options
-              bg-color="white"
-              style="min-width: 140px;"
-            />
-          </div>
+          <q-btn flat round icon="more_vert" color="white">
+            <q-menu auto-close style="border-radius: 12px;">
+              <q-list style="min-width: 160px;">
+                <q-item clickable to="/selector" @click="clearCurrentClub">
+                  <q-item-section avatar><q-icon name="swap_horiz" size="sm" color="grey-8" /></q-item-section>
+                  <q-item-section class="text-weight-medium">Mudar de Clube</q-item-section>
+                </q-item>
+                <q-separator />
+                <q-item clickable @click="handleLogout">
+                  <q-item-section avatar><q-icon name="logout" size="sm" color="negative" /></q-item-section>
+                  <q-item-section class="text-negative text-weight-bold">Terminar Sessão</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </q-btn>
         </div>
-          
-          <!-- Lista de Cartas de Jogo -->
-          <div class="row q-col-gutter-lg">
-            <div v-for="match in filteredMatches" :key="match.id" class="col-12 col-md-6 col-lg-4">
-            <q-card class="match-card shadow-4" :class="match.status === 'fechado' ? 'match-closed' : 'match-open'">
-              <div class="row items-center justify-between q-pa-md bg-white border-bottom">
-                <div class="row items-center text-dark text-weight-bold text-subtitle2">
-                  <q-icon name="calendar_month" size="sm" color="primary" class="q-mr-sm" />
-                  {{ formatDate(match.date) }}
+      </div>
+
+      <!-- ESTADOS DE CARREGAMENTO / VAZIO -->
+      <div v-if="loading" class="text-center q-pa-xl">
+        <q-spinner-fluent color="primary" size="50px" />
+        <div class="text-caption text-grey-6 q-mt-md">A aquecer os motores...</div>
+      </div>
+
+      <div v-else-if="matches.length === 0" class="text-center q-pa-xl bg-white shadow-1" style="border-radius: 16px; border: 1px solid #e2e8f0; margin-top: 2rem;">
+        <q-icon name="sports_soccer" size="5em" class="text-grey-4 q-mb-md" />
+        <div class="text-h6 text-weight-bold text-grey-8">Sem jogos agendados</div>
+        <p class="text-body2 text-grey-6 q-px-md">Ainda não há nenhuma convocatória aberta neste clube.</p>
+        <q-btn v-if="clubStore.currentClub?.can_manage_matches" color="primary" unelevated label="Agendar Primeiro Jogo" icon="add" class="q-mt-sm" style="border-radius: 8px;" @click="openCreateMatch()" />
+      </div>
+
+     <!-- FILTRO DINÂMICO -->
+      <div class="row justify-between items-center q-mb-md q-px-xs">
+        <div class="text-subtitle1 text-weight-bold text-dark row items-center">
+          <!-- Ícone a verde para ligar ao tema -->
+          <q-icon name="calendar_today" class="q-mr-sm text-green-9" size="sm" />
+          Calendário
+        </div>
+        
+        <div class="row items-center q-gutter-sm">
+          <!-- Toggle passa a usar a cor Âmbar quando selecionado -->
+          <q-btn-toggle
+            v-model="matchViewMode"
+            toggle-color="amber-8"
+            toggle-text-color="dark"
+            color="white"
+            text-color="grey-6"
+            :options="filterButtons"
+            rounded
+            unelevated
+            class="shadow-1"
+            style="border: 1px solid #e2e8f0;"
+          />
+          <q-select 
+            v-if="matchViewMode === 'month'"
+            v-model="selectedMonth" 
+            :options="availableMonths" 
+            dense outlined emit-value map-options bg-color="white" color="amber-8"
+            style="min-width: 130px;"
+          />
+        </div>
+      </div>
+
+      <!-- CARTÕES DE JOGO -->
+      <div class="row q-col-gutter-lg">
+        <div v-for="match in filteredMatches" :key="match.id" class="col-12 col-md-6 col-lg-4">
+          <q-card flat class="match-card-light">
+            
+            <!-- Topo do Cartão -->
+            <div class="row items-center justify-between q-pa-md" style="border-bottom: 1px solid #f1f5f9;">
+              <div class="text-subtitle2 text-weight-bold text-dark row items-center">
+                <!-- Ícone da Data em Cinza Claro Neutro -->
+                <div class="bg-grey-2 text-grey-7 flex flex-center q-mr-sm" style="width: 28px; height: 28px; border-radius: 6px;">
+                  <q-icon name="calendar_today" size="14px" />
                 </div>
-                <div class="row items-center q-gutter-xs">
-                  <q-badge color="accent" text-color="dark" class="text-weight-bolder q-px-sm shadow-1" style="border-radius: 6px; padding-top: 4px; padding-bottom: 4px;">
-                    {{ match.price_per_player }} €
-                  </q-badge>
-                  <q-badge :color="match.status === 'fechado' ? 'grey-7' : 'positive'" class="text-weight-bold shadow-1" style="border-radius: 6px; padding-top: 4px; padding-bottom: 4px;">
-                    {{ match.status === 'fechado' ? 'Encerrado' : 'Aberto' }}
-                  </q-badge>
+                {{ formatDate(match.date) }}
+              </div>
+              
+              <div class="row items-center q-gutter-x-sm">
+                <q-chip 
+                  dense 
+                  :color="match.status === 'fechado' ? 'grey-2' : 'amber-8'" 
+                  :text-color="match.status === 'fechado' ? 'grey-6' : 'dark'" 
+                  class="text-weight-bolder shadow-1"
+                  style="border-radius: 6px;"
+                >
+                  {{ match.status === 'fechado' ? 'FINALIZADO' : 'ABERTO' }}
+                </q-chip>
+
+                <!-- Menu de Gestão em Cinza Neutro -->
+                <q-btn v-if="clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner" flat round dense icon="more_vert" color="grey-6">
+                  <q-menu auto-close style="border-radius: 12px; min-width: 140px;">
+                    <q-list>
+                      <q-item clickable @click="openEditMatch(match)">
+                        <q-item-section avatar><q-icon name="edit" size="sm" color="grey-7" /></q-item-section>
+                        <q-item-section class="text-weight-bold">Editar</q-item-section>
+                      </q-item>
+                      <q-separator />
+                      <q-item clickable @click="deleteMatch(match)">
+                        <q-item-section avatar><q-icon name="delete" size="sm" color="negative" /></q-item-section>
+                        <q-item-section class="text-negative text-weight-bold">Apagar</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-menu>
+                </q-btn>
+              </div>
+            </div>
+
+            <q-card-section class="q-pa-md">
+              <!-- JOGO FECHADO -->
+              <div v-if="match.status === 'fechado'" class="q-py-sm">
+                <div class="row items-center justify-center no-wrap full-width text-center scoreboard-box q-pa-md">
+                  <div class="col-4 column items-center">
+                    <q-avatar size="44px" color="rgba(255,255,255,0.1)" text-color="white" icon="shield" />
+                    <div class="text-weight-bold text-grey-4 q-mt-sm text-uppercase text-ellipsis full-width" style="font-size: 11px;">{{ match.team_a_name || 'Equipa A' }}</div>
+                  </div>
                   
-                  <!-- MENU DE EDITAR / APAGAR -->
-                  <q-btn v-if="clubStore.currentClub?.can_manage_matches" flat round dense icon="more_vert" color="grey-7">
-                    <q-menu auto-close>
-                      <q-list style="min-width: 120px">
-                        <q-item clickable @click="openEditMatch(match)">
-                          <q-item-section avatar><q-icon name="edit" size="sm" color="grey-8" /></q-item-section>
-                          <q-item-section>Editar</q-item-section>
-                        </q-item>
-                        <q-separator />
-                        <q-item clickable @click="deleteMatch(match)">
-                          <q-item-section avatar><q-icon name="delete" size="sm" color="negative" /></q-item-section>
-                          <q-item-section class="text-negative text-weight-bold">Apagar</q-item-section>
-                        </q-item>
-                      </q-list>
-                    </q-menu>
-                  </q-btn>
+                  <div class="col-4 row items-center justify-center no-wrap q-gutter-x-sm">
+                    <div class="text-weight-bolder text-white" style="font-size: 2.2rem; line-height: 1;">{{ match.team_a_goals ?? '-' }}</div>
+                    <div class="text-blue-grey-3 text-h6 text-weight-bold">-</div>
+                    <div class="text-weight-bolder text-white" style="font-size: 2.2rem; line-height: 1;">{{ match.team_b_goals ?? '-' }}</div>
+                  </div>
+                  
+                  <div class="col-4 column items-center">
+                    <q-avatar size="44px" color="rgba(255,255,255,0.1)" text-color="white" icon="shield" />
+                    <div class="text-weight-bold text-grey-4 q-mt-sm text-uppercase text-ellipsis full-width" style="font-size: 11px;">{{ match.team_b_name || 'Equipa B' }}</div>
+                  </div>
                 </div>
               </div>
 
-              <q-card-section class="bg-grey-1 q-pa-none">
-                
-                
-                <div v-if="match.status === 'fechado'" class="q-py-md flex flex-center">
-                  <!-- O segredo está no "no-wrap" e no "justify-between" -->
-                  <div class="row items-center justify-between full-width text-center no-wrap q-px-sm">
-                    
-                    <!-- EQUIPA A (Ocupa 33.3% do espaço) -->
-                    <div class="col-4 column items-center">
-                      <q-avatar color="blue-1" text-color="blue-9" icon="shield" size="lg" />
-                      <div class="text-weight-bolder text-dark q-mt-sm" style="font-size: 11px; letter-spacing: 0.5px;">EQUIPA A</div>
-                    </div>
-                    
-                    <!-- RESULTADO E EQUIPAS (Também ocupa 33.3%) -->
-                    <div class="col-4 row items-center justify-center no-wrap q-gutter-x-xs">
-                      <div class="text-h4 text-weight-bolder" style="min-width: 30px; text-align: center;">
-                        {{ match.team_a_goals ?? '-' }}
-                      </div>
-                      <div class="text-subtitle1 text-grey-5 text-weight-bold q-px-xs">X</div>
-                      <div class="text-h4 text-weight-bolder" style="min-width: 30px; text-align: center;">
-                        {{ match.team_b_goals ?? '-' }}
-                      </div>
-                    </div>
-                    
-                    <!-- EQUIPA B (Ocupa os restantes 33.3%) -->
-                    <div class="col-4 column items-center">
-                      <q-avatar color="orange-1" text-color="orange-9" icon="shield" size="lg" />
-                      <div class="text-weight-bolder text-dark q-mt-sm" style="font-size: 11px; letter-spacing: 0.5px;">EQUIPA B</div>
-                    </div>
-
-                  </div>
+              <!-- JOGO ABERTO -->
+              <div v-else class="row items-center justify-between inner-info-box q-pa-sm">
+                <div class="col-5 q-pl-sm">
+                  <div class="text-caption text-grey-6 text-uppercase text-weight-bold" style="font-size: 10px;">Local</div>
+                  <div class="text-body2 text-weight-bold text-dark text-ellipsis">{{ match.location }}</div>
                 </div>
-
-                <div v-else class="q-pa-md">
-                  <div class="row items-center q-mb-md bg-white q-pa-sm shadow-1" style="border-radius: 10px;">
-                    <q-icon name="place" color="primary" size="sm" class="q-mr-sm" />
-                    <div>
-                      <div class="text-caption text-grey-6 text-weight-medium" style="line-height: 1;">Local / Campo</div>
-                      <div class="text-body2 text-weight-bold text-dark">{{ match.location }}</div>
-                    </div>
-                  </div>
-                  <div class="row items-center justify-between q-px-sm">
-                    <div class="row items-center">
-                      <q-icon name="groups" color="grey-6" size="sm" class="q-mr-xs" />
-                      <div>
-                        <div class="text-caption text-grey-6 text-weight-medium" style="line-height: 1;">Lotação Max.</div>
-                        <div class="text-body2 text-weight-bold text-dark">{{ match.max_players }} Jogadores</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </q-card-section>
-
-              <q-separator />
-
-              <q-card-actions class="q-pa-md bg-white row items-center justify-between">
-                <q-btn flat color="grey-8" icon="groups" label="Convocados" class="text-weight-bold" @click="openPresencesModal(match)" />
                 
-                <div class="row q-gutter-sm items-center">
-                  <q-btn 
-                     v-if="(!match.status || match.status === 'aberto') && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)"
-                     color="negative" 
-                     flat 
-                     dense
-                    icon="sports" 
-                    @click="openCloseModal(match)" 
-                  >
-                    <q-tooltip>Fechar Jogo</q-tooltip>
-                  </q-btn>
-                  
-                  <q-btn 
-                    v-if="!match.status || match.status === 'aberto'" 
-                    color="primary" 
-                    unelevated 
-                    label="Vou Jogar" 
-                    icon="check_circle" 
-                    class="text-weight-bold shadow-2" 
-                    style="border-radius: 8px;" 
-                    @click="joinMatch(match)" 
-                  />
+                <q-separator vertical class="bg-grey-3" />
+                
+                <div class="col-3 text-center">
+                  <div class="text-caption text-grey-6 text-uppercase text-weight-bold" style="font-size: 10px;">Vagas</div>
+                  <div class="text-body2 text-weight-bold text-dark">{{ match.max_players }}</div>
                 </div>
-              </q-card-actions>
-            </q-card>
+                
+                <q-separator vertical class="bg-grey-3" />
+                
+                <div class="col-3 text-right q-pr-sm">
+                  <div class="text-caption text-grey-6 text-uppercase text-weight-bold" style="font-size: 10px;">Preço</div>
+                  <!-- Preço a Verde Escuro em vez de Azul -->
+                  <div class="text-body2 text-weight-bolder text-green-9">{{ match.price_per_player }}€</div>
+                </div>
+              </div>
+            </q-card-section>
 
-          </div>
+            <!-- Rodapé do Cartão -->
+            <q-card-actions class="q-px-md q-pb-md q-pt-none row items-center justify-between">
+              <q-btn flat color="grey-8" icon="groups" label="Plantel" class="text-weight-bold bg-grey-2" style="border-radius: 8px;" @click="openPresencesModal(match)" />
+
+              <div class="row q-gutter-sm items-center">
+                <q-btn
+                  v-if="(!match.status || match.status === 'aberto') && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)"
+                  color="negative" flat round dense icon="sports" @click="openCloseModal(match)"
+                >
+                  <q-tooltip>Fechar Jogo</q-tooltip>
+                </q-btn>
+                
+                <!-- Botão VOU JOGAR (Laranja Suave / Âmbar) -->
+                <q-btn
+                  v-if="!match.status || match.status === 'aberto'"
+                  color="amber-8" text-color="dark" unelevated label="Vou Jogar" class="text-weight-bolder q-px-md shadow-2" style="border-radius: 8px;"
+                  @click="joinMatch(match)"
+                />
+              </div>
+            </q-card-actions>
+          </q-card>
         </div>
-      </div>
-  
-      </div>
+      </div>              
     </q-pull-to-refresh>
-  
+
+    <!-- Botão Flutuante (+ Criar Partida) -->
     <q-page-sticky v-if="clubStore.currentClub?.can_manage_matches" position="bottom-right" :offset="[20, 20]">
-      <q-btn fab icon="add" color="accent" text-color="dark" class="shadow-5 animate-pop" @click="openCreateMatch()">
+      <q-btn fab icon="add" color="amber-8" text-color="dark" class="shadow-5" @click="openCreateMatch()">
         <q-tooltip>Agendar Pelada</q-tooltip>
       </q-btn>
     </q-page-sticky>
-  
+
     <q-dialog v-model="showCreateModal" persistent transition-show="scale" transition-hide="scale">
       <q-card style="min-width: 350px; border-radius: 20px;">
-        <q-card-section class="row items-center bg-primary text-white q-py-md">
-          <div class="text-h6 text-weight-bold row items-center"><q-icon name="event_available" class="q-mr-sm" />Nova Convocatória</div>
-          <q-space /><q-btn icon="close" flat round dense v-close-popup />
+        <q-card-section class="row items-center q-py-md border-bottom">
+          <div class="text-h6 text-weight-bold text-dark row items-center">
+            <q-icon name="event_available" class="q-mr-sm text-dark" />
+            Nova Convocatória
+          </div>
+          <q-space />
+          <q-btn icon="close" flat round dense color="grey-6" v-close-popup />
         </q-card-section>
         <q-card-section class="q-pt-lg q-px-md">
           <q-form @submit="saveMatch" class="q-gutter-md">
@@ -286,14 +250,17 @@
             />
 
             <q-input rounded outlined dense v-model="newMatch.location" label="Local / Campo" :disable="useDefaultSettings" :rules="[val => !!val || 'Obrigatório']" />
-            
-            <div class="row q-col-gutter-sm">
-              <div class="col-6">
-                <q-input rounded outlined dense v-model.number="newMatch.max_players" type="number" label="Máx Jogadores" :disable="useDefaultSettings" />
-              </div>
-              <div class="col-6">
-                <q-input rounded outlined dense v-model.number="newMatch.price_per_player" type="number" step="0.5" label="Preço (€)" :disable="useDefaultSettings" />
-              </div>
+
+            <!-- BLOCO 1: Lotação e Preço -->
+            <div class="row no-wrap" style="gap: 16px;">
+              <q-input class="col" rounded outlined dense v-model.number="newMatch.max_players" type="number" label="Máx Jogadores" :disable="useDefaultSettings" />
+              <q-input class="col" rounded outlined dense v-model.number="newMatch.price_per_player" type="number" step="0.5" label="Preço (€)" :disable="useDefaultSettings" />
+            </div>
+
+            <!-- BLOCO 2: Nomes das Equipas -->
+            <div class="row no-wrap" style="gap: 16px;">
+              <q-input class="col" rounded outlined dense v-model="newMatch.team_a_name" label="Equipa A" :disable="useDefaultSettings" />
+              <q-input class="col" rounded outlined dense v-model="newMatch.team_b_name" label="Equipa B" :disable="useDefaultSettings" />
             </div>
 
             <!-- Checkbox para aplicar a todos os jogos futuros (Só aparece ao Editar) -->
@@ -309,7 +276,7 @@
                 v-if="!newMatch.id"
                 label="Gerar Mês Inteiro" 
                 icon="auto_mode" 
-                color="amber-9" 
+                color="dark" 
                 unelevated 
                 outline 
                 class="q-px-sm text-weight-bold" 
@@ -398,7 +365,9 @@
               <q-item-section>
                 <q-item-label class="text-weight-bold text-dark row items-center">
                   {{ presence.profiles?.name || presence.virtual_players?.name || presence.guest_name }}
-                  <q-badge v-if="presence.team" :color="presence.team === 'A' ? 'blue' : 'orange'" class="q-ml-sm text-weight-bold">Equipa {{ presence.team }}</q-badge>
+                  <q-badge v-if="presence.team" :color="presence.team === 'A' ? 'primary' : 'dark'" class="q-ml-sm text-weight-bold">
+                    {{ presence.team }}
+                  </q-badge>
                 </q-item-label>
                 <q-item-label caption>
                   <span :class="presence.status === 'confirmed' ? 'text-primary text-weight-medium' : 'text-warning'">
@@ -410,8 +379,8 @@
               <q-item-section side>
                 <div v-if="selectedMatch?.status !== 'fechado' && (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.can_manage_finances)" class="row items-center">
                   <template v-if="clubStore.currentClub?.can_manage_teams">
-                    <q-btn flat round dense icon="looks_one" size="sm" :color="presence.team === 'A' ? 'blue' : 'grey-4'" @click="assignTeam(presence, 'A')" />
-                    <q-btn flat round dense icon="looks_two" size="sm" :color="presence.team === 'B' ? 'orange' : 'grey-4'" @click="assignTeam(presence, 'B')" />
+                    <q-btn flat round dense icon="looks_one" size="sm" :color="presence.team === 'A' ? 'primary' : 'grey-4'" @click="assignTeam(presence, 'A')" />
+                    <q-btn flat round dense icon="looks_two" size="sm" :color="presence.team === 'B' ? 'dark' : 'grey-4'" @click="assignTeam(presence, 'B')" />
                   </template>
                   <q-btn v-if="clubStore.currentClub?.can_manage_finances || clubStore.currentClub?.is_owner" flat round dense :icon="presence.paid ? 'price_check' : 'currency_exchange'" size="sm" :color="presence.paid ? 'positive' : 'grey-4'" @click="togglePayment(presence)" />
                   <q-btn v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.can_manage_matches" flat round dense icon="person_remove" size="sm" color="negative" class="q-ml-xs" @click="removePresence(presence)" />
@@ -555,11 +524,13 @@
 
     <q-dialog v-model="showSettingsModal">
       <q-card style="min-width: 360px; border-radius: 16px;">
-        <q-card-section class="bg-primary text-white row items-center">
-          <div class="text-subtitle1 text-weight-bold row items-center">
-            <q-icon name="settings" class="q-mr-sm" /> Definições do Clube
+        <q-card-section class="row items-center border-bottom">
+          <div class="text-subtitle1 text-weight-bold text-dark row items-center">
+            <q-icon name="settings" class="q-mr-sm text-dark" />
+            Definições do Clube
           </div>
-          <q-space /><q-btn icon="close" flat round dense v-close-popup />
+          <q-space />
+          <q-btn icon="close" flat round dense color="grey-6" v-close-popup />
         </q-card-section>
 
         <q-card-section class="q-gutter-md q-pt-md">
@@ -568,15 +539,32 @@
           <q-input outlined dense v-model="clubSettings.default_location" label="Campo / Local Fixo" icon="place" />
           <q-input outlined dense type="number" v-model.number="clubSettings.default_max_players" label="Nº Lotação Máxima" />
 
-          <div class="row q-col-gutter-sm">
-            <div class="col-7">
-              <q-select outlined dense emit-value map-options v-model="clubSettings.recurring_day_of_week" 
-                :options="[{label:'Segunda',value:1},{label:'Terça',value:2},{label:'Quarta',value:3},{label:'Quinta',value:4},{label:'Sexta',value:5},{label:'Sábado',value:6},{label:'Domingo',value:7}]" 
-                label="Dia de Jogo Fixo" />
-            </div>
-            <div class="col-5">
-              <q-input outlined dense type="time" v-model="clubSettings.recurring_time" label="Hora Fixa" />
-            </div>
+          <!-- BLOCO DE EQUIPAS -->
+          <div class="row no-wrap" style="gap: 16px;">
+            <q-input class="col" outlined dense v-model="clubSettings.default_team_a_name" label="Nome Equipa A" placeholder="Ex: Coletes" />
+            <q-input class="col" outlined dense v-model="clubSettings.default_team_b_name" label="Nome Equipa B" placeholder="Ex: Sem Coletes" />
+          </div>
+
+          <!-- BLOCO DE AGENDAMENTO RECORRENTE (Com Proporção 7 / 5) -->
+          <div class="row no-wrap" style="gap: 16px;">
+            <q-select 
+              style="flex: 7;"
+              outlined 
+              dense 
+              emit-value 
+              map-options 
+              v-model="clubSettings.recurring_day_of_week"
+              :options="[{label:'Segunda',value:1},{label:'Terça',value:2},{label:'Quarta',value:3},{label:'Quinta',value:4},{label:'Sexta',value:5},{label:'Sábado',value:6},{label:'Domingo',value:7}]"
+              label="Dia de Jogo Fixo" 
+            />
+            <q-input 
+              style="flex: 5;"
+              outlined 
+              dense 
+              type="time" 
+              v-model="clubSettings.recurring_time" 
+              label="Hora Fixa" 
+            />
           </div>
         </q-card-section>
 
@@ -596,6 +584,7 @@ import { useAuthStore } from 'stores/useAuthStore'
 import { useClubStore } from 'stores/useClubStore'
 import { supabase } from 'boot/supabase'
 import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
 
 const props = defineProps(['id'])
 const authStore = useAuthStore()
@@ -672,12 +661,7 @@ const filteredMatches = computed(() => {
   return []
 })
 
-const newMatch = ref({ date: '', location: '', max_players: 14, price_per_player: 5.00 })
-
-// Adiciona isto AQUI:
 const useDefaultSettings = ref(true)
-
-
 
 onMounted(async () => {
   // ANTÍDOTO ANTI-F5: Recuperar sessão do Supabase caso a store tenha esvaziado
@@ -785,6 +769,8 @@ function applyDefaults(isToggled) {
     newMatch.value.location = clubSettings.value?.default_location || ''
     newMatch.value.max_players = clubSettings.value?.default_max_players || 14
     newMatch.value.price_per_player = clubSettings.value?.default_price || 5.00
+    newMatch.value.team_a_name = clubSettings.value?.default_team_a_name || 'Equipa A' 
+    newMatch.value.team_b_name = clubSettings.value?.default_team_b_name || 'Equipa B' 
     
     // Se for um jogo novo (sem ID), preenche também a data
     if (!newMatch.value.id) {
@@ -796,15 +782,16 @@ function applyDefaults(isToggled) {
 function openCreateMatch() {
   useDefaultSettings.value = true
   applyToFuture.value = false // Garante que a checkbox vem desmarcada
-  
   newMatch.value = { 
-    id: null, 
-    date: getNextRecurringDate(clubSettings.value?.recurring_day_of_week, clubSettings.value?.recurring_time), 
-    location: clubSettings.value?.default_location || '', 
-    max_players: clubSettings.value?.default_max_players || 14, 
-    price_per_player: clubSettings.value?.default_price || 5.00 
-  }
-  showCreateModal.value = true
+     id: null,
+     date: getNextRecurringDate(clubSettings.value?.recurring_day_of_week, clubSettings.value?.recurring_time),
+     location: clubSettings.value?.default_location || '',
+     max_players: clubSettings.value?.default_max_players || 14,
+     price_per_player: clubSettings.value?.default_price || 5.00,
+     team_a_name: clubSettings.value?.default_team_a_name || 'Equipa A', // <-- ADICIONADO
+     team_b_name: clubSettings.value?.default_team_b_name || 'Equipa B'  // <-- ADICIONADO
+   }
+   showCreateModal.value = true
 }
 
 function openEditMatch(match) {
@@ -890,6 +877,8 @@ async function executeSaveMatch() {
       location: newMatch.value.location,
       max_players: newMatch.value.max_players, 
       price_per_player: newMatch.value.price_per_player,
+      team_a_name: newMatch.value.team_a_name, // <- NOVO
+      team_b_name: newMatch.value.team_b_name, // <- NOVO
       club_id: clubStore.currentClub.id, 
       status: 'aberto' 
     }
@@ -965,6 +954,9 @@ async function fetchMatches() {
 async function fetchClubSettings() {
   const { data, error } = await supabase.from('clubs').select('*').eq('id', props.id).single()
   if (data && !error) {
+    // Força um nome padrão caso a base de dados devolva vazio (null)
+    data.default_team_a_name = data.default_team_a_name || 'Equipa A'
+    data.default_team_b_name = data.default_team_b_name || 'Equipa B'
     clubSettings.value = { ...clubSettings.value, ...data }
   }
 }
@@ -974,16 +966,28 @@ function formatDate(isoString) {
   return d.toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })
 }
 
-function copyInviteCode() {
-  const code = clubStore.currentClub?.invite_code
-  if (code) {
-    navigator.clipboard.writeText(code)
-    $q.notify({ type: 'positive', icon: 'content_copy', message: `Código ${code} copiado! Podes colar no WhatsApp.` })
-  } else {
-    $q.notify({ type: 'warning', message: 'Este clube ainda não tem código de convite.' })
-  }
+// function copyInviteCode() {
+//   const code = clubStore.currentClub?.invite_code
+//   if (code) {
+//     navigator.clipboard.writeText(code)
+//     $q.notify({ type: 'positive', icon: 'content_copy', message: `Código ${code} copiado! Podes colar no WhatsApp.` })
+//   } else {
+//     $q.notify({ type: 'warning', message: 'Este clube ainda não tem código de convite.' })
+//   }
+// }
+function clearCurrentClub() {
+  // Limpa o clube ativo quando clicamos em "Mudar de Clube" 
+  // para garantir que a barra inferior desaparece suavemente
+  clubStore.setClub(null)
 }
 
+const router = useRouter()
+
+async function handleLogout() {
+  await authStore.logout()
+  clubStore.setClub(null)
+  router.push('/login')
+}
 // --- ESTADO DAS PRESENÇAS ---
 const showPresencesModal = ref(false)
 const selectedMatch = ref(null)
@@ -1376,12 +1380,24 @@ async function updatePermission(profileId, field, value) {
 
 const showSettingsModal = ref(false)
 const savingSettings = ref(false)
-const clubSettings = ref({ default_max_players: 14, default_price: 5, monthly_fee: 20, default_location: '', recurring_day_of_week: 2, recurring_time: '21:00' })
+const clubSettings = ref({ 
+  default_max_players: 14, default_price: 5, monthly_fee: 20, default_location: '', 
+  recurring_day_of_week: 2, recurring_time: '21:00',
+  default_team_a_name: 'Equipa A', default_team_b_name: 'Equipa B' // <- NOVO
+})
+
+const newMatch = ref({ 
+  id: null, date: '', location: '', max_players: 14, price_per_player: 5.00,
+  team_a_name: 'Equipa A', team_b_name: 'Equipa B' // <- NOVO
+})
 
 async function openClubSettings() {
   showSettingsModal.value = true
   const { data } = await supabase.from('clubs').select('*').eq('id', props.id).single()
   if (data) {
+    // Força um nome padrão caso a base de dados devolva vazio (null)
+    data.default_team_a_name = data.default_team_a_name || 'Equipa A'
+    data.default_team_b_name = data.default_team_b_name || 'Equipa B'
     clubSettings.value = { ...data }
   }
 }
@@ -1394,7 +1410,9 @@ async function saveClubSettings() {
     monthly_fee: clubSettings.value.monthly_fee,
     default_location: clubSettings.value.default_location,
     recurring_day_of_week: clubSettings.value.recurring_day_of_week,
-    recurring_time: clubSettings.value.recurring_time
+    recurring_time: clubSettings.value.recurring_time,
+    default_team_a_name: clubSettings.value.default_team_a_name, // <- NOVO
+    default_team_b_name: clubSettings.value.default_team_b_name  // <- NOVO
   }).eq('id', props.id)
 
   if (!error) {
@@ -1454,6 +1472,8 @@ async function generateMonthlyMatchesBulk() {
         location: club.default_location || 'Campo Padrão',
         max_players: club.default_max_players || 14,
         price_per_player: club.default_price || 5.00,
+        team_a_name: newMatch.value.team_a_name, 
+        team_b_name: newMatch.value.team_b_name,
         status: 'aberto'
       })
     }
@@ -1538,17 +1558,159 @@ async function refreshPage(done) {
 </script>
   
 <style scoped>
-.match-premium-card {
-  border-radius: 14px;
+/* Fundo Global da Página (Verde Menta Suave) */
+.page-light-premium {
+  background-color: #f0fdf4; 
+  min-height: 100vh;
+}
+
+/* Cabeçalho do Clube (Verde Premium Degradé) */
+.club-header-block {
+  background: linear-gradient(135deg, #2E7D32 0%, #0A2E0C 100%);
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(10, 46, 12, 0.2);
+}
+
+/* Placar de Jogo Fechado (Usa o mesmo Verde Premium) */
+.scoreboard-box {
+  background: linear-gradient(135deg, #2E7D32 0%, #0A2E0C 100%);
+  border-radius: 12px;
+  color: white;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Cartão de Jogo (Com sombra e borda reforçadas para descolar do fundo menta) */
+.match-card-light {
+  background-color: #ffffff;
+  border-radius: 16px;
+  /* 1. Borda neutra e um pouco mais densa para recortar o cartão */
+  border: 1px solid rgba(0, 0, 0, 0.3); 
+  /* 2. Sombra reforçada (passou de 0.03 para 0.08) para dar altura */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.match-card-light:hover {
+  transform: translateY(-4px);
+  /* Sombra de hover mais agressiva para o efeito "pop-up" */
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.12); 
+}
+
+/* Caixa interior de Informação */
+.inner-info-box {
+  background-color: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+}
+
+.text-ellipsis {
+  white-space: nowrap;
   overflow: hidden;
-  border: 1px solid rgba(0,0,0,0.06);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  background: white;
+  text-overflow: ellipsis;
+}
+
+/* Cartão Premium com sombra difusa */
+.match-premium-card {
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.03);
+  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08) !important;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
+  overflow: hidden;
 }
 
 .match-premium-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 16px 50px -10px rgba(0,0,0,0.12) !important;
+}
+
+/* Placar de Jogo Estilo Transmissão (Verde Estádio) */
+.scoreboard-tv {
+  background: linear-gradient(135deg, var(--q-primary) 0%, #0d3b13 100%);
+  border-radius: 16px;
+  color: white;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.team-avatar-shadow {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
+
+.border-bottom-subtle {
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+/* Identificadores laterais baseados no estado do jogo (Reduzidos para um toque mais subtil) */
+.match-open {
+  border-left: 3px solid var(--q-primary); 
+}
+
+.match-closed {
+  border-left: 3px solid #e0e0e0; 
+  opacity: 0.90;
+}
+
+/* Tipografia e Utilitários */
+.font-mono {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.match-card-clean {
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.02); /* Borda quase invisível apenas para recortar o limite */
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08); /* Sombra difusa e profunda para contrastar com o fundo */
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Animação muito mais suave */
+}
+.border-bottom-light {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.match-card-vibrant {
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  overflow: hidden; /* Essencial para o cabeçalho escuro respeitar os cantos redondos */
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.match-card-vibrant:hover {
+  transform: translateY(-4px);
+  /* A sombra ganha um ligeiro tom esverdeado ao passar o rato */
+  box-shadow: 0 12px 30px rgba(46, 125, 50, 0.15); 
+}
+
+/* O Segredo: O Cabeçalho Escuro e Luminoso */
+.match-header-bg {
+  /* Fundo base escuro (quase preto) com um gradiente verde muito profundo */
+  background: linear-gradient(135deg, #111928 0%, #1a3a24 100%);
+  position: relative;
+  border-bottom: 3px solid var(--q-primary); /* Uma linha de energia verde a separar */
+}
+
+/* Efeito "Holofote de Estádio" no canto direito do cabeçalho */
+.match-header-bg::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at top right, rgba(76, 175, 80, 0.3) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.animate-pop {
+  transition: transform 0.2s ease-in-out;
+}
+
+.animate-pop:hover {
+  transform: scale(1.08);
 }
 
 /* Identificadores laterais baseados no estado do jogo */
@@ -1573,28 +1735,13 @@ async function refreshPage(done) {
   box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
 }
 
-.match-open {
-  border-left: 6px solid #2196f3; /* Azul quando está aberto a inscrições */
-}
-
-.match-closed {
-  border-left: 6px solid #616161; /* Cinza escuro quando fechado */
-  opacity: 0.95;
-}
+.border-left-primary { border-left: 3px solid var(--q-primary); }
+.border-left-dark { border-left: 3px solid var(--q-dark); }
 
 .border-bottom {
   border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
-.font-mono {
-  font-family: 'Courier New', Courier, monospace;
-}
-
-.text-ellipsis {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .bg-gradient-green {
   background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
 }
@@ -1604,12 +1751,7 @@ async function refreshPage(done) {
 .opacity-8 {
   opacity: 0.8;
 }
-.animate-pop {
-  transition: transform 0.2s ease-in-out;
-}
-.animate-pop:hover {
-  transform: scale(1.08);
-}
+
 .border-left-blue { border-left: 3px solid #2196f3; } 
 .border-left-orange { border-left: 3px solid #ff9800; }
 </style>

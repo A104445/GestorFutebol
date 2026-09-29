@@ -1,66 +1,74 @@
 <template>
-    <q-page class="bg-grey-2 q-pa-md">
-      
-      <div class="row items-center justify-between q-mb-lg bg-white q-pa-sm shadow-1" style="border-radius: 16px;">
-        <div class="q-pl-sm row items-center">
-          <q-icon name="emoji_events" size="lg" color="amber-8" class="q-mr-md" />
-          <div>
-            <h6 class="q-my-none text-weight-bolder text-dark">Ranking Geral</h6>
-            <div class="text-caption text-grey-6">Classificação da Época</div>
-          </div>
+  <q-page class="page-light-premium q-pa-md">
+    
+    <!-- CABEÇALHO DO RANKING -->
+    <div class="row items-center justify-between q-mb-lg q-pa-md club-header-block text-white">
+      <div class="row items-center q-gutter-x-md">
+        <!-- Ícone -->
+        <div class="bg-white flex flex-center shadow-2" style="width: 44px; height: 44px; border-radius: 12px;">
+          <!-- Passa para leaderboard -->
+          <q-icon name="leaderboard" size="26px" color="green-9" />
+        </div>
+        <!-- Texto -->
+        <div>
+          <!-- Nome principal alterado -->
+          <h5 class="q-my-none text-weight-bolder text-white" style="font-size: 1.3rem; letter-spacing: -0.5px;">
+            Estatísticas da Época
+          </h5>
         </div>
       </div>
-  
-      <div v-if="loading" class="text-center q-pa-xl">
-        <q-spinner-bars color="primary" size="40px" />
-      </div>
-  
-      <div v-else-if="leaderboard.length === 0" class="text-center q-pa-xl bg-white shadow-1" style="border-radius: 16px;">
-        <q-icon name="query_stats" size="4em" class="text-grey-4 q-mb-md" />
-        <div class="text-h6 text-grey-8">Sem Dados Estatísticos</div>
-        <p class="text-caption text-grey-6">Ainda não há jogos fechados com resultados para calcular o ranking.</p>
-      </div>
-  
-      <div v-else>
-        <q-markup-table flat bordered class="shadow-1" style="border-radius: 12px; overflow: hidden;">
-            <thead class="bg-dark text-white">
-            <tr>
-              <th class="text-left" style="width: 50px;">#</th>
-              <th class="text-left">Jogador</th>
-              <th class="text-center"><q-tooltip>Jogos Realizados</q-tooltip>J</th>
-              <th class="text-center text-info"><q-tooltip>Golos Marcados</q-tooltip>⚽</th>
-              <th class="text-center text-grey-5"><q-tooltip>Assistências</q-tooltip>👟</th>
-              <th class="text-center text-positive"><q-tooltip>Vitórias</q-tooltip>V</th>
-              <th class="text-center text-warning"><q-tooltip>Empates</q-tooltip>E</th>
-              <th class="text-center text-negative"><q-tooltip>Derrotas</q-tooltip>D</th>
-              <th class="text-center text-weight-bolder bg-primary">PTS</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white">
-            <tr v-for="(player, index) in leaderboard" :key="player.id" :class="index < 3 ? 'bg-amber-1' : ''">
-              <td class="text-left text-weight-bold" :class="getMedalColor(index)">
-                {{ index + 1 }}º
-                <q-icon v-if="index === 0" name="military_tech" color="amber" size="sm" />
-              </td>
-              <td class="text-left">
-                <div class="text-weight-bold text-dark">{{ player.name }}</div>
-                <div class="text-caption text-grey-6">OVR: {{ player.overall }}</div>
-              </td>
-              <td class="text-center text-grey-8">{{ player.matches }}</td>
-              <td class="text-center text-info text-weight-bolder" style="font-size: 1.1em;">{{ player.goals }}</td>
-              <td class="text-center text-grey-7 text-weight-bold">{{ player.assists }}</td>
-              <td class="text-center text-positive text-weight-medium">{{ player.wins }}</td>
-              <td class="text-center text-warning text-weight-medium">{{ player.draws }}</td>
-              <td class="text-center text-negative text-weight-medium">{{ player.losses }}</td>
-              <td class="text-center text-weight-bolder bg-green-1 text-dark" style="font-size: 1.1em;">
-                {{ player.points }}
-              </td>
-            </tr>
-          </tbody>
-        </q-markup-table>
-      </div>
-    </q-page>
-  </template>
+    </div>
+
+    <div v-if="loading" class="text-center q-pa-xl">
+      <q-spinner-bars color="green-9" size="40px" />
+    </div>
+
+    <div v-else-if="leaderboard.length === 0" class="text-center q-pa-xl match-card-light" style="margin-top: 2rem;">
+      <q-icon name="query_stats" size="4em" class="text-grey-4 q-mb-md" />
+      <div class="text-h6 text-grey-8 text-weight-bold">Sem Dados Estatísticos</div>
+      <p class="text-caption text-grey-6">Ainda não há jogos fechados com resultados para calcular o ranking.</p>
+    </div>
+
+    <div v-else>
+      <q-markup-table flat bordered class="match-card-light" style="overflow: hidden;">
+        <thead class="text-white" style="background: linear-gradient(135deg, #14532d 0%, #064e3b 100%);">
+          <tr>
+            <th class="text-left" style="width: 50px;">#</th>
+            <th class="text-left">Jogador</th>
+            <th class="text-center"><q-tooltip>Jogos Realizados</q-tooltip>J</th>
+            <th class="text-center text-amber-3"><q-tooltip>Golos Marcados</q-tooltip>G</th>
+            <th class="text-center text-green-2"><q-tooltip>Assistências</q-tooltip>A</th>
+            <th class="text-center text-white"><q-tooltip>Vitórias</q-tooltip>V</th>
+            <th class="text-center text-white"><q-tooltip>Empates</q-tooltip>E</th>
+            <th class="text-center text-white"><q-tooltip>Derrotas</q-tooltip>D</th>
+            <th class="text-center text-weight-bolder text-dark bg-amber-8">PTS</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white">
+          <tr v-for="(player, index) in leaderboard" :key="player.id" :class="index < 3 ? 'bg-orange-1' : ''">
+            <td class="text-left text-weight-bold" :class="getMedalColor(index)">
+              {{ index + 1 }}
+              <q-icon v-if="index === 0" name="military_tech" color="amber-8" size="sm" />
+            </td>
+            <td class="text-left">
+              <div class="text-weight-bold text-dark">{{ player.name }}</div>
+              <div class="text-caption text-grey-6">OVR: {{ player.overall }}</div>
+            </td>
+            <td class="text-center text-grey-8">{{ player.matches }}</td>
+            <td class="text-center text-green-9 text-weight-bolder" style="font-size: 1.1em;">{{ player.goals }}</td>
+            <td class="text-center text-grey-7 text-weight-bold">{{ player.assists }}</td>
+            <td class="text-center text-grey-8 text-weight-medium">{{ player.wins }}</td>
+            <td class="text-center text-grey-8 text-weight-medium">{{ player.draws }}</td>
+            <td class="text-center text-grey-8 text-weight-medium">{{ player.losses }}</td>
+            <td class="text-center text-weight-bolder bg-green-1 text-dark" style="font-size: 1.1em;">
+              {{ player.points }}
+            </td>
+          </tr>
+        </tbody>
+      </q-markup-table>
+    </div>
+  </q-page>
+</template>
   
   <script setup>
   import { ref, onMounted } from 'vue'
@@ -161,3 +169,21 @@
     loading.value = false
   }
   </script>
+
+<style scoped>
+.page-light-premium {
+  background-color: #f0fdf4;
+  min-height: 100vh;
+}
+.club-header-block {
+  background: linear-gradient(135deg, #2E7D32 0%, #0A2E0C 100%);
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(10, 46, 12, 0.2);
+}
+.match-card-light {
+  background-color: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #bbf7d0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+</style>

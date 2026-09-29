@@ -19,3 +19,33 @@
     zoom: 0.85; /* Reduz toda a aplicação para 85% do tamanho original */
   }
 }
+
+body {
+  background-color: #0b1120 !important;
+}
+
+/* --- CABEÇALHOS DE PÁGINA (DARK PREMIUM) --- */
+.page-header-premium {
+  border-radius: 16px;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gradientes Temáticos para cada ecrã */
+.header-theme-dashboard { background: linear-gradient(135deg, #0f172a 0%, #14532d 100%); } /* Slate para Verde Escuro */
+.header-theme-players { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); } /* Slate para Roxo Profundo */
+.header-theme-stats { background: linear-gradient(135deg, #0f172a 0%, #451a03 100%); } /* Slate para Bronze/Âmbar Escuro */
+
+.header-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white; /* Caixa branca no fundo escuro dá um contraste incrível */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}

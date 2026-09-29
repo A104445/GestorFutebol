@@ -1,39 +1,47 @@
 <template>
-  <q-page class="bg-grey-10 q-pa-md">
+  <q-page class="page-light-premium q-pa-md">
     
-    <div class="row items-center justify-between q-mb-xl bg-dark q-pa-md shadow-10" style="border-radius: 16px; border: 1px solid #333; background: linear-gradient(145deg, #111 0%, #1a1a1a 100%);">
-      <div class="q-pl-sm row items-center">
-        <q-icon name="sports_esports" size="lg" color="amber" class="q-mr-md" />
+    <!-- CABEÇALHO DO PLANTEL -->
+    <div class="row items-center justify-between q-mb-lg q-pa-md club-header-block text-white">
+      <div class="row items-center q-gutter-x-md">
+        <!-- Ícone -->
+        <div class="bg-white flex flex-center shadow-2" style="width: 44px; height: 44px; border-radius: 12px;">
+          <q-icon name="groups" size="26px" color="green-9" />
+        </div>
+        <!-- Texto (Limpo e Direto) -->
         <div>
-          <h5 class="q-my-none text-weight-bolder text-white font-fut" style="font-style: italic;">ULTIMATE TEAM</h5>
-          <div class="text-caption text-amber text-weight-bold">Plantel Oficial do Clube</div>
+          <h5 class="q-my-none text-weight-bolder text-white font-fut" style="font-size: 1.4rem; letter-spacing: -0.5px;">
+            Plantel
+          </h5>
         </div>
       </div>
+      
+      <!-- Ações -->
       <div class="row q-gutter-sm items-center">
-        <q-btn v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" color="amber" text-color="dark" icon="person_add" label="Criar Virtual" class="text-weight-bold" unelevated @click="showCreateVirtualModal = true" />
-        <q-btn flat round icon="close" color="grey-5" :to="`/club/${props.id}`" />
+        <q-btn v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" color="amber-8" text-color="dark" icon="person_add" label="Criar Virtual" class="text-weight-bolder shadow-1" unelevated style="border-radius: 8px;" @click="showCreateVirtualModal = true" />
       </div>
     </div>
 
     <div v-if="loading" class="text-center q-pa-xl">
-      <q-spinner-grid color="amber" size="50px" />
+      <q-spinner-grid color="green-9" size="50px" />
     </div>
-
+    
     <div v-else>
       <div v-for="section in ['Guarda-Redes', 'Defesas', 'Médios', 'Avançados']" :key="section">
         
         <div v-if="groupedMembers[section].length > 0" class="q-mb-xl">
-          <h6 class="text-white font-fut q-my-none q-mb-lg row items-center" style="border-bottom: 2px solid #333; padding-bottom: 8px;">
-            <q-icon :name="getSectionIcon(section)" class="q-mr-sm text-amber" size="md" />
+          <!-- Título das Secções (Adaptado para Fundo Claro) -->
+          <h6 class="text-dark font-fut q-my-none q-mb-lg row items-center" style="border-bottom: 2px solid #bbf7d0; padding-bottom: 8px;">
+            <q-icon :name="getSectionIcon(section)" class="q-mr-sm text-green-9" size="md" />
             {{ section.toUpperCase() }}
-            <q-badge color="dark" text-color="grey-5" class="q-ml-sm q-px-sm shadow-2">{{ groupedMembers[section].length }}</q-badge>
+            <q-badge color="green-1" text-color="green-9" class="q-ml-sm q-px-sm shadow-1" style="font-family: Arial, sans-serif;">{{ groupedMembers[section].length }}</q-badge>
           </h6>
-
+          
           <div class="row q-col-gutter-xl">
             <div v-for="member in groupedMembers[section]" :key="member.id" class="col-6 col-sm-4 col-md-3 col-lg-2 flex flex-center">
               
               <div 
-                class="fut-card shadow-15" 
+                class="fut-card shadow-10" 
                 :class="[isIcon(member) ? 'card-icon' : getCardTier(member.overall), (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner) ? 'cursor-pointer hover-lift' : '']"
                 @click="openEditModal(member)"
               >
@@ -43,26 +51,21 @@
                     <div class="fut-rating">{{ member.overall }}</div>
                     <div class="fut-position">{{ getShortPosition(member.position) }}</div>
                   </div>
-
-                  <q-icon v-if="member.is_virtual" name="construction" :color="isIcon(member) ? 'dark' : 'amber'" size="xs" class="absolute-top-right q-ma-sm" style="opacity: 0.8;">
+                  <q-icon v-if="member.is_virtual" name="construction" :color="isIcon(member) ? 'dark' : 'amber-9'" size="xs" class="absolute-top-right q-ma-sm" style="opacity: 0.8;">
                     <q-tooltip>Jogador Virtual Manual</q-tooltip>
                   </q-icon>
-
                   <div class="fut-portrait">
                     <q-icon name="person" size="5rem" class="silhouette" />
                   </div>
-
                   <div class="fut-name text-ellipsis row items-center justify-center">
                     <q-icon v-if="isIcon(member)" name="workspace_premium" size="xs" class="q-mr-xs" />
                     {{ member.name?.split(' ')[0] || 'Jogador' }}
                   </div>
-
                   <div class="fut-divider"></div>
-
                   <div class="row fut-stats justify-center">
-                  <!-- ESTATÍSTICAS PARA GUARDA-REDES -->
+                  <!-- ESTATÍSTICAS (O texto preto da carta faz com que a borda também precise de ser preta transparente) -->
                   <template v-if="member.position === 'Guarda-Redes'">
-                    <div class="col-5 column items-end q-pr-sm" style="border-right: 1px solid rgba(255,255,255,0.2);">
+                    <div class="col-5 column items-end q-pr-sm" style="border-right: 1px solid rgba(0,0,0,0.15);">
                       <div class="stat-row"><span class="stat-val">{{ member.diving || 70 }}</span><span class="stat-label">DIV</span></div>
                       <div class="stat-row"><span class="stat-val">{{ member.handling || 70 }}</span><span class="stat-label">HAN</span></div>
                       <div class="stat-row"><span class="stat-val">{{ member.kicking || 70 }}</span><span class="stat-label">KIC</span></div>
@@ -73,10 +76,8 @@
                       <div class="stat-row"><span class="stat-val">{{ member.positioning || 70 }}</span><span class="stat-label">POS</span></div>
                     </div>
                   </template>
-
-                  <!-- ESTATÍSTICAS PARA JOGADORES DE CAMPO -->
                   <template v-else>
-                    <div class="col-5 column items-end q-pr-sm" style="border-right: 1px solid rgba(255,255,255,0.2);">
+                    <div class="col-5 column items-end q-pr-sm" style="border-right: 1px solid rgba(0,0,0,0.15);">
                       <div class="stat-row"><span class="stat-val">{{ member.pace || 70 }}</span><span class="stat-label">PAC</span></div>
                       <div class="stat-row"><span class="stat-val">{{ member.shooting || 70 }}</span><span class="stat-label">SHO</span></div>
                       <div class="stat-row"><span class="stat-val">{{ member.passing || 70 }}</span><span class="stat-label">PAS</span></div>
@@ -88,8 +89,7 @@
                     </div>
                   </template>
                 </div>
-                </div>
-                  
+                </div>                   
                 <div class="fut-bottom-bar text-uppercase">
                   <q-icon name="sports_soccer" size="10px" class="q-mr-xs" /> 
                   {{ isIcon(member) ? 'ICON' : (member.is_virtual ? 'VIRTUAL' : 'PRO') }}
@@ -99,87 +99,76 @@
             </div>
           </div>
         </div>
-
       </div>
     </div>
 
+    <!-- MODAL: CRIAR JOGADOR VIRTUAL (Agora versão Light Premium) -->
     <q-dialog v-model="showCreateVirtualModal">
-      <q-card style="min-width: 320px; border-radius: 16px; background: #1a1a1a; color: white;">
-        <q-card-section class="row items-center">
-          <div class="text-subtitle1 text-weight-bold text-amber">Adicionar Jogador ao Plantel</div>
-          <q-space /><q-btn icon="close" flat round dense color="grey-5" v-close-popup />
+      <q-card style="min-width: 320px; border-radius: 16px; background: #ffffff;">
+        <q-card-section class="row items-center club-header-block text-white">
+          <div class="text-subtitle1 text-weight-bold">Adicionar Jogador Virtual</div>
+          <q-space /><q-btn icon="close" flat round dense color="white" v-close-popup />
         </q-card-section>
-        <q-card-section class="q-gutter-md">
-          <q-input dark outlined dense color="amber" v-model="newVirtualPlayer.name" label="Nome do Jogador" />
-          <q-select dark outlined dense color="amber" v-model="newVirtualPlayer.position" :options="['Guarda-Redes', 'Defesa', 'Médio', 'Avançado']" label="Posição Inicial" />
+        <q-card-section class="q-gutter-md q-pt-lg">
+          <q-input outlined dense color="green-9" v-model="newVirtualPlayer.name" label="Nome do Jogador" />
+          <q-select outlined dense color="green-9" v-model="newVirtualPlayer.position" :options="['Guarda-Redes', 'Defesa', 'Médio', 'Avançado']" label="Posição Inicial" />
         </q-card-section>
-        <q-card-actions align="right" class="q-pa-md bg-dark">
-          <q-btn flat label="Cancelar" color="grey-5" v-close-popup />
-          <q-btn color="amber" text-color="dark" label="Contratar" class="text-weight-bold" @click="createVirtualPlayer" :loading="saving" />
+        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn color="amber-8" text-color="dark" label="Contratar" class="text-weight-bolder shadow-1" style="border-radius: 6px;" @click="createVirtualPlayer" :loading="saving" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
+    <!-- MODAL: EDITAR ATRIBUTOS (Agora versão Light Premium) -->
     <q-dialog v-model="showEditModal">
-      <q-card style="min-width: 340px; max-width: 500px; width: 100%; border-radius: 16px; background: #1a1a1a; color: white;">
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-subtitle1 text-weight-bolder text-amber">Painel de Atributos FUT</div>
-          <q-space /><q-btn icon="close" flat round dense color="grey-5" v-close-popup />
+      <q-card style="min-width: 340px; max-width: 500px; width: 100%; border-radius: 16px; background: #ffffff;">
+        <q-card-section class="row items-center club-header-block text-white">
+          <div class="text-subtitle1 text-weight-bolder">Painel de Atributos</div>
+          <q-space /><q-btn icon="close" flat round dense color="white" v-close-popup />
         </q-card-section>
-
         <q-card-section class="q-pt-md">
-          <div class="text-h5 text-center text-weight-bolder text-white q-mb-lg text-uppercase font-fut">{{ selectedPlayer?.name }}</div>
+          <div class="text-h5 text-center text-weight-bolder text-dark q-mb-lg text-uppercase font-fut">{{ selectedPlayer?.name }}</div>
           <div class="row q-col-gutter-md items-center q-mb-md">
             <div class="col-12 col-sm-6">
-              <q-select dark outlined dense color="amber" v-model="editForm.position" :options="['Guarda-Redes', 'Defesa', 'Médio', 'Avançado']" label="Posição" />
+              <q-select outlined dense color="green-9" v-model="editForm.position" :options="['Guarda-Redes', 'Defesa', 'Médio', 'Avançado']" label="Posição" />
             </div>
             <div class="col-12 col-sm-6 flex flex-center">
-              <div class="text-center bg-dark q-px-xl q-py-sm shadow-5" style="border-radius: 8px; border: 1px solid #444;">
-                <div class="text-caption text-grey-5 text-weight-bold">OVERALL</div>
-                <div class="text-h3 text-weight-bolder text-amber" style="line-height: 1;">{{ computedOverall }}</div>
+              <div class="text-center bg-grey-2 q-px-xl q-py-sm shadow-2" style="border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div class="text-caption text-grey-7 text-weight-bold">OVERALL</div>
+                <div class="text-h3 text-weight-bolder text-green-9" style="line-height: 1;">{{ computedOverall }}</div>
               </div>
             </div>
           </div>
           
-          <q-separator dark class="q-my-md" />
+          <q-separator class="q-my-md bg-grey-3" />
+          
           <div class="row q-col-gutter-x-md q-col-gutter-y-sm">
-          <!-- SLIDERS PARA GUARDA-REDES -->
           <template v-if="editForm.position === 'Guarda-Redes'">
             <div v-for="stat in ['diving', 'handling', 'kicking', 'reflexes', 'speed', 'positioning']" :key="stat" class="col-12 col-sm-6">
-              <div class="row justify-between text-caption text-weight-bold">
-                <span class="text-capitalize">{{ stat }}</span><span class="text-amber">{{ editForm[stat] }}</span>
+              <div class="row justify-between text-caption text-weight-bold text-dark">
+                <span class="text-capitalize">{{ stat }}</span><span class="text-green-9 text-weight-bolder">{{ editForm[stat] }}</span>
               </div>
-              <q-slider v-model="editForm[stat]" :min="1" :max="99" color="amber" dense />
+              <q-slider v-model="editForm[stat]" :min="1" :max="99" color="green-9" dense />
             </div>
           </template>
-
-          <!-- SLIDERS PARA JOGADORES DE CAMPO -->
           <template v-else>
             <div v-for="stat in ['pace', 'dribbling', 'shooting', 'defending', 'passing', 'physical']" :key="stat" class="col-12 col-sm-6">
-              <div class="row justify-between text-caption text-weight-bold">
-                <span class="text-capitalize">{{ stat }}</span><span class="text-amber">{{ editForm[stat] }}</span>
+              <div class="row justify-between text-caption text-weight-bold text-dark">
+                <span class="text-capitalize">{{ stat }}</span><span class="text-green-9 text-weight-bolder">{{ editForm[stat] }}</span>
               </div>
-              <q-slider v-model="editForm[stat]" :min="1" :max="99" color="amber" dense />
+              <q-slider v-model="editForm[stat]" :min="1" :max="99" color="green-9" dense />
             </div>
           </template>
         </div>
         </q-card-section>
-
-        <q-card-actions class="q-pa-md column q-gutter-y-sm" style="background: #111;">
-          <q-btn label="Gravar Alterações" color="amber" text-color="dark" class="full-width text-weight-bolder" unelevated size="lg" :loading="saving" @click="savePlayerStats" />
-          
-          <q-btn 
-            label="Despedir Jogador (Remover)" 
-            color="negative" 
-            flat 
-            class="full-width text-weight-bold" 
-            :loading="saving" 
-            @click="removePlayer" 
-          />
+        
+        <q-card-actions class="q-pa-md column q-gutter-y-sm bg-grey-1">
+          <q-btn label="Gravar Alterações" color="amber-8" text-color="dark" class="full-width text-weight-bolder shadow-1" style="border-radius: 8px;" unelevated size="lg" :loading="saving" @click="savePlayerStats" />
+          <q-btn label="Despedir Jogador" color="negative" flat class="full-width text-weight-bold" style="border-radius: 8px;" :loading="saving" @click="removePlayer" />
         </q-card-actions>
       </q-card>
     </q-dialog>
-
   </q-page>
 </template>
 
@@ -374,9 +363,40 @@ function getShortPosition(p) { return p==='Guarda-Redes'?'GR':p==='Defesa'?'DEF'
 
 <style scoped>
 .font-fut { font-family: 'Impact', 'Arial Black', sans-serif; letter-spacing: -1px; }
-.fut-card { width: 155px; height: 225px; position: relative; border-radius: 6px 6px 35px 35px; padding: 8px; display: flex; flex-direction: column; transition: transform 0.3s ease; overflow: hidden; }
-.fut-card-inner { border: 1.5px solid rgba(255,255,255,0.4); border-radius: 4px 4px 30px 30px; height: 100%; display: flex; flex-direction: column; position: relative; z-index: 2; }
-.hover-lift:hover { transform: translateY(-12px) scale(1.08); z-index: 10; }
+/* A camada de FORA (Onde a borda escura tem de estar) */
+.fut-card {
+  width: 155px;
+  height: 225px;
+  position: relative;
+  border-radius: 6px 6px 35px 35px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: hidden;
+  /* A barreira escura passou para aqui! */
+  border: 1px solid rgba(0, 0, 0, 0.4); 
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); 
+}
+
+/* A camada de DENTRO (Devolvemos o brilho branco original) */
+.fut-card-inner {
+  border: 1.5px solid rgba(255, 255, 255, 0.4); 
+  border-radius: 4px 4px 30px 30px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+.hover-lift:hover {
+  transform: translateY(-12px) scale(1.08);
+  /* Sombra agressiva ao passar o rato para a carta saltar */
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
 .fut-card-shine { position: absolute; top: 0; left: -150%; width: 50%; height: 100%; background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.4), rgba(255,255,255,0)); transform: skewX(-25deg); animation: shine 4s infinite; z-index: 1; }
 @keyframes shine { 0% { left: -150%; } 30% { left: 200%; } 100% { left: 200%; } }
 .card-gold { background: linear-gradient(135deg, #e6c875, #ffd700, #b8860b); color: #1a1a1a; }
@@ -390,6 +410,30 @@ function getShortPosition(p) { return p==='Guarda-Redes'?'GR':p==='Defesa'?'DEF'
 .fut-name { font-family: 'Arial Black', sans-serif; text-align: center; font-size: 14px; text-transform: uppercase; margin-top: auto; }
 .fut-divider { height: 1px; background: currentColor; opacity: 0.2; margin: 4px 10px; }
 .fut-stats { font-size: 11px; line-height: 1.2; padding-bottom: 4px; }
+
+/* Fundo da Página Menta */
+.page-light-premium {
+  background-color: #f0fdf4;
+  min-height: 100vh;
+}
+
+/* Cabeçalhos Verde Premium */
+.club-header-block {
+  background: linear-gradient(135deg, #2E7D32 0%, #0A2E0C 100%);
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(10, 46, 12, 0.2);
+}
+
+/* Cartas FUT - Sombra ajustada para o fundo claro */
+.shadow-10 {
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+.hover-lift:hover {
+  transform: translateY(-12px) scale(1.08);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  z-index: 10;
+}
+
 .stat-row {
   display: flex;
   align-items: center;
@@ -414,10 +458,10 @@ function getShortPosition(p) { return p==='Guarda-Redes'?'GR':p==='Defesa'?'DEF'
 /* 1. O Fundo Claro e a Levitação da Carta */
 .card-icon {
   background: #ffffff !important;
-  border: none !important;
-  box-shadow:
-    0 15px 35px rgba(0, 0, 0, 0.15),
-    0 0 25px rgba(212, 175, 55, 0.4) !important;
+  /* Sombra base muito mais densa + brilho dourado */
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.2), 
+    0 0 15px rgba(212, 175, 55, 0.5) !important;
   animation: levitate-light 4s ease-in-out infinite;
   overflow: hidden;
   position: relative;
@@ -448,7 +492,8 @@ function getShortPosition(p) { return p==='Guarda-Redes'?'GR':p==='Defesa'?'DEF'
 /* 3. O Fundo Interior (Textura Marfim Imaculado) */
 .card-icon .fut-card-inner {
   background: radial-gradient(circle at 50% 0%, #ffffff 0%, #fdfcf9 50%, #eee6d1 100%) !important;
-  border: 1.5px solid rgba(212, 175, 55, 0.6);
+  /* Borda dourada sólida! Isto impede que o branco da carta se misture com o fundo */
+  border: 1px solid rgba(212, 175, 55, 0.8) !important;
   z-index: 2;
   box-shadow: inset 0 0 25px rgba(255, 255, 255, 0.9);
 }
@@ -512,10 +557,11 @@ function getShortPosition(p) { return p==='Guarda-Redes'?'GR':p==='Defesa'?'DEF'
   100% { transform: translate(50%, 50%) rotate(45deg); }
 }
 
+/* Redefinir a animação de levitação para ter sombras mais fortes */
 @keyframes levitate-light {
-  0% { transform: translateY(0px); box-shadow: 0 10px 20px rgba(0,0,0,0.1), 0 0 15px rgba(212,175,55,0.2); }
-  50% { transform: translateY(-6px); box-shadow: 0 15px 25px rgba(0,0,0,0.15), 0 0 25px rgba(212,175,55,0.5); }
-  100% { transform: translateY(0px); box-shadow: 0 10px 20px rgba(0,0,0,0.1), 0 0 15px rgba(212,175,55,0.2); }
+  0% { transform: translateY(0px); box-shadow: 0 8px 20px rgba(0,0,0,0.2), 0 0 15px rgba(212,175,55,0.4); }
+  50% { transform: translateY(-6px); box-shadow: 0 15px 30px rgba(0,0,0,0.25), 0 0 25px rgba(212,175,55,0.6); }
+  100% { transform: translateY(0px); box-shadow: 0 8px 20px rgba(0,0,0,0.2), 0 0 15px rgba(212,175,55,0.4); }
 }
 
 @keyframes pulse-avatar-light {
