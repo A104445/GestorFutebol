@@ -49,46 +49,67 @@
 
       <!-- ESTADOS DE CARREGAMENTO / VAZIO -->
       <div v-if="loading" class="text-center q-pa-xl">
-        <q-spinner-fluent color="primary" size="50px" />
+        <q-spinner-fluent color="green-9" size="50px" />
         <div class="text-caption text-grey-6 q-mt-md">A aquecer os motores...</div>
       </div>
 
-      <div v-else-if="matches.length === 0" class="text-center q-pa-xl bg-white shadow-1" style="border-radius: 16px; border: 1px solid #e2e8f0; margin-top: 2rem;">
+      <div v-else-if="matches.length === 0" class="text-center q-pa-xl match-card-light" style="margin-top: 2rem;">
         <q-icon name="sports_soccer" size="5em" class="text-grey-4 q-mb-md" />
-        <div class="text-h6 text-weight-bold text-grey-8">Sem jogos agendados</div>
+        <div class="text-h6 text-weight-bold text-dark">Sem jogos agendados</div>
         <p class="text-body2 text-grey-6 q-px-md">Ainda não há nenhuma convocatória aberta neste clube.</p>
-        <q-btn v-if="clubStore.currentClub?.can_manage_matches" color="primary" unelevated label="Agendar Primeiro Jogo" icon="add" class="q-mt-sm" style="border-radius: 8px;" @click="openCreateMatch()" />
+        <!-- Botão também já atualizado para as novas cores (Âmbar) -->
+        <q-btn v-if="clubStore.currentClub?.can_manage_matches" color="amber-8" text-color="dark" unelevated label="Agendar Primeiro Jogo" icon="add" class="q-mt-md text-weight-bolder shadow-1" style="border-radius: 8px;" @click="openCreateMatch()" />
       </div>
 
-     <!-- FILTRO DINÂMICO -->
-      <div class="row justify-between items-center q-mb-md q-px-xs">
-        <div class="text-subtitle1 text-weight-bold text-dark row items-center">
-          <!-- Ícone a verde para ligar ao tema -->
-          <q-icon name="calendar_today" class="q-mr-sm text-green-9" size="sm" />
-          Calendário
-        </div>
-        
-        <div class="row items-center q-gutter-sm">
-          <!-- Toggle passa a usar a cor Âmbar quando selecionado -->
-          <q-btn-toggle
-            v-model="matchViewMode"
-            toggle-color="amber-8"
-            toggle-text-color="dark"
-            color="white"
-            text-color="grey-6"
-            :options="filterButtons"
-            rounded
-            unelevated
-            class="shadow-1"
-            style="border: 1px solid #e2e8f0;"
-          />
-          <q-select 
-            v-if="matchViewMode === 'month'"
-            v-model="selectedMonth" 
-            :options="availableMonths" 
-            dense outlined emit-value map-options bg-color="white" color="amber-8"
-            style="min-width: 130px;"
-          />
+      <!-- O SEGREDO: O v-else que esconde o filtro quando não há jogos -->
+      <div v-else>
+        <!-- FILTRO DINÂMICO (Estilo Carrossel c/ Expansão) -->
+        <div class="q-mb-md q-px-xs">
+          
+          <!-- Linha Principal (Fixa) -->
+          <div class="row justify-between items-center">
+            <div class="text-subtitle1 text-weight-bold text-dark row items-center">
+              <q-icon name="calendar_today" class="q-mr-sm text-green-9" size="sm" />
+              Calendário
+            </div>
+            
+            <!-- CÁPSULA DO FILTRO -->
+            <div class="row items-center justify-between shadow-1 bg-white" style="border-radius: 24px; border: 1px solid #e2e8f0; width: 160px; height: 36px;">
+              <q-btn flat round dense icon="chevron_left" color="grey-6" size="sm" @click="prevFilter" />
+              <div class="text-weight-bold text-dark text-center text-uppercase" style="flex-grow: 1; font-size: 11px;">
+                {{ currentFilterLabel }}
+              </div>
+              <q-btn flat round dense icon="chevron_right" color="grey-6" size="sm" @click="nextFilter" />
+            </div>
+          </div>
+
+          <!-- Linha Secundária: Seletor de Mês (Aparece apenas quando "Mês" é selecionado) -->
+          <div v-if="matchViewMode === 'month'" class="row justify-end q-mt-sm">
+            
+            <!-- Largura reposta para 160px para alinhar perfeitamente com a cápsula de cima -->
+            <div class="bg-white shadow-1" style="border-radius: 24px; border: 1px solid #e2e8f0; width: 160px;">
+              <q-select 
+                v-model="selectedMonth" 
+                :options="availableMonths" 
+                dense 
+                borderless 
+                emit-value 
+                map-options 
+                color="green-9"
+                class="compact-select"
+              >
+                <!-- Juntamos o ícone e o texto no mesmo slot para os centrarmos juntos -->
+                <template v-slot:selected-item="scope">
+                  <div class="row items-center justify-center full-width" style="padding-left: 4px;">
+                    <q-icon name="event_note" size="xs" color="green-9" class="q-mr-xs" />
+                    <div class="text-weight-bold text-dark" style="font-size: 12px; white-space: nowrap;">
+                      {{ scope.opt.label }}
+                    </div>
+                  </div>
+                </template>
+              </q-select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -611,7 +632,8 @@ const filterButtons = computed(() => {
   const opts = [
     { label: 'Próximo', value: 'next' },
     { label: 'Mês', value: 'month' },
-    { label: 'Todos', value: 'all' }
+    { label: 'Todos', value: 'all' },
+    { label: 'Finalizados', value: 'closed' }
   ]
   
   const isManager = clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner
@@ -623,16 +645,43 @@ const filterButtons = computed(() => {
   return opts
 })
 
-// (A tua função availableMonths mantém-se igual...)
+// Descobre qual é o nome (label) do filtro que está selecionado agora
+const currentFilterLabel = computed(() => {
+  const current = filterButtons.value.find(f => f.value === matchViewMode.value)
+  return current ? current.label : 'Filtro'
+})
+
+// Função para a seta da Direita
+function nextFilter() {
+  const currentIndex = filterButtons.value.findIndex(f => f.value === matchViewMode.value)
+  // Avança um, e se chegar ao fim, volta ao início (0)
+  const nextIndex = (currentIndex + 1) % filterButtons.value.length
+  matchViewMode.value = filterButtons.value[nextIndex].value
+}
+
+// Função para a seta da Esquerda
+function prevFilter() {
+  const currentIndex = filterButtons.value.findIndex(f => f.value === matchViewMode.value)
+  // Recua um, e se estiver no início, vai para o último
+  const prevIndex = (currentIndex - 1 + filterButtons.value.length) % filterButtons.value.length
+  matchViewMode.value = filterButtons.value[prevIndex].value
+}
+
 const availableMonths = computed(() => {
   if (matches.value.length === 0) return []
   const months = [...new Set(matches.value.map(m => m.date.substring(0, 7)))]
   months.sort((a, b) => b.localeCompare(a))
+  
   return months.map(m => {
     const [year, month] = m.split('-')
     const date = new Date(year, month - 1, 1)
-    const monthName = date.toLocaleString('pt-PT', { month: 'long', year: 'numeric' })
-    return { label: monthName.charAt(0).toUpperCase() + monthName.slice(1), value: m }
+    
+    // Pede apenas as 3 letras do mês (ex: "out") e remove pontos
+    let monthName = date.toLocaleString('pt-PT', { month: 'short' }).replace('.', '')
+    const cleanMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1)
+    
+    // Resultado: "Out 2026"
+    return { label: `${cleanMonth} ${year}`, value: m }
   })
 })
 
@@ -656,6 +705,10 @@ const filteredMatches = computed(() => {
   if (matchViewMode.value === 'month') {
     if (!selectedMonth.value) return []
     return matches.value.filter(m => m.date.startsWith(selectedMonth.value))
+  }
+
+  if (matchViewMode.value === 'closed') {
+    return matches.value.filter(m => m.status === 'fechado')
   }
   
   return []
@@ -1754,4 +1807,16 @@ async function refreshPage(done) {
 
 .border-left-blue { border-left: 3px solid #2196f3; } 
 .border-left-orange { border-left: 3px solid #ff9800; }
+
+/* Remove paddings internos do q-select para caber em mobile */
+.compact-select :deep(.q-field__control) {
+  padding-left: 0 !important;
+  padding-right: 8px !important;
+  min-height: 36px !important;
+  height: 36px !important;
+}
+
+.compact-select :deep(.q-field__append) {
+  padding-left: 0 !important;
+}
 </style>

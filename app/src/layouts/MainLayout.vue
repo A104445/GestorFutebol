@@ -7,7 +7,7 @@
     </q-page-container>
 
     <!-- Barra de Navegação Inferior Discreta -->
-    <q-footer v-if="clubStore.currentClub && route.path !== '/selector'" class="text-white" style="border-top: 1px solid rgba(255,255,255,0.05);">
+    <q-footer v-if="clubStore.currentClub && route.path !== '/selector'" class="text-white fixed-bottom" style="border-top: 1px solid rgba(255,255,255,0.05); z-index: 2000;">
       <q-tabs
         v-model="tab"
         active-color="amber-8"
@@ -17,9 +17,10 @@
         dense
         style="height: 65px; background: linear-gradient(135deg, #2E7D32 0%, #0A2E0C 100%);"
       >
-        <q-route-tab name="games" icon="calendar_today" label="Jogos" :to="clubLink" exact />
-        <q-route-tab name="players" icon="groups" label="Plantel" :to="playersLink" exact />
-        <q-route-tab name="stats" icon="leaderboard" label="Estatísticas" :to="statsLink" exact />
+        <!-- Cada tab leva 'col-4' para ocupar exatamente 1/3 e 'custom-tab' para o CSS -->
+        <q-route-tab name="games" icon="calendar_today" label="Jogos" :to="clubLink" exact class="col-4 custom-tab" />
+        <q-route-tab name="players" icon="groups" label="Plantel" :to="playersLink" exact class="col-4 custom-tab" />
+        <q-route-tab name="stats" icon="leaderboard" label="Estatísticas" :to="statsLink" exact class="col-4 custom-tab" />
       </q-tabs>
     </q-footer>
   </q-layout>
@@ -38,3 +39,4 @@ const clubLink = computed(() => clubStore.currentClub ? `/club/${clubStore.curre
 const playersLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/players` : '/selector')
 const statsLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/stats` : '/selector')
 </script>
+

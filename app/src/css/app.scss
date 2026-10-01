@@ -16,12 +16,12 @@
 /* Telemóveis pequenos (até 400px de largura - ex: iPhone SE) */
 @media (max-width: 400px) {
   body {
-    zoom: 0.85; /* Reduz toda a aplicação para 85% do tamanho original */
+    zoom: 0.7; /* Reduz toda a aplicação para 85% do tamanho original */
   }
 }
 
 body {
-  background-color: #0b1120 !important;
+  background-color: #f0fdf4 !important;
 }
 
 /* --- CABEÇALHOS DE PÁGINA (DARK PREMIUM) --- */
