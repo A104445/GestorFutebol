@@ -7,11 +7,11 @@
 /* --- ZOOM OUT GLOBAL PARA TELEMÓVEIS --- */
 
 /* Telemóveis normais (até 600px de largura) */
-@media (max-width: 600px) {
-  body {
-    zoom: 0.95; /* Reduz toda a aplicação para 90% do tamanho original */
-  }
-}
+// @media (max-width: 600px) {
+//   body {
+//     zoom: 0.95; /* Reduz toda a aplicação para 90% do tamanho original */
+//   }
+// }
 
 /* Telemóveis pequenos (até 400px de largura - ex: iPhone SE) */
 @media (max-width: 400px) {
