@@ -386,7 +386,7 @@
               <q-item-section>
                 <q-item-label class="text-weight-bold text-dark row items-center">
                   {{ presence.profiles?.name || presence.virtual_players?.name || presence.guest_name }}
-                  <q-badge v-if="presence.team" :color="presence.team === 'A' ? 'primary' : 'dark'" class="q-ml-sm text-weight-bold">
+                  <q-badge v-if="presence.team" :color="presence.team === 'A' ? (clubSettings?.default_team_a_color || 'blue') : (clubSettings?.default_team_b_color || 'orange')" class="q-ml-sm text-weight-bold">
                     {{ presence.team }}
                   </q-badge>
                 </q-item-label>
@@ -400,8 +400,8 @@
               <q-item-section side>
                 <div v-if="selectedMatch?.status !== 'fechado' && (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.can_manage_finances)" class="row items-center">
                   <template v-if="clubStore.currentClub?.can_manage_teams">
-                    <q-btn flat round dense icon="looks_one" size="sm" :color="presence.team === 'A' ? 'primary' : 'grey-4'" @click="assignTeam(presence, 'A')" />
-                    <q-btn flat round dense icon="looks_two" size="sm" :color="presence.team === 'B' ? 'dark' : 'grey-4'" @click="assignTeam(presence, 'B')" />
+                    <q-btn flat round dense icon="looks_one" size="sm" :color="presence.team === 'A' ? (clubSettings?.default_team_a_color || 'blue') : 'grey-4'" @click="assignTeam(presence, 'A')" />
+                    <q-btn flat round dense icon="looks_two" size="sm" :color="presence.team === 'B' ? (clubSettings?.default_team_b_color || 'orange') : 'grey-4'" @click="assignTeam(presence, 'B')" />
                   </template>
                   <q-btn v-if="clubStore.currentClub?.can_manage_finances || clubStore.currentClub?.is_owner" flat round dense :icon="presence.paid ? 'price_check' : 'currency_exchange'" size="sm" :color="presence.paid ? 'positive' : 'grey-4'" @click="togglePayment(presence)" />
                   <q-btn v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.can_manage_matches" flat round dense icon="person_remove" size="sm" color="negative" class="q-ml-xs" @click="removePresence(presence)" />
@@ -420,55 +420,67 @@
     </q-dialog>
 
     <q-dialog v-model="showCloseModal" persistent>
-      <q-card style="min-width: 340px; max-width: 600px; width: 100%; border-radius: 16px; background: #1a1a1a; color: white;">
-        <q-card-section class="row items-center">
-          <div class="text-subtitle1 text-weight-bold text-amber">Estatísticas do Jogo</div>
-          <q-space /><q-btn icon="close" flat round dense color="grey-5" v-close-popup />
+      <q-card style="min-width: 340px; max-width: 600px; width: 100%; border-radius: 16px; background: #ffffff;">
+        
+        <!-- Cabeçalho com o tema principal do clube -->
+        <q-card-section class="row items-center club-header-block text-white">
+          <div class="text-subtitle1 text-weight-bold">
+            <q-icon name="sports" size="sm" class="q-mr-sm"/> Estatísticas do Jogo
+          </div>
+          <q-space /><q-btn icon="close" flat round dense color="white" v-close-popup />
         </q-card-section>
-
-        <q-card-section class="q-pa-sm" style="max-height: 65vh; overflow-y: auto;">
-          <div v-if="loadingPresences" class="text-center q-pa-md"><q-spinner color="amber" size="30px" /></div>
+        
+        <q-card-section class="q-pa-md" style="max-height: 65vh; overflow-y: auto;">
+          <div v-if="loadingPresences" class="text-center q-pa-md"><q-spinner color="green-9" size="30px" /></div>
           
           <div v-else>
-            <div class="row items-center justify-center text-center q-mb-md bg-dark q-pa-sm rounded-borders" style="border: 1px solid #333;">
+            <!-- PLACAR PRINCIPAL -->
+            <div class="row items-center justify-center text-center q-mb-lg bg-grey-1 q-pa-sm shadow-1" style="border-radius: 12px; border: 1px solid #e2e8f0;">
               <div class="col-4">
-                <div class="text-caption text-blue text-weight-bold">EQUIPA A</div>
-                <div class="text-h3 text-blue text-weight-bolder">{{ computedScoreA }}</div>
+                <div :class="`text-caption text-weight-bold text-uppercase text-${clubSettings?.default_team_a_color || 'blue'}`">{{ matchToClose?.team_a_name || 'EQUIPA A' }}</div>
+                <div :class="`text-h2 text-weight-bolder text-${clubSettings?.default_team_a_color || 'blue'}`" style="line-height: 1;">{{ computedScoreA }}</div>
               </div>
-              <div class="col-2 text-h5 text-grey-6">-</div>
+              <div class="col-2 text-h4 text-grey-4 text-weight-bold">-</div>
               <div class="col-4">
-                <div class="text-caption text-orange text-weight-bold">EQUIPA B</div>
-                <div class="text-h3 text-orange text-weight-bolder">{{ computedScoreB }}</div>
+                <div :class="`text-caption text-weight-bold text-uppercase text-${clubSettings?.default_team_b_color || 'orange'}`">{{ matchToClose?.team_b_name || 'EQUIPA B' }}</div>
+                <div :class="`text-h2 text-weight-bolder text-${clubSettings?.default_team_b_color || 'orange'}`" style="line-height: 1;">{{ computedScoreB }}</div>
               </div>
             </div>
 
-            <div class="text-blue text-weight-bold q-mb-sm q-ml-sm row items-center"><q-icon name="looks_one" class="q-mr-xs"/> Plantel A</div>
-            <div v-for="player in matchPlayersStats.teamA" :key="player.id" class="row items-center q-mb-sm bg-dark q-pa-sm rounded-borders border-left-blue">
-              <div class="col-6 text-body2 text-ellipsis text-weight-medium">{{ player.name }}</div>
+            <!-- LISTA DA EQUIPA A -->
+            <div :class="`text-${clubSettings?.default_team_a_color || 'blue'} text-weight-bold q-mb-sm q-ml-sm row items-center text-uppercase`">
+              <q-icon name="looks_one" class="q-mr-xs"/> {{ matchToClose?.team_a_name || 'Plantel A' }}
+            </div>
+            <div v-for="player in matchPlayersStats.teamA" :key="player.id" class="row items-center q-mb-sm bg-white q-pa-sm shadow-1" :style="`border-radius: 8px; border: 1px solid #f1f5f9; border-left: 4px solid var(--q-${clubSettings?.default_team_a_color || 'blue'});`">
+              <div class="col-6 text-body2 text-ellipsis text-weight-bold text-dark">{{ player.name }}</div>
               <div class="col-3 q-px-xs">
-                <q-input dark dense filled v-model.number="player.goals" type="number" label="Golos ⚽" min="0" input-class="text-center text-weight-bold text-white" />
+                <q-input dense outlined bg-color="grey-1" v-model.number="player.goals" type="number" label="Golos ⚽" min="0" input-class="text-center text-weight-bold text-dark" />
               </div>
               <div class="col-3 q-px-xs">
-                <q-input dark dense filled v-model.number="player.assists" type="number" label="Assis. 👟" min="0" input-class="text-center text-weight-bold text-white" />
+                <q-input dense outlined bg-color="grey-1" v-model.number="player.assists" type="number" label="Assis. 👟" min="0" input-class="text-center text-weight-bold text-dark" />
               </div>
             </div>
 
-            <div class="text-orange text-weight-bold q-mt-lg q-mb-sm q-ml-sm row items-center"><q-icon name="looks_two" class="q-mr-xs"/> Plantel B</div>
-            <div v-for="player in matchPlayersStats.teamB" :key="player.id" class="row items-center q-mb-sm bg-dark q-pa-sm rounded-borders border-left-orange">
-              <div class="col-6 text-body2 text-ellipsis text-weight-medium">{{ player.name }}</div>
+            <!-- LISTA DA EQUIPA B -->
+            <div :class="`text-${clubSettings?.default_team_b_color || 'orange'} text-weight-bold q-mt-lg q-mb-sm q-ml-sm row items-center text-uppercase`">
+              <q-icon name="looks_two" class="q-mr-xs"/> {{ matchToClose?.team_b_name || 'Plantel B' }}
+            </div>
+            <div v-for="player in matchPlayersStats.teamB" :key="player.id" class="row items-center q-mb-sm bg-white q-pa-sm shadow-1" :style="`border-radius: 8px; border: 1px solid #f1f5f9; border-left: 4px solid var(--q-${clubSettings?.default_team_b_color || 'orange'});`">
+              <div class="col-6 text-body2 text-ellipsis text-weight-bold text-dark">{{ player.name }}</div>
               <div class="col-3 q-px-xs">
-                <q-input dark dense filled v-model.number="player.goals" type="number" label="Golos ⚽" min="0" input-class="text-center text-weight-bold text-white" />
+                <q-input dense outlined bg-color="grey-1" v-model.number="player.goals" type="number" label="Golos ⚽" min="0" input-class="text-center text-weight-bold text-dark" />
               </div>
               <div class="col-3 q-px-xs">
-                <q-input dark dense filled v-model.number="player.assists" type="number" label="Assis. 👟" min="0" input-class="text-center text-weight-bold text-white" />
+                <q-input dense outlined bg-color="grey-1" v-model.number="player.assists" type="number" label="Assis. 👟" min="0" input-class="text-center text-weight-bold text-dark" />
               </div>
             </div>
           </div>
         </q-card-section>
-
-        <q-card-actions align="center" class="q-pa-md" style="background: #111;">
-          <q-btn label="Trancar Resultado e Estatísticas" color="amber" text-color="dark" class="full-width text-weight-bold" unelevated size="lg" :loading="saving" @click="closeMatch" />
+        
+        <q-card-actions align="center" class="q-pa-md bg-grey-1" style="border-top: 1px solid #e2e8f0;">
+          <q-btn label="Trancar Resultado e Estatísticas" color="amber-8" text-color="dark" class="full-width text-weight-bolder shadow-1" style="border-radius: 8px;" unelevated size="lg" :loading="saving" @click="closeMatch" />
         </q-card-actions>
+        
       </q-card>
     </q-dialog>
 
@@ -564,6 +576,69 @@
           <div class="row no-wrap" style="gap: 16px;">
             <q-input class="col" outlined dense v-model="clubSettings.default_team_a_name" label="Nome Equipa A" placeholder="Ex: Coletes" />
             <q-input class="col" outlined dense v-model="clubSettings.default_team_b_name" label="Nome Equipa B" placeholder="Ex: Sem Coletes" />
+          </div>
+
+          <!-- BLOCO DE CORES -->
+          <div class="row no-wrap q-mt-md q-mb-sm" style="gap: 16px;">
+            
+            <q-select 
+              class="col" outlined dense emit-value map-options
+              v-model="clubSettings.default_team_a_color" 
+              :options="[
+                {label: 'Bordeaux', value: 'red-10'},
+                {label: 'Vermelho', value: 'red-8'},
+                {label: 'Laranja', value: 'orange-8'},
+                {label: 'Amarelo', value: 'yellow-7'},
+                {label: 'Verde', value: 'positive'},
+                {label: 'Verde Tropa', value: 'green-10'},
+                {label: 'Ciano', value: 'cyan-7'},
+                {label: 'Azul', value: 'blue'},
+                {label: 'Azul Marinho', value: 'blue-10'},
+                {label: 'Roxo', value: 'purple'},
+                {label: 'Rosa', value: 'pink-6'},
+                {label: 'Castanho', value: 'brown-6'},
+                {label: 'Cinzento', value: 'grey-7'},
+                {label: 'Preto', value: 'dark'}
+              ]" 
+              label="Cor Equipa A" 
+            >
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section avatar><q-avatar :color="scope.opt.value" size="sm" /></q-item-section>
+                  <q-item-section>{{ scope.opt.label }}</q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+            
+            <q-select 
+              class="col" outlined dense emit-value map-options
+              v-model="clubSettings.default_team_b_color" 
+              :options="[
+                {label: 'Bordeaux', value: 'red-10'},
+                {label: 'Vermelho', value: 'negative'},
+                {label: 'Laranja', value: 'orange'},
+                {label: 'Amarelo', value: 'yellow-8'},
+                {label: 'Verde', value: 'positive'},
+                {label: 'Verde Tropa', value: 'green-10'},
+                {label: 'Ciano', value: 'cyan-7'},
+                {label: 'Azul', value: 'blue'},
+                {label: 'Azul Marinho', value: 'blue-10'},
+                {label: 'Roxo', value: 'purple'},
+                {label: 'Rosa', value: 'pink-6'},
+                {label: 'Castanho', value: 'brown-6'},
+                {label: 'Cinzento', value: 'grey-7'},
+                {label: 'Preto', value: 'dark'}
+              ]" 
+              label="Cor Equipa B" 
+            >
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section avatar><q-avatar :color="scope.opt.value" size="sm" /></q-item-section>
+                  <q-item-section>{{ scope.opt.label }}</q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+            
           </div>
 
           <!-- BLOCO DE AGENDAMENTO RECORRENTE (Com Proporção 7 / 5) -->
@@ -1464,8 +1539,10 @@ async function saveClubSettings() {
     default_location: clubSettings.value.default_location,
     recurring_day_of_week: clubSettings.value.recurring_day_of_week,
     recurring_time: clubSettings.value.recurring_time,
-    default_team_a_name: clubSettings.value.default_team_a_name, // <- NOVO
-    default_team_b_name: clubSettings.value.default_team_b_name  // <- NOVO
+    default_team_a_name: clubSettings.value.default_team_a_name, 
+    default_team_b_name: clubSettings.value.default_team_b_name,
+    default_team_a_color: clubSettings.value.default_team_a_color,
+    default_team_b_color: clubSettings.value.default_team_b_color  
   }).eq('id', props.id)
 
   if (!error) {
