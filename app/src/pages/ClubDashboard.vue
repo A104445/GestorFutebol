@@ -122,7 +122,7 @@
             <div class="row items-center justify-between q-pa-md" style="border-bottom: 1px solid #f1f5f9;">
               <div class="text-subtitle2 text-weight-bold text-dark row items-center">
                 <!-- Ícone da Data em Cinza Claro Neutro -->
-                <div class="bg-grey-2 text-grey-7 flex flex-center q-mr-sm" style="width: 28px; height: 28px; border-radius: 6px;">
+                <div class="bg-grey-3 text-grey-8 flex flex-center q-mr-sm" style="width: 28px; height: 28px; border-radius: 6px;">
                   <q-icon name="calendar_today" size="14px" />
                 </div>
                 {{ formatDate(match.date) }}
@@ -131,12 +131,13 @@
               <div class="row items-center q-gutter-x-sm">
                 <q-chip 
                   dense 
-                  :color="match.status === 'fechado' ? 'grey-2' : 'amber-8'" 
-                  :text-color="match.status === 'fechado' ? 'grey-6' : 'dark'" 
+                  :color="match.status === 'fechado' ? 'grey-3' : 'amber-8'" 
+                  :text-color="match.status === 'fechado' ? 'grey-8' : 'dark'" 
                   class="text-weight-bolder shadow-1"
-                  style="border-radius: 6px;"
+                  style="border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);"
                 >
-                  {{ match.status === 'fechado' ? 'FINALIZADO' : 'ABERTO' }}
+                  <!-- <q-icon v-if="match.status === 'fechado'" name="sports_score" size="14px" class="q-mr-xs" /> -->
+                  {{ match.status === 'fechado' ? 'TERMINADO' : 'ABERTO' }}
                 </q-chip>
 
                 <!-- Menu de Gestão em Cinza Neutro -->
@@ -162,21 +163,30 @@
               <!-- JOGO FECHADO -->
               <div v-if="match.status === 'fechado'" class="q-py-sm">
                 <div class="row items-center justify-center no-wrap full-width text-center scoreboard-box q-pa-md">
-                  <div class="col-4 column items-center">
-                    <q-avatar size="44px" color="rgba(255,255,255,0.1)" text-color="white" icon="shield" />
-                    <div class="text-weight-bold text-grey-4 q-mt-sm text-uppercase text-ellipsis full-width" style="font-size: 11px;">{{ match.team_a_name || 'Equipa A' }}</div>
-                  </div>
                   
+                  <!-- Equipa A -->
+                  <div class="col-4 column items-center">
+                    <q-avatar size="44px" :color="matchSettingsColor(match, 'A')" text-color="white" icon="shield" class="shadow-2" />
+                    <div class="text-weight-bold text-grey-3 q-mt-sm text-uppercase text-ellipsis full-width" style="font-size: 11px;">
+                      {{ match.team_a_name || clubSettings?.default_team_a_name || 'Equipa A' }}
+                    </div>
+                  </div>
+                                    
+                  <!-- Placar -->
                   <div class="col-4 row items-center justify-center no-wrap q-gutter-x-sm">
                     <div class="text-weight-bolder text-white" style="font-size: 2.2rem; line-height: 1;">{{ match.team_a_goals ?? '-' }}</div>
                     <div class="text-blue-grey-3 text-h6 text-weight-bold">-</div>
                     <div class="text-weight-bolder text-white" style="font-size: 2.2rem; line-height: 1;">{{ match.team_b_goals ?? '-' }}</div>
-                  </div>
-                  
+                  </div>                      
+
+                  <!-- Equipa B -->
                   <div class="col-4 column items-center">
-                    <q-avatar size="44px" color="rgba(255,255,255,0.1)" text-color="white" icon="shield" />
-                    <div class="text-weight-bold text-grey-4 q-mt-sm text-uppercase text-ellipsis full-width" style="font-size: 11px;">{{ match.team_b_name || 'Equipa B' }}</div>
+                    <q-avatar size="44px" :color="matchSettingsColor(match, 'B')" text-color="white" icon="shield" class="shadow-2" />
+                    <div class="text-weight-bold text-grey-3 q-mt-sm text-uppercase text-ellipsis full-width" style="font-size: 11px;">
+                      {{ match.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
+                    </div>
                   </div>
+
                 </div>
               </div>
 
@@ -206,7 +216,7 @@
 
             <!-- Rodapé do Cartão -->
             <q-card-actions class="q-px-md q-pb-md q-pt-none row items-center justify-between">
-              <q-btn flat color="grey-8" icon="groups" label="Plantel" class="text-weight-bold bg-grey-2" style="border-radius: 8px;" @click="openPresencesModal(match)" />
+              <q-btn flat color="grey-8" icon="groups" label="Plantel" class="text-weight-bold bg-grey-3" style="border-radius: 8px;" @click="openPresencesModal(match)" />
 
               <div class="row q-gutter-sm items-center">
                 <q-btn
@@ -222,6 +232,17 @@
                   color="amber-8" text-color="dark" unelevated label="Vou Jogar" class="text-weight-bolder q-px-md shadow-2" style="border-radius: 8px;"
                   @click="joinMatch(match)"
                 />
+
+                <!-- BOTÃO PARA REABRIR JOGO FECHADO (Admin/Dono) -->
+                <q-btn 
+                  v-if="match.status === 'fechado' && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)"
+                  flat dense round 
+                  color="amber-8" 
+                  icon="edit" 
+                  @click="reopenMatch(match)"
+                >
+                  <q-tooltip>Editar / Reabrir Jogo</q-tooltip>
+                </q-btn>
               </div>
             </q-card-actions>
           </q-card>
@@ -448,8 +469,8 @@
             </div>
 
             <!-- LISTA DA EQUIPA A -->
-            <div :class="`text-${clubSettings?.default_team_a_color || 'blue'} text-weight-bold q-mb-sm q-ml-sm row items-center text-uppercase`">
-              <q-icon name="looks_one" class="q-mr-xs"/> {{ matchToClose?.team_a_name || 'Plantel A' }}
+            <div :class="`text-${matchSettingsColor(matchToClose, 'A')} text-weight-bold q-mb-sm q-ml-sm row items-center text-uppercase`">
+              <q-icon name="shield" class="q-mr-xs"/> {{ matchToClose?.team_a_name || clubSettings?.default_team_a_name || 'Equipa A' }}
             </div>
             <div v-for="player in matchPlayersStats.teamA" :key="player.id" class="row items-center q-mb-sm bg-white q-pa-sm shadow-1" :style="`border-radius: 8px; border: 1px solid #f1f5f9; border-left: 4px solid var(--q-${clubSettings?.default_team_a_color || 'blue'});`">
               <div class="col-6 text-body2 text-ellipsis text-weight-bold text-dark">{{ player.name }}</div>
@@ -462,8 +483,8 @@
             </div>
 
             <!-- LISTA DA EQUIPA B -->
-            <div :class="`text-${clubSettings?.default_team_b_color || 'orange'} text-weight-bold q-mt-lg q-mb-sm q-ml-sm row items-center text-uppercase`">
-              <q-icon name="looks_two" class="q-mr-xs"/> {{ matchToClose?.team_b_name || 'Plantel B' }}
+            <div :class="`text-${matchSettingsColor(matchToClose, 'B')} text-weight-bold q-mt-lg q-mb-sm q-ml-sm row items-center text-uppercase`">
+              <q-icon name="shield" class="q-mr-xs"/> {{ matchToClose?.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
             </div>
             <div v-for="player in matchPlayersStats.teamB" :key="player.id" class="row items-center q-mb-sm bg-white q-pa-sm shadow-1" :style="`border-radius: 8px; border: 1px solid #f1f5f9; border-left: 4px solid var(--q-${clubSettings?.default_team_b_color || 'orange'});`">
               <div class="col-6 text-body2 text-ellipsis text-weight-bold text-dark">{{ player.name }}</div>
@@ -484,31 +505,64 @@
       </q-card>
     </q-dialog>
 
+    <!-- MODAL DA EQUIPA TÉCNICA -->
     <q-dialog v-model="showStaffModal">
-      <q-card style="min-width: 350px; max-width: 500px; width: 100%; border-radius: 12px;">
+      <q-card style="min-width: 350px; max-width: 550px; width: 100%; border-radius: 12px;">
+        
         <q-card-section class="row items-center bg-dark text-white">
           <div class="text-subtitle1 text-weight-bold">Equipa Técnica & Permissões</div>
           <q-space /><q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section class="q-pa-none" style="max-height: 60vh; overflow-y: auto;">
+        <!-- ZONA PARA ADICIONAR NOVO ADMIN -->
+        <q-card-section class="bg-grey-2" style="border-bottom: 1px solid #e2e8f0;">
+          <div class="text-caption text-weight-bold text-dark q-mb-xs">Adicionar Membro à Equipa Técnica</div>
+          <div class="row q-gutter-sm items-center">
+            <q-select 
+              v-model="selectedNewAdmin" 
+              :options="eligibleMembersOptions" 
+              dense outlined bg-color="white" class="col"
+              label="Procurar jogador no plantel..."
+              use-input hide-selected fill-input
+              @filter="filterEligibleMembers"
+            />
+            <q-btn color="primary" icon="add_moderator" label="Promover" unelevated class="text-weight-bold" @click="addAdmin" />
+          </div>
+        </q-card-section>
+
+        <!-- LISTA DE ADMINS COM PERMISSÕES -->
+        <q-card-section class="q-pa-none" style="max-height: 50vh; overflow-y: auto;">
           <div v-if="loadingStaff" class="text-center q-pa-lg"><q-spinner color="primary" size="30px" /></div>
           
           <q-list v-else separator>
             <q-item v-for="member in staffList" :key="member.profile_id" class="q-py-md">
+              
+              <!-- 1. Nome e Cargo -->
               <q-item-section>
                 <q-item-label class="text-weight-bold">{{ member.profiles?.name || 'Sem Nome' }}</q-item-label>
                 <q-item-label caption v-if="member.is_owner" class="text-amber-9 text-weight-bold">Dono do Clube</q-item-label>
-                <q-item-label caption v-else>Membro do Plantel</q-item-label>
+                <q-item-label caption v-else class="text-primary text-weight-bold">Administrador</q-item-label>
               </q-item-section>
-
+              
+              <!-- 2. Permissões (Agora todas uniformizadas na cor 'primary') -->
               <q-item-section>
                 <div class="column q-gutter-y-xs">
                   <q-toggle dense size="sm" v-model="member.can_manage_matches" color="primary" label="Gerir Jogos" @update:model-value="val => updatePermission(member.profile_id, 'can_manage_matches', val)" />
-                  <q-toggle dense size="sm" v-model="member.can_manage_teams" color="amber" label="Gerir Plantel" @update:model-value="val => updatePermission(member.profile_id, 'can_manage_teams', val)" />
-                  <q-toggle dense size="sm" v-model="member.can_manage_finances" color="positive" label="Tesoureiro" @update:model-value="val => updatePermission(member.profile_id, 'can_manage_finances', val)" />
+                  <q-toggle dense size="sm" v-model="member.can_manage_teams" color="primary" label="Gerir Plantel" @update:model-value="val => updatePermission(member.profile_id, 'can_manage_teams', val)" />
+                  <q-toggle dense size="sm" v-model="member.can_manage_finances" color="primary" label="Tesoureiro" @update:model-value="val => updatePermission(member.profile_id, 'can_manage_finances', val)" />
                 </div>
               </q-item-section>
+              
+              <!-- 3. Botão de Remover (A secção está SEMPRE presente para forçar o alinhamento) -->
+              <q-item-section side>
+                <q-btn v-if="!member.is_owner" flat round dense color="negative" icon="remove_moderator" @click="removeAdmin(member.profile_id)">
+                  <q-tooltip>Remover da Equipa Técnica</q-tooltip>
+                </q-btn>
+                
+                <!-- O botão "Fantasma" que garante o alinhamento milimétrico para o Dono -->
+                <q-btn v-else flat round dense icon="remove_moderator" style="visibility: hidden;" />
+              </q-item-section>
+
             </q-item>
           </q-list>
         </q-card-section>
@@ -556,8 +610,8 @@
     </q-dialog>
 
     <q-dialog v-model="showSettingsModal">
-      <q-card style="min-width: 360px; border-radius: 16px;">
-        <q-card-section class="row items-center border-bottom">
+      <q-card class="column" style="min-width: 360px; max-height: 85vh;border-radius: 16px;">
+        <q-card-section class="row items-center border-bottom q-gutter-md q-pt-md col">
           <div class="text-subtitle1 text-weight-bold text-dark row items-center">
             <q-icon name="settings" class="q-mr-sm text-dark" />
             Definições do Clube
@@ -662,9 +716,26 @@
               label="Hora Fixa" 
             />
           </div>
+
+          <!-- MODO DE ATRIBUTOS -->
+          <q-select 
+            outlined dense emit-value map-options
+            v-model="clubSettings.attribute_mode" 
+            :options="[{label: 'Valores Numéricos (1-99)', value: 'numeric'}, {label: 'Categorias de Palavras', value: 'categorical'}]" 
+            label="Modo de Visualização dos Atributos" 
+            class="q-mb-sm"
+          />
+
+          <!-- NOVO: OCULTAR ATRIBUTOS -->
+          <q-toggle 
+            v-model="clubSettings.hide_attributes_from_members" 
+            color="negative" 
+            label="Ocultar Ratings e OVR aos membros normais" 
+            class="q-mb-md"
+          />
         </q-card-section>
 
-        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+        <q-card-actions align="right" class="q-pa-md bg-grey-1 col-auto">
           <q-btn flat label="Cancelar" v-close-popup />
           <q-btn color="primary" label="Guardar Configurações" @click="saveClubSettings" :loading="savingSettings" unelevated />
         </q-card-actions>
@@ -725,6 +796,14 @@ const currentFilterLabel = computed(() => {
   const current = filterButtons.value.find(f => f.value === matchViewMode.value)
   return current ? current.label : 'Filtro'
 })
+
+function matchSettingsColor(match, teamType) {
+  if (teamType === 'A') {
+    return clubSettings.value?.default_team_a_color || 'blue'
+  } else {
+    return clubSettings.value?.default_team_b_color || 'orange'
+  }
+}
 
 // Função para a seta da Direita
 function nextFilter() {
@@ -790,6 +869,29 @@ const filteredMatches = computed(() => {
 })
 
 const useDefaultSettings = ref(true)
+
+async function reopenMatch(match) {
+  $q.dialog({
+    title: 'Reabrir Partida',
+    message: 'Tens a certeza que queres reabrir este jogo para edição? Os golos atuais serão mantidos para poderes ajustá-los.',
+    cancel: true,
+    persistent: true
+  }).onOk(async () => {
+    // Altera o estado do jogo na BD para 'aberto' (ou o termo que uses para jogos a decorrer)
+    const { error } = await supabase
+      .from('matches') // Substitui pelo nome da tua tabela de jogos se for diferente
+      .update({ status: 'aberto' })
+      .eq('id', match.id)
+
+    if (error) {
+      $q.notify({ type: 'negative', message: 'Erro ao reabrir jogo: ' + error.message, position: 'top' })
+    } else {
+      $q.notify({ type: 'positive', message: 'Jogo reaberto com sucesso!', position: 'top' })
+      // Se tiveres uma função que busca os jogos novamente (ex: fetchMatches), chama-a aqui:
+      await fetchMatches() 
+    }
+  })
+}
 
 onMounted(async () => {
   // ANTÍDOTO ANTI-F5: Recuperar sessão do Supabase caso a store tenha esvaziado
@@ -1457,31 +1559,101 @@ async function removePresence(presence) {
   }
 }
 
-// VARIÁVEIS DA EQUIPA TÉCNICA
+// --- SISTEMA DE EQUIPA TÉCNICA (ADMINS) ---
 const showStaffModal = ref(false)
 const staffList = ref([])
 const loadingStaff = ref(false)
 
+// Variáveis para a barra de pesquisa
+const selectedNewAdmin = ref(null)
+const allEligibleMembers = ref([])
+const eligibleMembersOptions = ref([])
+
 async function openStaffManager() {
   showStaffModal.value = true
   loadingStaff.value = true
-  
+
   const { data, error } = await supabase
     .from('club_members')
     .select('profile_id, role, is_owner, can_manage_matches, can_manage_teams, can_manage_finances, profiles(name)')
     .eq('club_id', props.id)
-    .eq('status', 'approved') // <-- ADICIONA ESTA LINHA PARA ESCONDER OS PENDENTES
+    .eq('status', 'approved')
     .order('is_owner', { ascending: false })
-    
+
   if (error) {
     $q.notify({ type: 'negative', message: 'Erro: ' + error.message, timeout: 5000 })
   } else if (data) {
-    staffList.value = data
+    // 1. Filtrar APENAS quem já é Admin ou Dono para a lista de Permissões
+    staffList.value = data.filter(m => m.role === 'admin' || m.is_owner)
+    
+    // 2. Criar a lista de jogadores normais para a barra de pesquisa
+    const eligible = data.filter(m => m.role !== 'admin' && !m.is_owner)
+    allEligibleMembers.value = eligible.map(m => ({
+      label: m.profiles?.name || 'Sem Nome',
+      value: m.profile_id
+    }))
+    eligibleMembersOptions.value = allEligibleMembers.value
   }
-  
   loadingStaff.value = false
 }
 
+// Filtro da barra de pesquisa
+function filterEligibleMembers(val, update) {
+  update(() => {
+    const needle = val.toLowerCase()
+    eligibleMembersOptions.value = allEligibleMembers.value.filter(v => v.label.toLowerCase().indexOf(needle) > -1)
+  })
+}
+
+// PROMOVER JOGADOR A ADMIN
+async function addAdmin() {
+  if (!selectedNewAdmin.value) return
+  
+  const profileId = selectedNewAdmin.value.value
+
+  const { error } = await supabase
+    .from('club_members')
+    .update({ role: 'admin' }) 
+    .eq('club_id', props.id)
+    .eq('profile_id', profileId)
+
+  if (!error) {
+    $q.notify({ type: 'positive', message: 'Membro promovido a Administrador!', position: 'top' })
+    selectedNewAdmin.value = null
+    await openStaffManager() // Atualiza as duas listas automaticamente
+  } else {
+    $q.notify({ type: 'negative', message: 'Erro ao promover: ' + error.message, position: 'top' })
+  }
+}
+
+// DESPROMOVER ADMIN A JOGADOR NORMAL
+async function removeAdmin(profileId) {
+  $q.dialog({
+    title: 'Despromover Membro',
+    message: 'Tens a certeza? Este membro vai perder acesso ao painel de gestão do clube.',
+    cancel: true,
+    persistent: true
+  }).onOk(async () => {
+    // Retira o cargo de admin e desativa todos os toggles de permissão por segurança
+    const { error } = await supabase
+      .from('club_members')
+      .update({ 
+        role: 'member',
+        can_manage_matches: false,
+        can_manage_teams: false,
+        can_manage_finances: false
+      })
+      .eq('club_id', props.id)
+      .eq('profile_id', profileId)
+
+    if (!error) {
+      $q.notify({ type: 'info', message: 'Membro removido da Equipa Técnica.', position: 'top' })
+      await openStaffManager() // Atualiza as listas
+    }
+  })
+}
+
+// ATUALIZAR PERMISSÕES GRANULARES (Mantém a que já tinhas, apenas adicionei "position: top")
 async function updatePermission(profileId, field, value) {
   const updateData = {}
   updateData[field] = value
@@ -1491,18 +1663,16 @@ async function updatePermission(profileId, field, value) {
     .update(updateData)
     .eq('club_id', props.id)
     .eq('profile_id', profileId)
-    .select() // O select obriga a base de dados a devolver o resultado ou o erro real
+    .select() 
     
   if (error) {
-    // Agora vai mostrar o erro exato do Supabase!
-    $q.notify({ type: 'negative', message: 'ERRO: ' + error.message, timeout: 6000 })
-    await openStaffManager() 
+    $q.notify({ type: 'negative', message: 'ERRO: ' + error.message, timeout: 6000, position: 'top' })
+    await openStaffManager()
   } else if (!data || data.length === 0) {
-    // Se não houver erro mas o data vier vazio, é o RLS (Segurança) a bloquear
-    $q.notify({ type: 'negative', message: 'ERRO RLS: Não tens permissões na Base de Dados para alterar isto.', timeout: 6000 })
+    $q.notify({ type: 'negative', message: 'ERRO RLS: Não tens permissões na BD para alterar isto.', timeout: 6000, position: 'top' })
     await openStaffManager()
   } else {
-    $q.notify({ type: 'positive', message: 'Permissões atualizadas!' })
+    $q.notify({ type: 'positive', message: 'Permissões atualizadas!', position: 'top' })
   }
 }
 
@@ -1511,6 +1681,7 @@ const savingSettings = ref(false)
 const clubSettings = ref({ 
   default_max_players: 14, default_price: 5, monthly_fee: 20, default_location: '', 
   recurring_day_of_week: 2, recurring_time: '21:00',
+  attribute_mode: 'numeric', hide_attributes_from_members: false,
   default_team_a_name: 'Equipa A', default_team_b_name: 'Equipa B' // <- NOVO
 })
 
@@ -1539,6 +1710,8 @@ async function saveClubSettings() {
     default_location: clubSettings.value.default_location,
     recurring_day_of_week: clubSettings.value.recurring_day_of_week,
     recurring_time: clubSettings.value.recurring_time,
+    attribute_mode: clubSettings.value.attribute_mode,
+    hide_attributes_from_members: clubSettings.value.hide_attributes_from_members,
     default_team_a_name: clubSettings.value.default_team_a_name, 
     default_team_b_name: clubSettings.value.default_team_b_name,
     default_team_a_color: clubSettings.value.default_team_a_color,

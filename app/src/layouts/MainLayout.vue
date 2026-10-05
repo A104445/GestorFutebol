@@ -7,7 +7,7 @@
     </q-page-container>
 
     <!-- Barra de Navegação Inferior Discreta -->
-    <q-footer v-if="clubStore.currentClub && route.path !== '/selector'" class="text-white fixed-bottom" style="border-top: 1px solid rgba(255,255,255,0.05); z-index: 2000;">
+    <q-footer v-if="clubStore.currentClub && route.path !== '/selector'" elevated class="bg-white fixed-bottom" style="z-index: 9999; position: fixed !important; bottom: 0; left: 0; width: 100%;">
       <q-tabs
         v-model="tab"
         active-color="amber-8"
@@ -39,4 +39,12 @@ const clubLink = computed(() => clubStore.currentClub ? `/club/${clubStore.curre
 const playersLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/players` : '/selector')
 const statsLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/stats` : '/selector')
 </script>
+
+<style scoped>
+
+.q-page {
+  padding-bottom: 70px !important; 
+}
+
+</style>
 

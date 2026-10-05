@@ -30,57 +30,125 @@
     </div>
 
     <div v-else>
-      <q-markup-table flat bordered class="match-card-light" style="overflow: hidden;">
-        <thead class="text-white" style="background: linear-gradient(135deg, #14532d 0%, #064e3b 100%);">
-          <tr>
-            <th class="text-left" style="width: 50px;">#</th>
-            <th class="text-left">Jogador</th>
-            <th class="text-center"><q-tooltip>Jogos Realizados</q-tooltip>J</th>
-            <th class="text-center text-amber-3"><q-tooltip>Golos Marcados</q-tooltip>G</th>
-            <th class="text-center text-green-2"><q-tooltip>Assistências</q-tooltip>A</th>
-            <th class="text-center text-white"><q-tooltip>Vitórias</q-tooltip>V</th>
-            <th class="text-center text-white"><q-tooltip>Empates</q-tooltip>E</th>
-            <th class="text-center text-white"><q-tooltip>Derrotas</q-tooltip>D</th>
-            <th class="text-center text-weight-bolder text-dark bg-amber-8">PTS</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white">
-          <tr v-for="(player, index) in leaderboard" :key="player.id" :class="index < 3 ? 'bg-orange-1' : ''">
-            <td class="text-left text-weight-bold" :class="getMedalColor(index)">
-              {{ index + 1 }}
-              <q-icon v-if="index === 0" name="military_tech" color="amber-8" size="sm" />
-            </td>
-            <td class="text-left">
-              <div class="text-weight-bold text-dark">{{ player.name }}</div>
-              <div class="text-caption text-grey-6">OVR: {{ player.overall }}</div>
-            </td>
-            <td class="text-center text-grey-8">{{ player.matches }}</td>
-            <td class="text-center text-green-9 text-weight-bolder" style="font-size: 1.1em;">{{ player.goals }}</td>
-            <td class="text-center text-grey-7 text-weight-bold">{{ player.assists }}</td>
-            <td class="text-center text-grey-8 text-weight-medium">{{ player.wins }}</td>
-            <td class="text-center text-grey-8 text-weight-medium">{{ player.draws }}</td>
-            <td class="text-center text-grey-8 text-weight-medium">{{ player.losses }}</td>
-            <td class="text-center text-weight-bolder bg-green-1 text-dark" style="font-size: 1.1em;">
-              {{ player.points }}
-            </td>
-          </tr>
-        </tbody>
-      </q-markup-table>
+      <q-table
+        :rows="leaderboard"
+        :columns="columns"
+        row-key="id"
+        class="match-card-light my-sticky-table"
+        flat
+        bordered
+        hide-pagination
+        v-model:pagination="pagination"
+        color="green-9"
+      >
+        <!-- CABEÇALHO PERSONALIZADO (Com as setas de ordenação e Tooltips) -->
+        <template v-slot:header="props">
+          <q-tr :props="props">
+            <q-th
+              v-for="col in props.cols"
+              :key="col.name"
+              :props="props"
+              class="text-white text-weight-bold"
+              :class="col.headerClasses"
+            >
+              <q-tooltip v-if="col.tooltip" anchor="top middle" self="bottom middle" :offset="[10, 10]">
+                {{ col.tooltip }}
+              </q-tooltip>
+              {{ col.label }}
+            </q-th>
+          </q-tr>
+        </template>
+
+        <!-- LINHAS DA TABELA (Sem a medalha e com a ordem dinâmica) -->
+        <template v-slot:body="props">
+          <q-tr :props="props" :class="props.rowIndex < 3 ? 'bg-orange-1' : 'bg-white'">
+            
+            <q-td key="rank" :props="props" class="text-left text-weight-bold" :class="getMedalColor(props.rowIndex)">
+              {{ props.rowIndex + 1 }}
+            </q-td>
+            
+            <q-td key="jogador" :props="props" class="text-left">
+              <div class="text-weight-bold text-dark text-ellipsis" style="max-width: 130px;">{{ props.row.name }}</div>
+              <div class="text-caption text-grey-6" style="line-height: 1;">OVR: {{ props.row.overall }}</div>
+            </q-td>
+
+            <q-td key="matches" :props="props" class="text-center text-grey-8">{{ props.row.matches }}</q-td>
+            <q-td key="goals" :props="props" class="text-center text-green-9 text-weight-bolder" style="font-size: 1.1em;">{{ props.row.goals }}</q-td>
+            <q-td key="assists" :props="props" class="text-center text-grey-7 text-weight-bold">{{ props.row.assists }}</q-td>
+            <q-td key="wins" :props="props" class="text-center text-grey-8 text-weight-medium">{{ props.row.wins }}</q-td>
+            <q-td key="draws" :props="props" class="text-center text-grey-8 text-weight-medium">{{ props.row.draws }}</q-td>
+            <q-td key="losses" :props="props" class="text-center text-grey-8 text-weight-medium">{{ props.row.losses }}</q-td>
+            
+            <q-td key="points" :props="props" class="text-center text-weight-bolder text-dark bg-green-1" style="font-size: 1.1em;">
+              {{ props.row.points }}
+            </q-td>
+
+          </q-tr>
+        </template>
+      </q-table>
     </div>
   </q-page>
 </template>
   
-  <script setup>
-  import { ref, onMounted } from 'vue'
-  import { supabase } from 'boot/supabase'
+<script setup>
+import { ref, onMounted } from 'vue'
+import { supabase } from 'boot/supabase'
+import { useAuthStore } from 'stores/useAuthStore' // <- Importar Auth
+import { useClubStore } from 'stores/useClubStore' // <- Importar Club
+
+const authStore = useAuthStore() // <- Iniciar Auth
+const clubStore = useClubStore() // <- Iniciar Club
+
+const props = defineProps(['id'])
+const loading = ref(true)
+const leaderboard = ref([])
+  // Configuração inicial (Ordena por Pontos descrescente e não divide em páginas)
+const pagination = ref({
+  sortBy: 'points',
+  descending: true,
+  rowsPerPage: 0 
+})
+
+// Definição das colunas para permitir clicar e ordenar!
+const columns = [
+  { name: 'rank', label: '#', align: 'left', headerClasses: 'text-left' },
+  { name: 'jogador', label: 'Jogador', field: row => row.name, align: 'left', sortable: true },
+  { name: 'matches', label: 'J', field: 'matches', align: 'center', sortable: true, tooltip: 'Jogos Realizados' },
+  { name: 'goals', label: 'G', field: 'goals', align: 'center', sortable: true, headerClasses: 'text-amber-3', tooltip: 'Golos Marcados' },
+  { name: 'assists', label: 'A', field: 'assists', align: 'center', sortable: true, headerClasses: 'text-green-2', tooltip: 'Assistências' },
+  { name: 'wins', label: 'V', field: 'wins', align: 'center', sortable: true, tooltip: 'Vitórias' },
+  { name: 'draws', label: 'E', field: 'draws', align: 'center', sortable: true, tooltip: 'Empates' },
+  { name: 'losses', label: 'D', field: 'losses', align: 'center', sortable: true, tooltip: 'Derrotas' },
+  { name: 'points', label: 'PTS', field: 'points', align: 'center', sortable: true, headerClasses: 'bg-amber-8 text-dark' }
+]
   
-  const props = defineProps(['id'])
-  const loading = ref(true)
-  const leaderboard = ref([])
-  
-  onMounted(async () => {
-    await calculateStats()
-  })
+onMounted(async () => {
+  // 1. O ANTÍDOTO ANTI-F5 (Reidrata a memória do utilizador e do clube)
+  if (!authStore.user) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      authStore.user = user
+      await authStore.fetchProfile(user.id)
+    }
+  }
+  if (authStore.user && (!clubStore.currentClub || clubStore.currentClub.id !== props.id)) {
+    const { data } = await supabase
+      .from('club_members')
+      .select('role, is_owner, can_manage_finances, can_manage_teams, can_manage_matches, clubs(id, name)')
+      .eq('club_id', props.id)
+      .eq('profile_id', authStore.user.id)
+      .single()
+    if (data) {
+      clubStore.setClub({
+        id: data.clubs.id, name: data.clubs.name, role: data.role, is_owner: data.is_owner,
+        can_manage_finances: data.can_manage_finances, can_manage_teams: data.can_manage_teams, can_manage_matches: data.can_manage_matches
+      })
+    }
+  }
+
+  // 2. Continua com o cálculo das estatísticas
+  await calculateStats()
+})
   
   function getMedalColor(index) {
     if (index === 0) return 'text-amber-9' // Ouro
@@ -186,4 +254,60 @@
   border: 1px solid #bbf7d0;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 }
+
+/* --- A MAGIA DA TABELA FIXA (SCROLL CRUZADO) --- */
+.my-sticky-table {
+  /* Limita a altura para ativar o scroll vertical dentro do ecrã */
+  max-height: calc(100vh - 180px); 
+}
+
+/* O Cabeçalho Verde Escuro sempre no topo */
+.my-sticky-table thead tr th {
+  position: sticky;
+  z-index: 2;
+  background: #064e3b; /* Cor fixa para garantir que não fica transparente ao fazer scroll */
+}
+
+.my-sticky-table thead tr {
+  background-color: #064e3b !important;
+}
+
+.my-sticky-table thead tr:first-child th {
+  top: 0;
+}
+
+/* Coluna 1: A hashtag (#) super estreita e colada à esquerda */
+.my-sticky-table tr th:first-child,
+.my-sticky-table tr td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 35px;
+  max-width: 35px;
+  padding: 4px 8px; /* Tira o excesso de padding para poupar espaço */
+}
+
+/* Coluna 2: O Nome do Jogador também colado (logo a seguir à Coluna 1) */
+.my-sticky-table tr th:nth-child(2),
+.my-sticky-table tr td:nth-child(2) {
+  position: sticky;
+  left: 35px; /* Tem de ser igual à largura da primeira coluna */
+  z-index: 1;
+}
+
+/* O cruzamento entre o Cabeçalho e as Colunas da Esquerda tem de estar acima de tudo (Z-index: 3) */
+.my-sticky-table thead tr th:first-child,
+.my-sticky-table thead tr th:nth-child(2) {
+  z-index: 3;
+}
+
+/* Garantir que as células fixas mantêm a cor das linhas (Laranja nas top 3, Branco nas restantes) */
+.my-sticky-table tbody tr.bg-white td {
+  background: #ffffff;
+}
+.my-sticky-table tbody tr.bg-orange-1 td {
+  background: #fff3e0;
+}
+
+
 </style>

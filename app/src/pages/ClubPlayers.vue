@@ -42,54 +42,69 @@
               
               <div 
                 class="fut-card shadow-10" 
-                :class="[isIcon(member) ? 'card-icon' : getCardTier(member.overall), (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner) ? 'cursor-pointer hover-lift' : '']"
+                :class="[
+                  isIcon(member) ? 'card-icon' : (shouldHideStats ? 'card-hidden' : getCardTier(member.overall)), 
+                  (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner) ? 'cursor-pointer hover-lift' : ''
+                ]"
                 @click="openEditModal(member)"
               >
                 <div class="fut-card-shine"></div>
                 <div class="fut-card-inner">
-                  <div class="fut-top-info">
-                    <div class="fut-rating">{{ member.overall }}</div>
-                    <div class="fut-position">{{ getShortPosition(member.position) }}</div>
-                  </div>
-                  <q-icon v-if="member.is_virtual" name="construction" :color="isIcon(member) ? 'dark' : 'amber-9'" size="xs" class="absolute-top-right q-ma-sm" style="opacity: 0.8;">
-                    <q-tooltip>Jogador Virtual Manual</q-tooltip>
-                  </q-icon>
-                  <div class="fut-portrait">
-                    <q-icon name="person" size="5rem" class="silhouette" />
-                  </div>
-                  <div class="fut-name text-ellipsis row items-center justify-center">
-                    <q-icon v-if="isIcon(member)" name="workspace_premium" size="xs" class="q-mr-xs" />
-                    {{ member.name?.split(' ')[0] || 'Jogador' }}
-                  </div>
-                  <div class="fut-divider"></div>
-                  <div class="row fut-stats justify-center">
-                  <!-- ESTATÍSTICAS (O texto preto da carta faz com que a borda também precise de ser preta transparente) -->
-                  <template v-if="member.position === 'Guarda-Redes'">
-                    <div class="col-5 column items-end q-pr-sm" style="border-right: 1px solid rgba(0,0,0,0.15);">
-                      <div class="stat-row"><span class="stat-val">{{ member.diving || 70 }}</span><span class="stat-label">DIV</span></div>
-                      <div class="stat-row"><span class="stat-val">{{ member.handling || 70 }}</span><span class="stat-label">HAN</span></div>
-                      <div class="stat-row"><span class="stat-val">{{ member.kicking || 70 }}</span><span class="stat-label">KIC</span></div>
-                    </div>
-                    <div class="col-5 column items-start q-pl-sm">
-                      <div class="stat-row"><span class="stat-val">{{ member.reflexes || 70 }}</span><span class="stat-label">REF</span></div>
-                      <div class="stat-row"><span class="stat-val">{{ member.speed || 70 }}</span><span class="stat-label">SPD</span></div>
-                      <div class="stat-row"><span class="stat-val">{{ member.positioning || 70 }}</span><span class="stat-label">POS</span></div>
-                    </div>
-                  </template>
-                  <template v-else>
-                    <div class="col-5 column items-end q-pr-sm" style="border-right: 1px solid rgba(0,0,0,0.15);">
-                      <div class="stat-row"><span class="stat-val">{{ member.pace || 70 }}</span><span class="stat-label">PAC</span></div>
-                      <div class="stat-row"><span class="stat-val">{{ member.shooting || 70 }}</span><span class="stat-label">SHO</span></div>
-                      <div class="stat-row"><span class="stat-val">{{ member.passing || 70 }}</span><span class="stat-label">PAS</span></div>
-                    </div>
-                    <div class="col-5 column items-start q-pl-sm">
-                      <div class="stat-row"><span class="stat-val">{{ member.dribbling || 70 }}</span><span class="stat-label">DRI</span></div>
-                      <div class="stat-row"><span class="stat-val">{{ member.defending || 70 }}</span><span class="stat-label">DEF</span></div>
-                      <div class="stat-row"><span class="stat-val">{{ member.physical || 70 }}</span><span class="stat-label">PHY</span></div>
-                    </div>
-                  </template>
+                <!-- TOPO: Oculta o OVR mas mantém a posição -->
+                <div class="fut-top-info">
+                  <div v-if="!shouldHideStats" class="fut-rating">{{ member.overall }}</div>
+                  <div class="fut-position" :class="{'q-mt-sm': shouldHideStats}">{{ getShortPosition(member.position) }}</div>
                 </div>
-                </div>                   
+
+                <q-icon v-if="member.is_virtual" name="construction" :color="isIcon(member) ? 'dark' : 'amber-9'" size="xs" class="absolute-top-right q-ma-sm" style="opacity: 0.8;">
+                  <q-tooltip>Jogador Virtual Manual</q-tooltip>
+                </q-icon>
+
+                <!-- FOTO: Desce ligeiramente se a carta for a versão resumida -->
+                <div class="fut-portrait" :style="shouldHideStats ? 'margin-top: 35px;' : 'margin-top: 15px;'">
+                  <q-icon name="person" size="5rem" class="silhouette" />
+                </div>
+
+                <div class="fut-name text-ellipsis row items-center justify-center" :class="{'q-mt-md': shouldHideStats}">
+                  <q-icon v-if="isIcon(member)" name="workspace_premium" size="xs" class="q-mr-xs" />
+                  {{ member.name?.split(' ')[0] || 'Jogador' }}
+                </div>
+
+                <!-- ESTATÍSTICAS: Só renderiza o separador e a grelha se não estiverem ocultos -->
+                <template v-if="!shouldHideStats">
+                  <div class="fut-divider"></div>
+                  
+                  <div class="row full-width justify-center q-mt-sm" style="font-size: 11px; margin-bottom: 2px;">
+                    <!-- JOGADOR DE CAMPO -->
+                    <template v-if="member.position !== 'Guarda-Redes'">
+                      <div class="col-5 column items-end q-pr-sm" style="border-right: 1px solid rgba(0,0,0,0.15);">
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.pace || 70) }}</span><span class="stat-label">PAC</span></div>
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.shooting || 70) }}</span><span class="stat-label">SHO</span></div>
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.passing || 70) }}</span><span class="stat-label">PAS</span></div>
+                      </div>
+                      <div class="col-5 column items-start q-pl-sm">
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.dribbling || 70) }}</span><span class="stat-label">DRI</span></div>
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.defending || 70) }}</span><span class="stat-label">DEF</span></div>
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.physical || 70) }}</span><span class="stat-label">PHY</span></div>
+                      </div>
+                    </template>
+
+                    <!-- GUARDA-REDES -->
+                    <template v-else>
+                      <div class="col-5 column items-end q-pr-sm" style="border-right: 1px solid rgba(0,0,0,0.15);">
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.diving || 70) }}</span><span class="stat-label">DIV</span></div>
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.handling || 70) }}</span><span class="stat-label">HAN</span></div>
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.kicking || 70) }}</span><span class="stat-label">KIC</span></div>
+                      </div>
+                      <div class="col-5 column items-start q-pl-sm">
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.reflexes || 70) }}</span><span class="stat-label">REF</span></div>
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.speed || 70) }}</span><span class="stat-label">SPD</span></div>
+                        <div class="stat-row"><span class="stat-val">{{ getStatLabel(member.positioning || 70) }}</span><span class="stat-label">POS</span></div>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+
                 <div class="fut-bottom-bar text-uppercase">
                   <q-icon name="sports_soccer" size="10px" class="q-mr-xs" /> 
                   {{ isIcon(member) ? 'ICON' : (member.is_virtual ? 'VIRTUAL' : 'PRO') }}
@@ -100,6 +115,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
 
     <!-- MODAL: CRIAR JOGADOR VIRTUAL (Agora versão Light Premium) -->
@@ -121,13 +137,18 @@
     </q-dialog>
 
     <!-- MODAL: EDITAR ATRIBUTOS (Agora versão Light Premium) -->
-    <q-dialog v-model="showEditModal">
-      <q-card style="min-width: 340px; max-width: 500px; width: 100%; border-radius: 16px; background: #ffffff;">
-        <q-card-section class="row items-center club-header-block text-white">
-          <div class="text-subtitle1 text-weight-bolder">Painel de Atributos</div>
-          <q-space /><q-btn icon="close" flat round dense color="white" v-close-popup />
+    <q-dialog v-model="showEditModal" persistent>
+      <q-card style="min-width: 320px; max-width: 500px; width: 100%; border-radius: 16px;">
+        
+        <!-- 1. CABEÇALHO FIXO -->
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6 text-weight-bold">Editar Jogador</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
-        <q-card-section class="q-pt-md">
+
+        <!-- 2. CORPO COM SCROLL (Aqui é que a magia acontece) -->
+        <q-card-section class="scroll" style="max-height: 65vh;">
           <div class="text-h5 text-center text-weight-bolder text-dark q-mb-lg text-uppercase font-fut">{{ selectedPlayer?.name }}</div>
           <div class="row q-col-gutter-md items-center q-mb-md">
             <div class="col-12 col-sm-6">
@@ -140,32 +161,66 @@
               </div>
             </div>
           </div>
-          
+
           <q-separator class="q-my-md bg-grey-3" />
           
           <div class="row q-col-gutter-x-md q-col-gutter-y-sm">
-          <template v-if="editForm.position === 'Guarda-Redes'">
-            <div v-for="stat in ['diving', 'handling', 'kicking', 'reflexes', 'speed', 'positioning']" :key="stat" class="col-12 col-sm-6">
-              <div class="row justify-between text-caption text-weight-bold text-dark">
-                <span class="text-capitalize">{{ stat }}</span><span class="text-green-9 text-weight-bolder">{{ editForm[stat] }}</span>
+            <template v-if="editForm.position === 'Guarda-Redes'">
+              <div v-for="stat in ['diving', 'handling', 'kicking', 'reflexes', 'speed', 'positioning']" :key="stat" class="col-12 col-sm-6">
+                <div class="row justify-between text-caption text-weight-bold text-dark q-mb-xs">
+                  <span class="text-capitalize">{{ stat }}</span>
+                  <span v-if="clubSettings.attribute_mode === 'numeric'" class="text-green-9 text-weight-bolder">{{ editForm[stat] }}</span>
+                </div>
+                <q-slider v-if="clubSettings.attribute_mode === 'numeric'" v-model="editForm[stat]" :min="1" :max="99" color="green-9" dense />
+                <q-select 
+                  v-else 
+                  :model-value="editForm[stat]"
+                  @update:model-value="val => editForm[stat] = Number(val)"
+                  :options="categoryOptions" 
+                  emit-value 
+                  map-options 
+                  dense 
+                  outlined 
+                  bg-color="grey-1" 
+                  color="green-9" 
+                />
               </div>
-              <q-slider v-model="editForm[stat]" :min="1" :max="99" color="green-9" dense />
-            </div>
-          </template>
-          <template v-else>
-            <div v-for="stat in ['pace', 'dribbling', 'shooting', 'defending', 'passing', 'physical']" :key="stat" class="col-12 col-sm-6">
-              <div class="row justify-between text-caption text-weight-bold text-dark">
-                <span class="text-capitalize">{{ stat }}</span><span class="text-green-9 text-weight-bolder">{{ editForm[stat] }}</span>
+            </template>
+
+            <template v-else>
+              <div v-for="stat in ['pace', 'dribbling', 'shooting', 'defending', 'passing', 'physical']" :key="stat" class="col-12 col-sm-6">
+                <div class="row justify-between text-caption text-weight-bold text-dark q-mb-xs">
+                  <span class="text-capitalize">{{ stat }}</span>
+                  <span v-if="clubSettings.attribute_mode === 'numeric'" class="text-green-9 text-weight-bolder">{{ editForm[stat] }}</span>
+                </div>
+                <q-slider v-if="clubSettings.attribute_mode === 'numeric'" v-model="editForm[stat]" :min="1" :max="99" color="green-9" dense />
+                <q-select 
+                  v-else 
+                  :model-value="editForm[stat]"
+                  @update:model-value="val => editForm[stat] = Number(val)"
+                  :options="categoryOptions" 
+                  emit-value 
+                  map-options 
+                  dense 
+                  outlined 
+                  bg-color="grey-1" 
+                  color="green-9" 
+                />        
               </div>
-              <q-slider v-model="editForm[stat]" :min="1" :max="99" color="green-9" dense />
-            </div>
-          </template>
+            </template>
         </div>
         </q-card-section>
         
-        <q-card-actions class="q-pa-md column q-gutter-y-sm bg-grey-1">
-          <q-btn label="Gravar Alterações" color="amber-8" text-color="dark" class="full-width text-weight-bolder shadow-1" style="border-radius: 8px;" unelevated size="lg" :loading="saving" @click="savePlayerStats" />
-          <q-btn label="Despedir Jogador" color="negative" flat class="full-width text-weight-bold" style="border-radius: 8px;" :loading="saving" @click="removePlayer" />
+        <!-- 3. RODAPÉ FIXO (Os botões ficam sempre visíveis em baixo) -->
+        <q-card-actions align="between" class="bg-grey-1 q-px-md q-py-sm" style="border-top: 1px solid #e2e8f0;">
+          <!-- Botão de Remover do lado esquerdo -->
+          <q-btn label="Remover" color="negative" icon="delete" flat dense @click="removePlayer" />
+          
+          <!-- Botões de Cancelar e Guardar do lado direito -->
+          <div>
+            <q-btn label="Cancelar" color="grey-7" flat v-close-popup class="q-mr-sm" />
+            <q-btn label="Guardar" color="green-9" unelevated style="border-radius: 8px;" @click="savePlayerStats" :loading="saving" />
+          </div>
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -175,11 +230,13 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useClubStore } from 'stores/useClubStore'
+import { useAuthStore } from 'stores/useAuthStore'
 import { supabase } from 'boot/supabase'
 import { useQuasar } from 'quasar'
 
 const props = defineProps(['id'])
 const clubStore = useClubStore()
+const authStore = useAuthStore()
 const $q = useQuasar()
 
 const members = ref([])
@@ -229,7 +286,105 @@ const computedOverall = computed(() => {
   return Math.round(overall)
 })
 
-onMounted(async () => { await fetchAllMembers() })
+const clubSettings = ref({ attribute_mode: 'numeric', hide_attributes_from_members: false })
+
+// 1. Cria esta propriedade calculada (computed) logo abaixo das tuas variáveis
+const shouldHideStats = computed(() => {
+  const isManager = clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner
+  return clubSettings.value.hide_attributes_from_members && !isManager
+})
+
+const categoryOptions = [
+  { label: 'Excelente', value: 96 },
+  { label: 'Muito Bom', value: 90 },
+  { label: 'Bom', value: 82 },
+  { label: 'Médio', value: 70 },
+  { label: 'Mau', value: 55 },
+  { label: 'Péssimo', value: 40 }
+]
+
+// Ir buscar a definição quando a página abre
+onMounted(async () => {
+  // 3. O ANTÍDOTO ANTI-F5 (Reidrata a memória do utilizador e do clube)
+  if (!authStore.user) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      authStore.user = user
+      await authStore.fetchProfile(user.id)
+    }
+  }
+  
+  if (authStore.user && (!clubStore.currentClub || clubStore.currentClub.id !== props.id)) {
+    const { data } = await supabase
+      .from('club_members')
+      .select('role, is_owner, can_manage_finances, can_manage_teams, can_manage_matches, clubs(id, name)')
+      .eq('club_id', props.id)
+      .eq('profile_id', authStore.user.id)
+      .single()
+    if (data) {
+      clubStore.setClub({
+        id: data.clubs.id, name: data.clubs.name, role: data.role, is_owner: data.is_owner,
+        can_manage_finances: data.can_manage_finances, can_manage_teams: data.can_manage_teams, can_manage_matches: data.can_manage_matches
+      })
+    }
+  }
+
+  // 4. Carregar a definição de Categórico/Numérico do Clube
+  const { data: settingsData } = await supabase.from('clubs').select('attribute_mode, hide_attributes_from_members').eq('id', props.id).single()
+  if (settingsData) {
+    clubSettings.value.attribute_mode = settingsData.attribute_mode || 'numeric'
+    clubSettings.value.hide_attributes_from_members = settingsData.hide_attributes_from_members || false
+  }
+
+  // 5. Carregar os jogadores
+  await fetchAllMembers()
+})
+
+// Tradutor de Número para Letras (Para mostrar nas Cartas)
+function getStatLabel(val) {
+  if (clubSettings.value.attribute_mode === 'numeric') return val;
+  if (val >= 93) return 'EXC'
+  if (val >= 86) return 'MBO' // Muito Bom
+  if (val >= 77) return 'BOM'
+  if (val >= 65) return 'MED'
+  if (val >= 50) return 'MAU'
+  return 'PES'
+}
+
+// Quando abre o modal, arredonda o número para encaixar na categoria correta
+function snapToCategory(val) {
+  if (val >= 93) return 96
+  if (val >= 86) return 90
+  if (val >= 77) return 82
+  if (val >= 65) return 70
+  if (val >= 50) return 55
+  return 40
+}
+
+function openEditModal(member) {
+  if (!clubStore.currentClub?.can_manage_teams && !clubStore.currentClub?.is_owner) return
+  selectedPlayer.value = member
+  
+  // Criar uma cópia do jogador
+  const f = { ...member }
+  
+  // LISTA DE TODOS OS ATRIBUTOS
+  const allStats = ['pace', 'shooting', 'passing', 'dribbling', 'defending', 'physical', 'diving', 'handling', 'kicking', 'reflexes', 'speed', 'positioning']
+  
+  // Garantir que todos existem no objeto ANTES de o passar para o Vue (vital para a reatividade!)
+  allStats.forEach(s => {
+    let statValue = f[s] || 70 // Se estiver vazio, assume 70
+    if (clubSettings.value.attribute_mode === 'categorical') {
+      f[s] = snapToCategory(statValue)
+    } else {
+      f[s] = statValue
+    }
+  })
+  
+  // Agora sim, passamos para o form e o Vue já consegue "espiar" as alterações
+  editForm.value = f
+  showEditModal.value = true
+}
 
 async function fetchAllMembers() {
   loading.value = true
@@ -280,31 +435,45 @@ async function createVirtualPlayer() {
   saving.value = false
 }
 
-function openEditModal(member) {
-  if (!clubStore.currentClub?.can_manage_teams && !clubStore.currentClub?.is_owner) return
-  selectedPlayer.value = member
-  editForm.value = { ...member }
-  showEditModal.value = true
-}
-
 async function savePlayerStats() {
   saving.value = true
+  
+  // Deteta inteligentemente se vai gravar na tabela de virtuais ou reais
   const table = selectedPlayer.value.is_virtual ? 'virtual_players' : 'profiles'
-  const matchField = selectedPlayer.value.is_virtual ? 'id' : 'id'
+  
+  // O pacote de dados blindado (com o overall a puxar diretamente do editForm para evitar NaN)
+  const payload = {
+    overall: Number(editForm.value.overall || 70),
+    position: editForm.value.position,
+    pace: Number(editForm.value.pace || 70),
+    shooting: Number(editForm.value.shooting || 70),
+    passing: Number(editForm.value.passing || 70),
+    dribbling: Number(editForm.value.dribbling || 70),
+    defending: Number(editForm.value.defending || 70),
+    physical: Number(editForm.value.physical || 70),
+    diving: Number(editForm.value.diving || 70),
+    handling: Number(editForm.value.handling || 70),
+    kicking: Number(editForm.value.kicking || 70),
+    reflexes: Number(editForm.value.reflexes || 70),
+    speed: Number(editForm.value.speed || 70),
+    positioning: Number(editForm.value.positioning || 70)
+  }
 
-  const { error } = await supabase.from(table).update({
-    overall: computedOverall.value, position: editForm.value.position, pace: editForm.value.pace,
-    shooting: editForm.value.shooting, passing: editForm.value.passing, dribbling: editForm.value.dribbling,
-    defending: editForm.value.defending, physical: editForm.value.physical,
-    diving: editForm.value.diving, handling: editForm.value.handling, kicking: editForm.value.kicking,
-    reflexes: editForm.value.reflexes, speed: editForm.value.speed, positioning: editForm.value.positioning
-  }).eq(matchField, selectedPlayer.value.id)
+  const { error } = await supabase
+    .from(table)
+    .update(payload)
+    .eq('id', selectedPlayer.value.id)
 
   if (!error) {
-    $q.notify({ type: 'positive', message: 'Atributos FUT atualizados com sucesso!' })
+    // Notificação de Sucesso NO TOPO!
+    $q.notify({ type: 'positive', message: 'Atributos FUT atualizados!', position: 'top' })
     showEditModal.value = false
     await fetchAllMembers()
+  } else {
+    // A MAGIA AQUI: Notificação de Erro NO TOPO para a barra inferior não esconder!
+    $q.notify({ type: 'negative', message: 'Erro ao gravar: ' + error.message, position: 'top', timeout: 5000 })
   }
+  
   saving.value = false
 }
 
@@ -434,22 +603,30 @@ function getShortPosition(p) { return p==='Guarda-Redes'?'GR':p==='Defesa'?'DEF'
   z-index: 10;
 }
 
+/* --- BLOCO DE ESTATÍSTICAS DA CARTA FUT --- */
 .stat-row {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 4px; /* O espaço exato entre o número e a letra */
+  width: 100%;
+  margin-bottom: 2px;
 }
 
 .stat-val {
   font-weight: 900;
-  width: 18px; /* Congela a largura dos números */
+  width: 28px; /* Espaço largo garantido para "EXC" ou "MBO" */
   text-align: right;
+  font-size: 11px;
 }
 
 .stat-label {
-  width: 22px; /* Congela a largura das letras (o "I" passa a ocupar o mesmo que o "D") */
+  width: 24px; /* Espaço para "PAC", "SHO", etc. */
   text-align: left;
+  font-weight: 700;
+  color: #373737; /* Um tom ligeiramente mais leve para diferenciar do valor */
+  margin-left: 5px; /* O truque: garante que há sempre 5px de distância entre o valor e a letra */
 }
+
 .fut-bottom-bar { text-align: center; font-weight: 900; font-size: 10px; opacity: 0.7; margin-top: auto; padding-bottom: 4px; }
 /* =========================================
    👑 LUMINARY ICON (TIAGO EDITION - CLARA) 👑
@@ -544,6 +721,23 @@ function getShortPosition(p) { return p==='Guarda-Redes'?'GR':p==='Defesa'?'DEF'
 
 /* Esconder o brilho normal para as lendas */
 .card-icon .fut-card-shine { display: none; }
+
+.stat-val {
+  font-weight: 900;
+  width: 25px; /* Aumentado para caber as 3 letras (ex: MBO) */
+  text-align: right;
+  font-size: 11px;
+}
+.stat-label {
+  width: 22px;
+  text-align: left;
+}
+
+/* Cartão Mistério (Modo Secreto para Membros) */
+.card-hidden {
+  background: linear-gradient(135deg, #334155, #0f172a, #000000); /* Tom Dark Slate Premium */
+  color: #f8fafc;
+}
 
 /* --- OS MOTORES DE ANIMAÇÃO 3D --- */
 @keyframes spin-plasma {
