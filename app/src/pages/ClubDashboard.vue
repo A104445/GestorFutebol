@@ -131,13 +131,12 @@
               <div class="row items-center q-gutter-x-sm">
                 <q-chip 
                   dense 
-                  :color="match.status === 'fechado' ? 'grey-3' : 'amber-8'" 
-                  :text-color="match.status === 'fechado' ? 'grey-8' : 'dark'" 
+                  :color="match.status === 'fechado' ? 'grey-3' : (match.status === 'votacao' ? 'blue-2' : 'amber-8')" 
+                  :text-color="match.status === 'fechado' ? 'grey-8' : (match.status === 'votacao' ? 'blue-9' : 'dark')" 
                   class="text-weight-bolder shadow-1"
                   style="border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);"
                 >
-                  <!-- <q-icon v-if="match.status === 'fechado'" name="sports_score" size="14px" class="q-mr-xs" /> -->
-                  {{ match.status === 'fechado' ? 'TERMINADO' : 'ABERTO' }}
+                  {{ match.status === 'fechado' ? 'TERMINADO' : (match.status === 'votacao' ? 'EM VOTAÇÃO' : 'ABERTO') }}
                 </q-chip>
 
                 <!-- Menu de Gestão em Cinza Neutro -->
@@ -243,6 +242,54 @@
                 >
                   <q-tooltip>Editar / Reabrir Jogo</q-tooltip>
                 </q-btn>
+
+                <!-- Botão AVALIAR JOGO (Apenas se ainda não votou) -->
+                <q-btn 
+                  v-if="match.status === 'votacao' && !votedMatches.includes(match.id)" 
+                  color="blue-8" 
+                  text-color="white" 
+                  unelevated 
+                  label="Avaliar Jogo" 
+                  icon="how_to_vote" 
+                  class="text-weight-bolder q-px-md shadow-2" 
+                  style="border-radius: 8px;"
+                  @click="openVotingModal(match)" 
+                />
+
+                <!-- Botão JÁ VOTASTE (Bloqueado) -->
+                <q-btn 
+                  v-if="match.status === 'votacao' && votedMatches.includes(match.id)" 
+                  color="grey-4" 
+                  text-color="grey-7" 
+                  unelevated 
+                  disable
+                  label="Voto Registado" 
+                  icon="check_circle" 
+                  class="text-weight-bold q-px-md shadow-1" 
+                  style="border-radius: 8px;"
+                />
+
+                <!-- Botão ENCERRAR VOTAÇÕES e APURAR (Para os Admins) -->
+                <q-btn 
+                  v-if="match.status === 'votacao' && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)"
+                  color="negative" 
+                  flat round dense 
+                  icon="gavel" 
+                  @click="closeVoting(match)"
+                >
+                  <q-tooltip>Encerrar Urnas e Apurar MVP</q-tooltip>
+                </q-btn>
+
+                <!-- BOTÃO PARA VER RESULTADOS DO JOGO FECHADO -->
+                <q-btn 
+                  v-if="match.status === 'fechado'" 
+                  flat dense 
+                  color="amber-9" 
+                  icon="emoji_events" 
+                  label="Resultados" 
+                  class="text-weight-bold"
+                  @click="openResultsModal(match)"
+                />
               </div>
             </q-card-actions>
           </q-card>
@@ -472,34 +519,104 @@
             <div :class="`text-${matchSettingsColor(matchToClose, 'A')} text-weight-bold q-mb-sm q-ml-sm row items-center text-uppercase`">
               <q-icon name="shield" class="q-mr-xs"/> {{ matchToClose?.team_a_name || clubSettings?.default_team_a_name || 'Equipa A' }}
             </div>
-            <div v-for="player in matchPlayersStats.teamA" :key="player.id" class="row items-center q-mb-sm bg-white q-pa-sm shadow-1" :style="`border-radius: 8px; border: 1px solid #f1f5f9; border-left: 4px solid var(--q-${clubSettings?.default_team_a_color || 'blue'});`">
-              <div class="col-6 text-body2 text-ellipsis text-weight-bold text-dark">{{ player.name }}</div>
-              <div class="col-3 q-px-xs">
-                <q-input dense outlined bg-color="grey-1" v-model.number="player.goals" type="number" label="Golos ⚽" min="0" input-class="text-center text-weight-bold text-dark" />
+
+            <div v-for="player in matchPlayersStats.teamA" :key="player.id" class="row no-wrap items-center justify-between q-mb-sm bg-white q-pa-sm shadow-1" :style="`border-radius: 12px; border: 1px solid #f1f5f9; border-left: 4px solid var(--q-${clubSettings?.default_team_a_color || 'blue'});`">
+              
+              <!-- Nome do Jogador -->
+              <div class="text-body2 text-ellipsis text-weight-bold text-dark" style="flex: 1; min-width: 0; padding-right: 8px;">
+                {{ player.name }}
               </div>
-              <div class="col-3 q-px-xs">
-                <q-input dense outlined bg-color="grey-1" v-model.number="player.assists" type="number" label="Assis. 👟" min="0" input-class="text-center text-weight-bold text-dark" />
+              
+              <!-- Controlos Customizados (+ / -) Clean Design -->
+              <div class="row no-wrap q-gutter-x-md" style="width: auto;">
+                
+                <!-- Golos -->
+                <div class="column items-center">
+                  <div class="text-grey-6 text-weight-bold q-mb-xs" style="font-size: 9px; letter-spacing: 0.5px;">GOLOS</div>
+                  <div class="row items-center no-wrap bg-grey-2" style="border-radius: 20px; padding: 2px;">
+                    <q-btn round dense flat icon="remove" size="10px" :color="player.goals > 0 ? 'dark' : 'grey-4'" :disable="player.goals <= 0" @click="player.goals--" />
+                    <div class="text-weight-bolder text-dark text-center" style="width: 22px; font-size: 14px;">{{ player.goals }}</div>
+                    <q-btn round dense flat icon="add" size="10px" color="dark" @click="player.goals++" />
+                  </div>
+                </div>
+                
+                <!-- Assistências -->
+                <div class="column items-center">
+                  <div class="text-grey-6 text-weight-bold q-mb-xs" style="font-size: 9px; letter-spacing: 0.5px;">ASSIS</div>
+                  <div class="row items-center no-wrap bg-grey-2" style="border-radius: 20px; padding: 2px;">
+                    <q-btn round dense flat icon="remove" size="10px" :color="player.assists > 0 ? 'dark' : 'grey-4'" :disable="player.assists <= 0" @click="player.assists--" />
+                    <div class="text-weight-bolder text-dark text-center" style="width: 22px; font-size: 14px;">{{ player.assists }}</div>
+                    <q-btn round dense flat icon="add" size="10px" color="dark" @click="player.assists++" />
+                  </div>
+                </div>
+
               </div>
             </div>
+
 
             <!-- LISTA DA EQUIPA B -->
             <div :class="`text-${matchSettingsColor(matchToClose, 'B')} text-weight-bold q-mt-lg q-mb-sm q-ml-sm row items-center text-uppercase`">
               <q-icon name="shield" class="q-mr-xs"/> {{ matchToClose?.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
             </div>
-            <div v-for="player in matchPlayersStats.teamB" :key="player.id" class="row items-center q-mb-sm bg-white q-pa-sm shadow-1" :style="`border-radius: 8px; border: 1px solid #f1f5f9; border-left: 4px solid var(--q-${clubSettings?.default_team_b_color || 'orange'});`">
-              <div class="col-6 text-body2 text-ellipsis text-weight-bold text-dark">{{ player.name }}</div>
-              <div class="col-3 q-px-xs">
-                <q-input dense outlined bg-color="grey-1" v-model.number="player.goals" type="number" label="Golos ⚽" min="0" input-class="text-center text-weight-bold text-dark" />
+
+            <div v-for="player in matchPlayersStats.teamB" :key="player.id" class="row no-wrap items-center justify-between q-mb-sm bg-white q-pa-sm shadow-1" :style="`border-radius: 12px; border: 1px solid #f1f5f9; border-left: 4px solid var(--q-${clubSettings?.default_team_b_color || 'orange'});`">
+              
+              <!-- Nome do Jogador -->
+              <div class="text-body2 text-ellipsis text-weight-bold text-dark" style="flex: 1; min-width: 0; padding-right: 8px;">
+                {{ player.name }}
               </div>
-              <div class="col-3 q-px-xs">
-                <q-input dense outlined bg-color="grey-1" v-model.number="player.assists" type="number" label="Assis. 👟" min="0" input-class="text-center text-weight-bold text-dark" />
+              
+              <!-- Controlos Customizados (+ / -) Clean Design -->
+              <div class="row no-wrap q-gutter-x-md" style="width: auto;">
+                
+                <!-- Golos -->
+                <div class="column items-center">
+                  <div class="text-grey-6 text-weight-bold q-mb-xs" style="font-size: 9px; letter-spacing: 0.5px;">GOLOS</div>
+                  <div class="row items-center no-wrap bg-grey-2" style="border-radius: 20px; padding: 2px;">
+                    <q-btn round dense flat icon="remove" size="10px" :color="player.goals > 0 ? 'dark' : 'grey-4'" :disable="player.goals <= 0" @click="player.goals--" />
+                    <div class="text-weight-bolder text-dark text-center" style="width: 22px; font-size: 14px;">{{ player.goals }}</div>
+                    <q-btn round dense flat icon="add" size="10px" color="dark" @click="player.goals++" />
+                  </div>
+                </div>
+                
+                <!-- Assistências -->
+                <div class="column items-center">
+                  <div class="text-grey-6 text-weight-bold q-mb-xs" style="font-size: 9px; letter-spacing: 0.5px;">ASSIS</div>
+                  <div class="row items-center no-wrap bg-grey-2" style="border-radius: 20px; padding: 2px;">
+                    <q-btn round dense flat icon="remove" size="10px" :color="player.assists > 0 ? 'dark' : 'grey-4'" :disable="player.assists <= 0" @click="player.assists--" />
+                    <div class="text-weight-bolder text-dark text-center" style="width: 22px; font-size: 14px;">{{ player.assists }}</div>
+                    <q-btn round dense flat icon="add" size="10px" color="dark" @click="player.assists++" />
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
         </q-card-section>
         
-        <q-card-actions align="center" class="q-pa-md bg-grey-1" style="border-top: 1px solid #e2e8f0;">
-          <q-btn label="Trancar Resultado e Estatísticas" color="amber-8" text-color="dark" class="full-width text-weight-bolder shadow-1" style="border-radius: 8px;" unelevated size="lg" :loading="saving" @click="closeMatch" />
+        <q-card-actions align="between" class="q-pa-md bg-grey-1" style="border-top: 1px solid #e2e8f0;">
+          <!-- NOVO: Botão de guardar o progresso e manter o jogo aberto -->
+          <q-btn 
+            label="Guardar (Ao Vivo)" 
+            color="blue-8" 
+            icon="save" 
+            unelevated 
+            style="border-radius: 8px;" 
+            :loading="saving" 
+            @click="saveLiveStats" 
+          />
+          
+          <!-- O teu botão antigo de Trancar, renomeado para ser mais claro -->
+          <q-btn 
+            label="Encerrar Partida" 
+            color="amber-8" 
+            text-color="dark" 
+            class="text-weight-bolder shadow-1" 
+            style="border-radius: 8px;" 
+            unelevated 
+            :loading="saving" 
+            @click="closeMatch" 
+          />
         </q-card-actions>
         
       </q-card>
@@ -733,12 +850,125 @@
             label="Ocultar Ratings e OVR aos membros normais" 
             class="q-mb-md"
           />
+
+          <!-- NOVO: ATIVAR VOTAÇÕES -->
+          <q-toggle 
+            v-model="clubSettings.enable_voting" 
+            color="blue" 
+            label="Ativar Votação de MVP e Avaliações pós-jogo" 
+          />
         </q-card-section>
 
         <q-card-actions align="right" class="q-pa-md bg-grey-1 col-auto">
           <q-btn flat label="Cancelar" v-close-popup />
           <q-btn color="primary" label="Guardar Configurações" @click="saveClubSettings" :loading="savingSettings" unelevated />
         </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- MODAL DE VOTAÇÃO (AVALIAÇÕES E MVP) -->
+    <q-dialog v-model="showVotingModal" persistent>
+      <q-card class="column no-wrap" style="min-width: 340px; max-width: 500px; width: 100%; border-radius: 16px; max-height: 85vh;">
+        
+        <q-card-section class="row items-center col-auto text-white bg-blue-9 q-py-md">
+          <div class="text-subtitle1 text-weight-bold row items-center">
+            <q-icon name="how_to_vote" class="q-mr-sm" size="sm" />
+            Votação & MVP
+          </div>
+          <q-space />
+          <q-btn icon="close" flat round dense color="white" v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="col q-pa-md" style="overflow-y: auto; overflow-x: hidden;">
+          <div class="text-caption text-grey-8 q-mb-md text-weight-medium">
+            Dá uma nota de 1 a 10 aos teus colegas de equipa e escolhe quem merece levar a bola para casa (MVP). <span class="text-blue-8 text-weight-bold">A tua votação é 100% anónima.</span>
+          </div>
+
+          <div v-if="loadingVotes" class="text-center q-pa-lg">
+            <q-spinner color="blue" size="40px" />
+          </div>
+
+          <div v-else>
+            <div v-for="p in votingPlayers" :key="p.id" class="q-mb-md bg-grey-1 q-pa-sm shadow-1" style="border-radius: 8px; border: 1px solid #f1f5f9;">
+              
+              <div class="row justify-between items-center q-mb-sm">
+                <div class="text-weight-bold text-dark text-ellipsis" style="max-width: 65%;">
+                  <q-icon name="person" color="grey-6" class="q-mr-xs" /> {{ p.name }}
+                </div>
+                <q-radio v-model="selectedMVP" :val="p.id" color="amber-8" label="MVP" class="text-weight-bolder text-amber-9" dense />
+              </div>
+              
+              <div class="row items-center q-gutter-x-md q-px-sm">
+                <div class="col">
+                  <q-slider v-model="p.rating" :min="1" :max="10" :step="1" color="blue-6" markers dense />
+                </div>
+                <div class="text-weight-bolder text-blue-9 text-center bg-blue-1" style="width: 30px; border-radius: 4px; padding: 2px;">
+                  {{ p.rating }}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="between" class="bg-grey-2 col-auto q-pa-md" style="border-top: 1px solid #e2e8f0;">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn color="blue-9" label="Submeter Votos" unelevated class="text-weight-bold" style="border-radius: 8px;" @click="submitVotes" :loading="savingVotes" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- MODAL DOS RESULTADOS FINAIS (MVP E NOTAS) -->
+    <q-dialog v-model="showResultsModal">
+      <q-card style="min-width: 340px; max-width: 500px; width: 100%; border-radius: 16px;">
+        
+        <q-card-section class="row items-center bg-dark text-white q-py-md">
+          <div class="text-subtitle1 text-weight-bold row items-center">
+            <q-icon name="emoji_events" class="text-amber-5 q-mr-sm" size="sm" />
+            Resumo da Partida
+          </div>
+          <q-space />
+          <q-btn icon="close" flat round dense color="grey-5" v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pa-md bg-grey-1" style="max-height: 70vh; overflow-y: auto;">
+          <div v-if="loadingResults" class="text-center q-pa-md"><q-spinner color="amber-8" size="30px" /></div>
+          
+          <div v-else>
+            <q-list separator>
+              <q-item v-for="(p, index) in matchResultsData" :key="p.id" class="bg-white shadow-1 q-mb-sm" style="border-radius: 8px;">
+                
+                <q-item-section avatar>
+                  <q-avatar :color="p.isMvp ? 'amber-8' : 'grey-3'" :text-color="p.isMvp ? 'dark' : 'grey-8'" class="text-weight-bolder">
+                    {{ index + 1 }}
+                  </q-avatar>
+                </q-item-section>
+
+                <q-item-section>
+                  <q-item-label class="text-weight-bold text-dark row items-center">
+                    {{ p.name }} 
+                    <q-icon v-if="p.isMvp" name="workspace_premium" color="amber-8" size="sm" class="q-ml-xs">
+                      <q-tooltip>MVP da Partida</q-tooltip>
+                    </q-icon>
+                  </q-item-label>
+                  <q-item-label caption class="text-grey-7">
+                    Golos: <span class="text-green-9 text-weight-bold">{{ p.goals }}</span> | Assis: <span class="text-blue-9 text-weight-bold">{{ p.assists }}</span>
+                  </q-item-label>
+                </q-item-section>
+
+                <q-item-section side>
+                  <div class="text-center">
+                    <div class="text-caption text-weight-bold text-grey-6" style="font-size: 9px;">NOTA</div>
+                    <div class="text-h6 text-weight-bolder" :class="p.rating >= 7 ? 'text-green-9' : (p.rating >= 5 ? 'text-amber-9' : 'text-negative')">
+                      {{ p.rating > 0 ? p.rating : '-' }}
+                    </div>
+                  </div>
+                </q-item-section>
+
+              </q-item>
+            </q-list>
+          </div>
+        </q-card-section>
       </q-card>
     </q-dialog>
   
@@ -766,36 +996,6 @@ let realtimeChannel
 
 const matchViewMode = ref('next')
 const selectedMonth = ref(null)
-
-// 1. Conta quantos jogos passados ainda estão abertos
-const pendingMatchesCount = computed(() => {
-  const now = new Date()
-  return matches.value.filter(m => m.status !== 'fechado' && new Date(m.date) < now).length
-})
-
-// 2. Gera os botões do filtro dinamicamente (Mostra "Pendentes" se for Admin)
-const filterButtons = computed(() => {
-  const opts = [
-    { label: 'Próximo', value: 'next' },
-    { label: 'Mês', value: 'month' },
-    { label: 'Todos', value: 'all' },
-    { label: 'Finalizados', value: 'closed' }
-  ]
-  
-  const isManager = clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner
-  if (isManager && pendingMatchesCount.value > 0) {
-    // Insere o botão vermelho de Pendentes logo a seguir ao "Próximo"
-    opts.splice(1, 0, { label: `Pendentes (${pendingMatchesCount.value})`, value: 'pending' })
-  }
-  
-  return opts
-})
-
-// Descobre qual é o nome (label) do filtro que está selecionado agora
-const currentFilterLabel = computed(() => {
-  const current = filterButtons.value.find(f => f.value === matchViewMode.value)
-  return current ? current.label : 'Filtro'
-})
 
 function matchSettingsColor(match, teamType) {
   if (teamType === 'A') {
@@ -839,23 +1039,70 @@ const availableMonths = computed(() => {
   })
 })
 
-// 3. O filtro real com a nova regra do "Próximo" e dos "Pendentes"
+// 1. Contadores
+const pendingMatchesCount = computed(() => {
+  const now = new Date()
+  return matches.value.filter(m => (!m.status || m.status === 'aberto') && new Date(m.date) < now).length
+})
+
+const votingMatchesCount = computed(() => {
+  return matches.value.filter(m => m.status === 'votacao').length
+})
+
+// 2. Botões organizados de forma blindada (usando push para garantir a ordem)
+const filterButtons = computed(() => {
+  const opts = [{ label: 'Próximo', value: 'next' }]
+
+  // Adiciona a aba de Votação se houver jogos nesse estado
+  if (votingMatchesCount.value > 0) {
+    opts.push({ label: `Votação (${votingMatchesCount.value})`, value: 'voting' })
+  }
+
+  // Adiciona a aba de Pendentes (Apenas para Admins)
+  const isManager = clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner
+  if (isManager && pendingMatchesCount.value > 0) {
+    opts.push({ label: `Pendentes (${pendingMatchesCount.value})`, value: 'pending' })
+  }
+
+  // Adiciona as abas fixas no fim
+  opts.push({ label: 'Mês', value: 'month' })
+  opts.push({ label: 'Todos', value: 'all' })
+  opts.push({ label: 'Finalizados', value: 'closed' })
+
+  return opts
+})
+
+// 3. Label atual
+const currentFilterLabel = computed(() => {
+  const current = filterButtons.value.find(f => f.value === matchViewMode.value)
+  return current ? current.label : 'Filtro'
+})
+
+// 4. O Filtro Real
 const filteredMatches = computed(() => {
   if (matchViewMode.value === 'all') return matches.value
-  
   const now = new Date()
-  
+
   if (matchViewMode.value === 'next') {
-    // Procura o primeiro jogo cuja data seja maior ou igual a AGORA
-    const nextMatch = matches.value.find(m => new Date(m.date) >= now)
+    // Tenta encontrar o 1º jogo aberto no futuro
+    let nextMatch = matches.value.find(m => (!m.status || m.status === 'aberto') && new Date(m.date) >= now)
+    
+    // REDE DE SEGURANÇA: Se não houver jogos no futuro, apanha o 1º jogo aberto que houver (para não ficar ecrã branco)
+    if (!nextMatch) {
+      nextMatch = matches.value.find(m => (!m.status || m.status === 'aberto'))
+    }
+    
     return nextMatch ? [nextMatch] : []
   }
   
-  if (matchViewMode.value === 'pending') {
-    // Mostra jogos não fechados e que já passaram no tempo
-    return matches.value.filter(m => m.status !== 'fechado' && new Date(m.date) < now)
+  if (matchViewMode.value === 'voting') {
+    return matches.value.filter(m => m.status === 'votacao')
   }
-  
+
+  if (matchViewMode.value === 'pending') {
+    return matches.value.filter(m => (!m.status || m.status === 'aberto') && new Date(m.date) < now)
+  }
+
   if (matchViewMode.value === 'month') {
     if (!selectedMonth.value) return []
     return matches.value.filter(m => m.date.startsWith(selectedMonth.value))
@@ -864,9 +1111,24 @@ const filteredMatches = computed(() => {
   if (matchViewMode.value === 'closed') {
     return matches.value.filter(m => m.status === 'fechado')
   }
-  
+
   return []
 })
+
+// Memória dos jogos onde o utilizador já votou
+const votedMatches = ref([])
+
+async function fetchUserVotes() {
+  if (!authStore.user) return
+  const { data } = await supabase
+    .from('match_votes')
+    .select('match_id')
+    .eq('voter_id', authStore.user.id)
+  
+  if (data) {
+    votedMatches.value = data.map(v => v.match_id)
+  }
+}
 
 const useDefaultSettings = ref(true)
 
@@ -884,9 +1146,9 @@ async function reopenMatch(match) {
       .eq('id', match.id)
 
     if (error) {
-      $q.notify({ type: 'negative', message: 'Erro ao reabrir jogo: ' + error.message, position: 'top' })
+      $q.notify({ type: 'negative', message: 'Erro ao reabrir jogo: ' + error.message })
     } else {
-      $q.notify({ type: 'positive', message: 'Jogo reaberto com sucesso!', position: 'top' })
+      $q.notify({ type: 'positive', message: 'Jogo reaberto com sucesso!' })
       // Se tiveres uma função que busca os jogos novamente (ex: fetchMatches), chama-a aqui:
       await fetchMatches() 
     }
@@ -927,6 +1189,7 @@ onMounted(async () => {
   
   await fetchClubSettings()
   await fetchMatches()
+  await fetchUserVotes()
   await fetchPendingRequests()
 
   realtimeChannel = supabase
@@ -935,9 +1198,9 @@ onMounted(async () => {
       'postgres_changes',
       { event: '*', schema: 'public', table: 'match_presences' },
       (payload) => {
-        if (selectedMatch.value) {
-          const isCurrentMatch = payload.new?.match_id === selectedMatch.value.id || 
-                                 payload.old?.match_id === selectedMatch.value.id
+        if (showPresencesModal.value && selectedMatch.value) {
+          const isCurrentMatch = payload.new?.match_id === selectedMatch.value.id ||
+                                  payload.old?.match_id === selectedMatch.value.id
           if (isCurrentMatch) {
             openPresencesModal(selectedMatch.value)
           }
@@ -1298,21 +1561,28 @@ async function openCloseModal(match) {
   matchToClose.value = match
   showCloseModal.value = true
   loadingPresences.value = true
-
-  // Vai buscar apenas os jogadores que estão confirmados e que já têm equipa definida (A ou B)
+  
+  // ADICIONADO: Puxar também os 'goals' e 'assists' da base de dados
   const { data, error } = await supabase
     .from('match_presences')
-    .select('id, team, guest_name, profiles(name), virtual_players(name)')
+    .select('id, team, guest_name, goals, assists, profiles(name), virtual_players(name)')
     .eq('match_id', match.id)
     .eq('status', 'confirmed')
     .not('team', 'is', null)
-
+    
   if (!error && data) {
     const teamA = []
     const teamB = []
     data.forEach(p => {
       const name = p.profiles?.name || p.virtual_players?.name || p.guest_name || 'Desconhecido'
-      const playerObj = { id: p.id, name, goals: 0, assists: 0, team: p.team }
+      // ADICIONADO: Usar os valores da BD, ou 0 se ainda não tiverem nada
+      const playerObj = { 
+        id: p.id, 
+        name, 
+        goals: p.goals || 0, 
+        assists: p.assists || 0, 
+        team: p.team 
+      }
       
       if (p.team === 'A') teamA.push(playerObj)
       else if (p.team === 'B') teamB.push(playerObj)
@@ -1361,24 +1631,26 @@ async function closeMatch() {
     const finalScoreA = teamAPlayers.reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0)
     const finalScoreB = teamBPlayers.reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0)
 
-    // 3. Atualizar a tabela de jogos para encerrar a partida oficialmente
+  // 3. Atualizar a tabela de jogos para encerrar a partida ou abrir votacao
+  const nextStatus = clubSettings.value?.enable_voting === true ? 'votacao' : 'fechado'
+
     const { error: matchError } = await supabase
       .from('matches')
       .update({ 
-        status: 'fechado', 
-        team_a_goals: finalScoreA, 
-        team_b_goals: finalScoreB 
-      })
+         status: nextStatus, 
+         team_a_goals: finalScoreA, 
+         team_b_goals: finalScoreB 
+       })
       .eq('id', matchToClose.value.id)
 
     if (matchError) {
       $q.notify({ type: 'negative', message: 'Erro ao fechar a partida: ' + matchError.message })
     } else {
       $q.notify({ 
-        type: 'positive', 
-        icon: 'sports_score', 
-        message: 'Partida encerrada com sucesso! Pontos e golos computados.' 
-      })
+         type: 'positive', 
+         icon: nextStatus === 'votacao' ? 'how_to_vote' : 'sports_score', 
+         message: nextStatus === 'votacao' ? 'Golos guardados! Votações abertas.' : 'Partida encerrada com sucesso!' 
+       })
       showCloseModal.value = false
       await fetchMatches() // Atualiza a listagem no ecrã principal
     }
@@ -1388,6 +1660,233 @@ async function closeMatch() {
   } finally {
     saving.value = false
   }
+}
+
+async function saveLiveStats() {
+  if (!matchToClose.value) return
+  saving.value = true
+  
+  try {
+    const allPlayers = [...(matchPlayersStats.value.teamA || []), ...(matchPlayersStats.value.teamB || [])]
+    
+    // Grava as estatísticas de cada jogador sem mudar o estado do jogo
+    for (const p of allPlayers) {
+      const goalsVal = parseInt(p.goals) || 0
+      const assistsVal = parseInt(p.assists) || 0
+      await supabase
+        .from('match_presences')
+        .update({ goals: goalsVal, assists: assistsVal })
+        .eq('id', p.id)
+    }
+    
+    // Atualiza também o total de golos da partida
+    const finalScoreA = matchPlayersStats.value.teamA.reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0)
+    const finalScoreB = matchPlayersStats.value.teamB.reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0)
+    
+    await supabase.from('matches').update({ team_a_goals: finalScoreA, team_b_goals: finalScoreB }).eq('id', matchToClose.value.id)
+
+    $q.notify({ type: 'positive', icon: 'sync', message: 'Estatísticas guardadas em tempo real!', position: 'top' })
+  } catch (err) {
+    console.error("Erro :", err)
+    $q.notify({ type: 'negative', message: 'Erro ao guardar dados.', position: 'top' })
+  } finally {
+    saving.value = false
+  }
+}
+
+// --- SISTEMA DE VOTAÇÃO (MVP & NOTAS) ---
+const showVotingModal = ref(false)
+const loadingVotes = ref(false)
+const savingVotes = ref(false)
+const votingMatch = ref(null)
+const votingPlayers = ref([])
+const selectedMVP = ref(null)
+
+async function openVotingModal(match) {
+  votingMatch.value = match
+  showVotingModal.value = true
+  loadingVotes.value = true
+  selectedMVP.value = null
+  
+  // Vamos buscar os jogadores que estiveram presentes neste jogo
+  const { data, error } = await supabase
+    .from('match_presences')
+    .select('id, profile_id, virtual_player_id, guest_name, profiles(name), virtual_players(name)')
+    .eq('match_id', match.id)
+    .eq('status', 'confirmed')
+  
+  if (data && !error) {
+    // Carrega a lista com uma nota base de "6" para toda a gente
+    votingPlayers.value = data.map(p => ({
+      id: p.id, // ID da Presença (Vital para cruzar dados)
+      profile_id: p.profile_id,
+      virtual_player_id: p.virtual_player_id,
+      name: p.profiles?.name || p.virtual_players?.name || p.guest_name || 'Convidado',
+      rating: 6 
+    }))
+  }
+  loadingVotes.value = false
+}
+
+async function submitVotes() {
+  if (!selectedMVP.value) {
+    $q.notify({ type: 'warning', message: 'Tens de eleger o teu Homem do Jogo (MVP)!', position: 'top' })
+    return
+  }
+  
+  savingVotes.value = true
+  
+  try {
+    const mvpPlayer = votingPlayers.value.find(p => p.id === selectedMVP.value)
+    
+    // 1. Gravar o MVP
+    const { error: mvpError } = await supabase.from('match_votes').insert([{
+      match_id: votingMatch.value.id,
+      voter_id: authStore.user.id,
+      mvp_profile_id: mvpPlayer.profile_id || null,
+      mvp_virtual_id: mvpPlayer.virtual_player_id || null
+    }])
+
+    // Bloqueio de Segurança: Se der erro de duplicação, barra logo aqui.
+    if (mvpError) {
+      if (mvpError.code === '23505') {
+        $q.notify({ type: 'warning', message: 'Já votaste neste jogo!', position: 'top' })
+        showVotingModal.value = false
+        return
+      }
+      throw mvpError
+    }
+
+    // 2. Gravar as Notas Individuais
+    const ratingsPayload = votingPlayers.value
+      .filter(p => p.profile_id || p.virtual_player_id)
+      .map(p => ({
+        match_id: votingMatch.value.id,
+        voter_id: authStore.user.id,
+        target_profile_id: p.profile_id || null,
+        target_virtual_id: p.virtual_player_id || null,
+        rating: p.rating
+      }))
+    
+    const { error: ratingsError } = await supabase.from('match_player_ratings').insert(ratingsPayload)
+    if (ratingsError) throw ratingsError
+
+    // 3. Sucesso! Adicionar à lista local para o botão ficar bloqueado imediatamente
+    votedMatches.value.push(votingMatch.value.id)
+    $q.notify({ type: 'positive', icon: 'how_to_vote', message: 'Votos registados com sucesso!', position: 'top' })
+    showVotingModal.value = false
+    
+  } catch (error) {
+    console.error("Erro na votação:", error)
+    $q.notify({ type: 'negative', message: 'Erro ao guardar: ' + error.message, position: 'top', timeout: 5000 })
+  } finally {
+    savingVotes.value = false
+  }
+}
+
+async function closeVoting(match) {
+  $q.dialog({
+    title: 'Apurar Resultados',
+    message: 'Esta ação encerra as urnas, calcula as médias, entrega o prémio de MVP e finaliza o jogo permanentemente. Confirmar?',
+    cancel: { flat: true, color: 'grey' },
+    persistent: true,
+    ok: { label: 'Encerrar Votação', color: 'negative', unelevated: true }
+  }).onOk(async () => {
+    saving.value = true
+    
+    // 1. Ir buscar os Votos e as Notas dadas a este jogo
+    const { data: mvpVotes } = await supabase.from('match_votes').select('*').eq('match_id', match.id)
+    const { data: ratings } = await supabase.from('match_player_ratings').select('*').eq('match_id', match.id)
+    const { data: presences } = await supabase.from('match_presences').select('id, profile_id, virtual_player_id').eq('match_id', match.id)
+    
+    // 2. Agrupar os votos para descobrir quem é o MVP!
+    let mvpCounts = {}
+    if (mvpVotes) {
+      mvpVotes.forEach(v => {
+        const target = v.mvp_profile_id ? `p_${v.mvp_profile_id}` : (v.mvp_virtual_id ? `v_${v.mvp_virtual_id}` : null)
+        if (target) mvpCounts[target] = (mvpCounts[target] || 0) + 1
+      })
+    }
+    
+    let topMvpTarget = null
+    let maxVotes = 0
+    for (const [key, val] of Object.entries(mvpCounts)) {
+      if (val > maxVotes) { maxVotes = val; topMvpTarget = key; }
+    }
+
+    // 3. Fazer a média das notas de cada jogador
+    let ratingSums = {}
+    let ratingCounts = {}
+    if (ratings) {
+      ratings.forEach(r => {
+        const target = r.target_profile_id ? `p_${r.target_profile_id}` : (r.target_virtual_id ? `v_${r.target_virtual_id}` : null)
+        if (target) {
+          ratingSums[target] = (ratingSums[target] || 0) + r.rating
+          ratingCounts[target] = (ratingCounts[target] || 0) + 1
+        }
+      })
+    }
+
+    // 4. Gravar os resultados finais diretamente na tabela das Presenças!
+    for (const p of presences) {
+      const targetKey = p.profile_id ? `p_${p.profile_id}` : (p.virtual_player_id ? `v_${p.virtual_player_id}` : null)
+      const is_mvp = targetKey === topMvpTarget && topMvpTarget !== null
+      const avg = ratingCounts[targetKey] ? (ratingSums[targetKey] / ratingCounts[targetKey]).toFixed(2) : 0
+      
+      await supabase.from('match_presences').update({ is_mvp: is_mvp, rating_average: avg }).eq('id', p.id)
+    }
+
+    // 5. Trancar o Jogo
+    await supabase.from('matches').update({ status: 'fechado' }).eq('id', match.id)
+    
+    $q.notify({ type: 'positive', icon: 'workspace_premium', message: 'Urnas fechadas! MVP apurado com sucesso.' })
+    await fetchMatches()
+    
+    // NOVO: Volta para a aba "Próximo" automaticamente para não bugar o ecrã
+    matchViewMode.value = 'next'
+    
+    saving.value = false
+  })
+}
+
+// --- SISTEMA DE VER RESULTADOS (PÓS-JOGO) ---
+const showResultsModal = ref(false)
+const loadingResults = ref(false)
+const matchResultsData = ref([])
+
+async function openResultsModal(match) {
+  showResultsModal.value = true
+  loadingResults.value = true
+  matchResultsData.value = []
+
+  // Vai buscar os jogadores confirmados e os seus dados (golos, notas, mvp)
+  const { data, error } = await supabase
+    .from('match_presences')
+    .select('id, goals, assists, rating_average, is_mvp, team, profiles(name), virtual_players(name), guest_name')
+    .eq('match_id', match.id)
+    .eq('status', 'confirmed')
+
+  if (data && !error) {
+    matchResultsData.value = data.map(p => ({
+      id: p.id,
+      name: p.profiles?.name || p.virtual_players?.name || p.guest_name || 'Desconhecido',
+      team: p.team,
+      goals: p.goals || 0,
+      assists: p.assists || 0,
+      rating: Number(p.rating_average) || 0, // Garante que é número
+      isMvp: p.is_mvp
+    }))
+    
+    // Ordena do melhor para o pior (Primeiro o MVP, depois pela Nota, depois por Golos)
+    matchResultsData.value.sort((a, b) => {
+      if (a.isMvp && !b.isMvp) return -1;
+      if (!a.isMvp && b.isMvp) return 1;
+      if (b.rating !== a.rating) return b.rating - a.rating;
+      return b.goals - a.goals;
+    })
+  }
+  
+  loadingResults.value = false
 }
   
 async function autoBalanceTeams() {
@@ -1618,11 +2117,11 @@ async function addAdmin() {
     .eq('profile_id', profileId)
 
   if (!error) {
-    $q.notify({ type: 'positive', message: 'Membro promovido a Administrador!', position: 'top' })
+    $q.notify({ type: 'positive', message: 'Membro promovido a Administrador!' })
     selectedNewAdmin.value = null
     await openStaffManager() // Atualiza as duas listas automaticamente
   } else {
-    $q.notify({ type: 'negative', message: 'Erro ao promover: ' + error.message, position: 'top' })
+    $q.notify({ type: 'negative', message: 'Erro ao promover: ' + error.message })
   }
 }
 
@@ -1647,7 +2146,7 @@ async function removeAdmin(profileId) {
       .eq('profile_id', profileId)
 
     if (!error) {
-      $q.notify({ type: 'info', message: 'Membro removido da Equipa Técnica.', position: 'top' })
+      $q.notify({ type: 'info', message: 'Membro removido da Equipa Técnica.' })
       await openStaffManager() // Atualiza as listas
     }
   })
@@ -1666,13 +2165,13 @@ async function updatePermission(profileId, field, value) {
     .select() 
     
   if (error) {
-    $q.notify({ type: 'negative', message: 'ERRO: ' + error.message, timeout: 6000, position: 'top' })
+    $q.notify({ type: 'negative', message: 'ERRO: ' + error.message, timeout: 6000 })
     await openStaffManager()
   } else if (!data || data.length === 0) {
-    $q.notify({ type: 'negative', message: 'ERRO RLS: Não tens permissões na BD para alterar isto.', timeout: 6000, position: 'top' })
+    $q.notify({ type: 'negative', message: 'ERRO RLS: Não tens permissões na BD para alterar isto.', timeout: 6000 })
     await openStaffManager()
   } else {
-    $q.notify({ type: 'positive', message: 'Permissões atualizadas!', position: 'top' })
+    $q.notify({ type: 'positive', message: 'Permissões atualizadas!' })
   }
 }
 
@@ -1682,6 +2181,7 @@ const clubSettings = ref({
   default_max_players: 14, default_price: 5, monthly_fee: 20, default_location: '', 
   recurring_day_of_week: 2, recurring_time: '21:00',
   attribute_mode: 'numeric', hide_attributes_from_members: false,
+  enable_voting: true,
   default_team_a_name: 'Equipa A', default_team_b_name: 'Equipa B' // <- NOVO
 })
 
@@ -1712,6 +2212,7 @@ async function saveClubSettings() {
     recurring_time: clubSettings.value.recurring_time,
     attribute_mode: clubSettings.value.attribute_mode,
     hide_attributes_from_members: clubSettings.value.hide_attributes_from_members,
+    enable_voting: clubSettings.value.enable_voting, 
     default_team_a_name: clubSettings.value.default_team_a_name, 
     default_team_b_name: clubSettings.value.default_team_b_name,
     default_team_a_color: clubSettings.value.default_team_a_color,

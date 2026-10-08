@@ -13,6 +13,11 @@
 //   }
 // }
 
+/* Levantar as notificações globais para não colidirem com o menu inferior (Footer) */
+.q-notifications__list--bottom {
+  margin-bottom: 75px !important;
+}
+
 /* Telemóveis pequenos (até 400px de largura - ex: iPhone SE) */
 @media (max-width: 400px) {
   body {
