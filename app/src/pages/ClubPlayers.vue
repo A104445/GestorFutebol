@@ -267,23 +267,27 @@ const groupedMembers = computed(() => {
 })
 
 const computedOverall = computed(() => {
-  const f = editForm.value
-  let overall = 70
-  switch (f.position) {
-    case 'Guarda-Redes': 
-      overall = (f.reflexes * 0.30) + (f.diving * 0.30) + (f.positioning * 0.20) + (f.handling * 0.10) + (f.kicking * 0.05) + (f.speed * 0.05); 
-      break
-    case 'Defesa': 
-      overall = (f.defending * 0.40) + (f.physical * 0.30) + (f.pace * 0.15) + (f.passing * 0.10) + (f.dribbling * 0.05); 
-      break
-    case 'M dio': 
-      overall = (f.passing * 0.30) + (f.dribbling * 0.25) + (f.pace * 0.15) + (f.shooting * 0.10) + (f.defending * 0.10) + (f.physical * 0.10); 
-      break
-    case 'Avan ado': 
-      overall = (f.shooting * 0.35) + (f.pace * 0.25) + (f.dribbling * 0.20) + (f.physical * 0.10) + (f.passing * 0.05) + (f.defending * 0.05); 
-      break
+  if (!editForm.value) return 70
+
+  if (editForm.value.position === 'GK') {
+    return Math.round((
+      Number(editForm.value.diving || 70) +
+      Number(editForm.value.handling || 70) +
+      Number(editForm.value.kicking || 70) +
+      Number(editForm.value.reflexes || 70) +
+      Number(editForm.value.speed || 70) +
+      Number(editForm.value.positioning || 70)
+    ) / 6)
+  } else {
+    return Math.round((
+      Number(editForm.value.pace || 70) +
+      Number(editForm.value.shooting || 70) +
+      Number(editForm.value.passing || 70) +
+      Number(editForm.value.dribbling || 70) +
+      Number(editForm.value.defending || 70) +
+      Number(editForm.value.physical || 70)
+    ) / 6)
   }
-  return Math.round(overall)
 })
 
 const clubSettings = ref({ attribute_mode: 'numeric', hide_attributes_from_members: false })
@@ -438,43 +442,69 @@ async function createVirtualPlayer() {
 async function savePlayerStats() {
   saving.value = true
   
-  // Deteta inteligentemente se vai gravar na tabela de virtuais ou reais
-  const table = selectedPlayer.value.is_virtual ? 'virtual_players' : 'profiles'
-  
-  // O pacote de dados blindado (com o overall a puxar diretamente do editForm para evitar NaN)
-  const payload = {
-    overall: Number(editForm.value.overall || 70),
-    position: editForm.value.position,
-    pace: Number(editForm.value.pace || 70),
-    shooting: Number(editForm.value.shooting || 70),
-    passing: Number(editForm.value.passing || 70),
-    dribbling: Number(editForm.value.dribbling || 70),
-    defending: Number(editForm.value.defending || 70),
-    physical: Number(editForm.value.physical || 70),
-    diving: Number(editForm.value.diving || 70),
-    handling: Number(editForm.value.handling || 70),
-    kicking: Number(editForm.value.kicking || 70),
-    reflexes: Number(editForm.value.reflexes || 70),
-    speed: Number(editForm.value.speed || 70),
-    positioning: Number(editForm.value.positioning || 70)
-  }
+  try {
+    const table = selectedPlayer.value.is_virtual ? 'virtual_players' : 'profiles'
+    
+    // 1. CÁLCULO DIRETO E INFALÍVEL AQUI DENTRO!
+    let finalOverall = 70
+    if (editForm.value.position === 'GK') {
+      finalOverall = Math.round((
+        Number(editForm.value.diving || 70) +
+        Number(editForm.value.handling || 70) +
+        Number(editForm.value.kicking || 70) +
+        Number(editForm.value.reflexes || 70) +
+        Number(editForm.value.speed || 70) +
+        Number(editForm.value.positioning || 70)
+      ) / 6)
+    } else {
+      finalOverall = Math.round((
+        Number(editForm.value.pace || 70) +
+        Number(editForm.value.shooting || 70) +
+        Number(editForm.value.passing || 70) +
+        Number(editForm.value.dribbling || 70) +
+        Number(editForm.value.defending || 70) +
+        Number(editForm.value.physical || 70)
+      ) / 6)
+    }
 
-  const { error } = await supabase
-    .from(table)
-    .update(payload)
-    .eq('id', selectedPlayer.value.id)
+    // 2. Prepara os dados para enviar
+    const payload = {
+      overall: finalOverall, // <--- Agora usa o cálculo exato feito na hora!
+      position: editForm.value.position,
+      pace: Number(editForm.value.pace || 70),
+      shooting: Number(editForm.value.shooting || 70),
+      passing: Number(editForm.value.passing || 70),
+      dribbling: Number(editForm.value.dribbling || 70),
+      defending: Number(editForm.value.defending || 70),
+      physical: Number(editForm.value.physical || 70),
+      diving: Number(editForm.value.diving || 70),
+      handling: Number(editForm.value.handling || 70),
+      kicking: Number(editForm.value.kicking || 70),
+      reflexes: Number(editForm.value.reflexes || 70),
+      speed: Number(editForm.value.speed || 70),
+      positioning: Number(editForm.value.positioning || 70)
+    }
 
-  if (!error) {
-    // Notificação de Sucesso NO TOPO!
+    // 3. Grava na Base de Dados
+    const { data, error } = await supabase
+      .from(table)
+      .update(payload)
+      .eq('id', selectedPlayer.value.id)
+      .select()
+
+    if (error) throw error
+    if (!data || data.length === 0) throw new Error("Bloqueado por RLS ou ID não encontrado.")
+
     $q.notify({ type: 'positive', message: 'Atributos FUT atualizados!', position: 'top' })
     showEditModal.value = false
     await fetchAllMembers()
-  } else {
-    // A MAGIA AQUI: Notificação de Erro NO TOPO para a barra inferior não esconder!
-    $q.notify({ type: 'negative', message: 'Erro ao gravar: ' + error.message, position: 'top', timeout: 5000 })
+
+  } catch (err) {
+    console.error("Erro ao guardar:", err)
+    $q.notify({ type: 'negative', message: 'Erro: ' + err.message, position: 'top', timeout: 5000 })
+  } finally {
+    saving.value = false
   }
-  
-  saving.value = false
 }
 
 async function removePlayer() {
