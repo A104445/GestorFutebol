@@ -551,13 +551,13 @@ async function savePlayerStats() {
     if (error) throw error
     if (!data || data.length === 0) throw new Error("Bloqueado por RLS ou ID não encontrado.")
 
-    $q.notify({ type: 'positive', message: 'Atributos FUT atualizados!', position: 'top' })
+    $q.notify({ type: 'positive', message: 'Atributos FUT atualizados!' })
     showEditModal.value = false
     await fetchAllMembers()
 
   } catch (err) {
     console.error("Erro ao guardar:", err)
-    $q.notify({ type: 'negative', message: 'Erro: ' + err.message, position: 'top', timeout: 5000 })
+    $q.notify({ type: 'negative', message: 'Erro: ' + err.message, timeout: 5000 })
   } finally {
     saving.value = false
   }

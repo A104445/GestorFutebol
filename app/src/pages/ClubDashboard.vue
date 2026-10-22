@@ -32,6 +32,11 @@
           <q-btn flat round icon="more_vert" color="white">
             <q-menu auto-close style="border-radius: 12px;">
               <q-list style="min-width: 160px;">
+                <q-item clickable @click="openProfileModal">
+                  <q-item-section avatar><q-icon name="manage_accounts" size="sm" color="primary" /></q-item-section>
+                  <q-item-section class="text-weight-bold">O Meu Perfil</q-item-section>
+                </q-item>
+                <q-separator />
                 <q-item clickable to="/selector" @click="clearCurrentClub">
                   <q-item-section avatar><q-icon name="swap_horiz" size="sm" color="grey-8" /></q-item-section>
                   <q-item-section class="text-weight-medium">Mudar de Clube</q-item-section>
@@ -330,13 +335,14 @@
 
     <q-dialog v-model="showCreateModal" persistent transition-show="scale" transition-hide="scale">
       <q-card style="min-width: 350px; border-radius: 20px;">
-        <q-card-section class="row items-center q-py-md border-bottom">
-          <div class="text-h6 text-weight-bold text-dark row items-center">
-            <q-icon name="event_available" class="q-mr-sm text-dark" />
+        <!-- CABEÇALHO PRETO PREMIUM -->
+        <q-card-section class="row items-center bg-dark text-white q-py-md">
+          <div class="text-subtitle1 text-weight-bolder row items-center">
+            <q-icon name="event_available" color="primary" size="sm" class="q-mr-sm" />
             Nova Convocatória
           </div>
           <q-space />
-          <q-btn icon="close" flat round dense color="grey-6" v-close-popup />
+          <q-btn icon="close" flat round dense color="grey-4" v-close-popup />
         </q-card-section>
         <q-card-section class="q-pt-lg q-px-md">
           <q-form @submit="saveMatch" class="q-gutter-md">
@@ -382,43 +388,43 @@
             </div>
 
             <!-- ZONA DOS BOTÕES -->
-            <div class="row justify-between q-mt-lg items-center">
+            <div class="column q-gutter-y-sm q-mt-lg">
               
-              <!-- Mostrar o "Gerar Mês" APENAS se for um jogo NOVO (sem ID) -->
-              <q-btn 
+              <!-- 1. Botão Principal (Publicar / Guardar) -->
+              <q-btn
+                :label="newMatch.id ? 'Guardar Alterações' : 'Publicar (Só 1)'"
+                type="submit"
+                color="primary"
+                unelevated
+                class="full-width text-weight-bold"
+                style="border-radius: 8px; padding: 10px 0;"
+                :loading="saving"
+              />
+              
+              <!-- 2. Botão Secundário (Gerar Lote) -->
+              <q-btn
                 v-if="!newMatch.id"
-                label="Gerar Mês Inteiro" 
-                icon="auto_mode" 
-                color="dark" 
-                unelevated 
-                outline 
-                class="q-px-sm text-weight-bold" 
-                style="border-radius: 8px;" 
-                @click="generateMonthlyMatchesBulk" 
-                :loading="saving" 
-              >
-                <q-tooltip>Cria jogos até ao fim do mês</q-tooltip>
-              </q-btn>
-              
-              <!-- Espaçador para empurrar os botões para a direita se estiver a editar -->
-              <q-space v-else />
+                label="Gerar Mês Inteiro"
+                icon="auto_mode"
+                color="dark"
+                unelevated
+                outline
+                class="full-width text-weight-bold"
+                style="border-radius: 8px; padding: 10px 0;"
+                @click="generateMonthlyMatchesBulk"
+                :loading="saving"
+              />
 
-              <!-- Lado Direito: Cancelar e Guardar/Publicar -->
-              <div class="row q-gutter-sm">
-                <q-btn label="Cancelar" flat color="grey-6" v-close-popup style="border-radius: 8px;" />
-                
-                <!-- O texto muda consoante estamos a editar ou a criar -->
-                <q-btn 
-                  :label="newMatch.id ? 'Guardar Alterações' : 'Publicar (Só 1)'" 
-                  type="submit" 
-                  color="primary" 
-                  unelevated 
-                  class="q-px-md" 
-                  style="border-radius: 8px;" 
-                  :loading="saving" 
-                />
-              </div>
-              
+              <!-- 3. Cancelar -->
+              <q-btn 
+                label="Cancelar" 
+                flat 
+                color="grey-6" 
+                v-close-popup 
+                class="full-width text-weight-bold"
+                style="border-radius: 8px; padding: 10px 0;" 
+              />
+
             </div>
           </q-form>
         </q-card-section>
@@ -1117,6 +1123,69 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <!-- MODAL DO PERFIL PESSOAL -->
+    <q-dialog v-model="showProfileModal">
+      <q-card style="min-width: 340px; max-width: 450px; width: 100%; border-radius: 16px;">
+        <q-card-section class="row items-center bg-dark text-white q-py-md">
+          <div class="text-subtitle1 text-weight-bold row items-center">
+            <q-icon name="badge" class="q-mr-sm text-primary" size="sm" /> O Meu Perfil
+          </div>
+          <q-space /><q-btn icon="close" flat round dense color="grey-5" v-close-popup />
+        </q-card-section>
+        
+        <q-card-section class="q-pa-md scroll" style="max-height: 70vh;">
+          <div class="column q-gutter-y-md">
+            
+            <div class="text-caption text-weight-bold text-grey-8">Dados Pessoais</div>
+            
+            <q-input outlined dense v-model="profileForm.name" label="Nome de Jogador" color="primary" bg-color="grey-1">
+              <template v-slot:prepend><q-icon name="person" color="grey-7" /></template>
+            </q-input>
+
+            <q-separator class="q-my-sm" />
+            <div class="text-caption text-weight-bold text-grey-8">Preferências de Campo</div>
+
+            <div class="row q-col-gutter-sm">
+              <div class="col-6">
+                <q-select outlined dense v-model="profileForm.position" :options="['Guarda-Redes', 'Defesa', 'Médio', 'Avançado']" label="Posição" color="primary" bg-color="grey-1">
+                  <template v-slot:prepend><q-icon name="sports_soccer" color="grey-7" size="xs" /></template>
+                </q-select>
+              </div>
+              <div class="col-6">
+                <q-select outlined dense v-model="profileForm.preferred_foot" :options="['Direito', 'Esquerdo', 'Ambos']" label="Pé Preferido" color="primary" bg-color="grey-1">
+                  <template v-slot:prepend><q-icon name="do_not_step" color="grey-7" size="xs" /></template>
+                </q-select>
+              </div>
+            </div>
+
+            <q-separator class="q-my-sm" />
+            <div class="text-caption text-weight-bold text-grey-8">Segurança</div>
+            
+            <q-input outlined dense v-model="profileForm.newPassword" :type="isPwdProfile1 ? 'password' : 'text'" label="Nova Password" placeholder="Deixa em branco para manter" color="primary" bg-color="grey-1">
+              <template v-slot:prepend><q-icon name="lock" color="grey-7" /></template>
+              <template v-slot:append>
+                <q-icon :name="isPwdProfile1 ? 'visibility_off' : 'visibility'" class="cursor-pointer" @click="isPwdProfile1 = !isPwdProfile1" />
+              </template>
+            </q-input>
+
+            <!-- Só aparece se o utilizador começar a escrever uma nova password -->
+            <q-input v-if="profileForm.newPassword" outlined dense v-model="profileForm.confirmPassword" :type="isPwdProfile2 ? 'password' : 'text'" label="Confirmar Nova Password" color="primary" bg-color="grey-1" :rules="[val => val === profileForm.newPassword || 'As passwords não coincidem']">
+              <template v-slot:prepend><q-icon name="lock_reset" color="grey-7" /></template>
+              <template v-slot:append>
+                <q-icon :name="isPwdProfile2 ? 'visibility_off' : 'visibility'" class="cursor-pointer" @click="isPwdProfile2 = !isPwdProfile2" />
+              </template>
+            </q-input>
+            
+          </div>
+        </q-card-section>
+        
+        <q-card-actions align="right" class="bg-grey-1 q-pa-md" style="border-top: 1px solid #e2e8f0;">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn color="primary" label="Guardar" unelevated style="border-radius: 8px;" @click="saveProfile" :loading="savingProfile" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   
   </q-page>
 </template>
@@ -1149,6 +1218,68 @@ function matchSettingsColor(match, teamType) {
     return clubSettings.value?.default_team_a_color || 'blue'
   } else {
     return clubSettings.value?.default_team_b_color || 'orange'
+  }
+}
+
+// --- SISTEMA DE PERFIL PESSOAL ---
+const showProfileModal = ref(false)
+const savingProfile = ref(false)
+const isPwdProfile1 = ref(true)
+const isPwdProfile2 = ref(true)
+const profileForm = ref({ name: '', position: 'Médio', preferred_foot: 'Direito', newPassword: '', confirmPassword: '' })
+
+function openProfileModal() {
+  profileForm.value.name = authStore.profile?.name || ''
+  profileForm.value.position = authStore.profile?.position || 'Médio'
+  profileForm.value.preferred_foot = authStore.profile?.preferred_foot || 'Direito'
+  profileForm.value.newPassword = ''
+  profileForm.value.confirmPassword = ''
+  isPwdProfile1.value = true
+  isPwdProfile2.value = true
+  showProfileModal.value = true
+}
+
+async function saveProfile() {
+  // Verifica se as passwords coincidem antes de enviar para o servidor
+  if (profileForm.value.newPassword && profileForm.value.newPassword !== profileForm.value.confirmPassword) {
+    $q.notify({ type: 'warning', message: 'As passwords não coincidem.' })
+    return
+  }
+
+  savingProfile.value = true
+  try {
+    const updates = {
+      name: profileForm.value.name.trim(),
+      position: profileForm.value.position,
+      preferred_foot: profileForm.value.preferred_foot
+    }
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', authStore.user.id)
+    
+    if (profileError) throw profileError
+    
+    if (authStore.profile) {
+      authStore.profile.name = updates.name
+      authStore.profile.position = updates.position
+      authStore.profile.preferred_foot = updates.preferred_foot
+    }
+    
+    if (profileForm.value.newPassword) {
+      const { error: passError } = await supabase.auth.updateUser({ 
+        password: profileForm.value.newPassword 
+      })
+      if (passError) throw passError
+    }
+    
+    $q.notify({ type: 'positive', icon: 'check_circle', message: 'Ficha de jogador atualizada!' })
+    showProfileModal.value = false
+  } catch (err) {
+    $q.notify({ type: 'negative', message: 'Erro ao guardar perfil: ' + err.message })
+  } finally {
+    savingProfile.value = false
   }
 }
 
@@ -1231,14 +1362,10 @@ const filteredMatches = computed(() => {
   const now = new Date()
 
   if (matchViewMode.value === 'next') {
-    // Tenta encontrar o 1º jogo aberto no futuro
+    // Procura apenas o 1º jogo aberto que seja no FUTURO
     let nextMatch = matches.value.find(m => (!m.status || m.status === 'aberto') && new Date(m.date) >= now)
     
-    // REDE DE SEGURANÇA: Se não houver jogos no futuro, apanha o 1º jogo aberto que houver (para não ficar ecrã branco)
-    if (!nextMatch) {
-      nextMatch = matches.value.find(m => (!m.status || m.status === 'aberto'))
-    }
-    
+    // Removida a "rede de segurança". Se não houver jogos futuros, devolve vazio para mostrar o ecrã de aviso!
     return nextMatch ? [nextMatch] : []
   }
   

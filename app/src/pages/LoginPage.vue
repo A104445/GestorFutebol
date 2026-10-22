@@ -118,13 +118,13 @@
                   <template v-slot:prepend><q-icon name="email" /></template>
                 </q-input>
 
-                <!-- PASSWORD (Mínimo 6 caracteres) -->
+                <!-- PASSWORD (Com Olhinho) -->
                 <q-input 
                   outlined 
                   bg-color="grey-1"
                   color="primary"
                   v-model="password" 
-                  type="password" 
+                  :type="isPwd ? 'password' : 'text'" 
                   label="Password" 
                   :rules="[
                     val => !!val || 'A password é obrigatória',
@@ -133,6 +133,13 @@
                   lazy-rules
                 >
                   <template v-slot:prepend><q-icon name="lock" /></template>
+                  <template v-slot:append>
+                    <q-icon 
+                      :name="isPwd ? 'visibility_off' : 'visibility'" 
+                      class="cursor-pointer" 
+                      @click="isPwd = !isPwd" 
+                    />
+                  </template>
                 </q-input>
 
                 <div v-if="authStore.error" class="text-negative text-center text-weight-bold q-mt-sm bg-red-1 q-pa-sm" style="border-radius: 8px;">
@@ -164,6 +171,11 @@
                   />
                 </div>
 
+                <!-- ESQUECI-ME DA PASSWORD (Apenas no Login) -->
+                <div v-if="!isRegisterMode" class="text-center q-mt-sm">
+                  <q-btn flat no-caps color="grey-6" size="sm" class="text-weight-bold" label="Esqueceste-te da password?" @click="showResetModal = true" />
+                </div>
+
                 <q-separator class="q-my-md" />
 
                 <!-- LOGIN COM GOOGLE -->
@@ -179,6 +191,24 @@
 
           </q-card>
         </transition>
+
+        <!-- MODAL RECUPERAÇÃO DE PASSWORD -->
+        <q-dialog v-model="showResetModal">
+          <q-card style="min-width: 320px; border-radius: 16px;">
+            <q-card-section class="bg-dark text-white row items-center q-py-md">
+              <div class="text-subtitle1 text-weight-bold">Recuperar Password</div>
+              <q-space /><q-btn icon="close" flat round dense color="grey-4" v-close-popup />
+            </q-card-section>
+            <q-card-section class="q-pa-md">
+              <div class="text-caption text-grey-8 q-mb-md">Introduz o teu email. Vais receber um link seguro para redefinir a tua password.</div>
+              <q-input outlined dense v-model="resetEmail" type="email" label="O teu Email" color="primary" bg-color="grey-1" />
+            </q-card-section>
+            <q-card-actions align="right" class="bg-grey-1 q-pa-md">
+              <q-btn label="Cancelar" flat color="grey-7" v-close-popup />
+              <q-btn label="Enviar Link" color="primary" unelevated style="border-radius: 8px;" @click="sendResetEmail" :loading="resetting" />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
 
       </q-page>
     </q-page-container>
@@ -203,6 +233,7 @@ const $q = useQuasar()
 // Variáveis do Onboarding
 const showOnboarding = ref(false)
 const slide = ref('1')
+const isPwd = ref(true)
 
 onMounted(() => {
   // Verifica se é a primeira vez que a pessoa abre a app
@@ -211,6 +242,26 @@ onMounted(() => {
     showOnboarding.value = true
   }
 })
+
+const showResetModal = ref(false)
+const resetEmail = ref('')
+const resetting = ref(false)
+
+async function sendResetEmail() {
+  if (!resetEmail.value) return
+  resetting.value = true
+  const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.value, {
+    redirectTo: window.location.origin + '/login'
+  })
+  if (error) {
+    $q.notify({ type: 'negative', message: 'Erro: ' + error.message })
+  } else {
+    $q.notify({ type: 'positive', message: 'Email de recuperação enviado! Verifica a tua caixa de correio.' })
+    showResetModal.value = false
+    resetEmail.value = ''
+  }
+  resetting.value = false
+}
 
 function finishOnboarding() {
   showOnboarding.value = false
@@ -226,7 +277,7 @@ async function handleSubmit() {
   if (isRegisterMode.value) {
     const success = await authStore.register(email.value, password.value, name.value)
     if (success) {
-      $q.notify({ type: 'positive', message: 'Conta criada com sucesso!', position: 'top' })
+      $q.notify({ type: 'positive', message: 'Conta criada com sucesso!' })
       redirectUser()
     }
   } else {
@@ -240,11 +291,11 @@ async function handleGoogleLogin() {
     provider: 'google',
     options: { redirectTo: window.location.origin }
   })
-  if (error) $q.notify({ type: 'negative', message: error.message, position: 'top' })
+  if (error) $q.notify({ type: 'negative', message: error.message })
 }
 
 function redirectUser() {
-  $q.notify({ type: 'positive', message: 'Sessão iniciada com sucesso!', position: 'top' })
+  $q.notify({ type: 'positive', message: 'Sessão iniciada com sucesso!' })
   const pendingClubId = localStorage.getItem('pending_club_join')
   if (pendingClubId) {
     localStorage.removeItem('pending_club_join')
