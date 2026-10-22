@@ -114,7 +114,7 @@
       </div>
 
       <!-- CARTÕES DE JOGO -->
-      <div class="row q-col-gutter-lg">
+      <div v-if="filteredMatches.length > 0" class="row q-col-gutter-lg">
         <div v-for="match in filteredMatches" :key="match.id" class="col-12 col-md-6 col-lg-4">
           <q-card flat class="match-card-light">
             
@@ -309,7 +309,16 @@
             </q-card-actions>
           </q-card>
         </div>
-      </div>              
+      </div>
+      
+      <!-- NOVO: MENSAGEM DE FILTRO VAZIO -->
+      <div v-else class="text-center q-pa-xl match-card-light q-mt-md">
+        <q-icon name="event_busy" size="4em" class="text-grey-4 q-mb-sm" />
+        <div class="text-subtitle1 text-weight-bold text-dark">Nenhum jogo nesta vista</div>
+        <p class="text-caption text-grey-6 q-px-md q-mt-xs">
+          Não encontrámos partidas para esta pesquisa. Muda de aba para acederes aos jogos passados ou marca um novo desafio.
+        </p>
+      </div>
     </q-pull-to-refresh>
 
     <!-- Botão Flutuante (+ Criar Partida) -->
@@ -1871,10 +1880,10 @@ async function saveLiveStats() {
     
     await supabase.from('matches').update({ team_a_goals: finalScoreA, team_b_goals: finalScoreB }).eq('id', matchToClose.value.id)
 
-    $q.notify({ type: 'positive', icon: 'sync', message: 'Estatísticas guardadas em tempo real!', position: 'top' })
+    $q.notify({ type: 'positive', icon: 'sync', message: 'Estatísticas guardadas em tempo real!' })
   } catch (err) {
     console.error("Erro :", err)
-    $q.notify({ type: 'negative', message: 'Erro ao guardar dados.', position: 'top' })
+    $q.notify({ type: 'negative', message: 'Erro ao guardar dados.' })
   } finally {
     saving.value = false
   }
@@ -1916,7 +1925,7 @@ async function openVotingModal(match) {
 
 async function submitVotes() {
   if (!selectedMVP.value) {
-    $q.notify({ type: 'warning', message: 'Tens de eleger o teu Homem do Jogo (MVP)!', position: 'top' })
+    $q.notify({ type: 'warning', message: 'Tens de eleger o teu Homem do Jogo (MVP)!' })
     return
   }
   
@@ -1936,7 +1945,7 @@ async function submitVotes() {
     // Bloqueio de Segurança: Se der erro de duplicação, barra logo aqui.
     if (mvpError) {
       if (mvpError.code === '23505') {
-        $q.notify({ type: 'warning', message: 'Já votaste neste jogo!', position: 'top' })
+        $q.notify({ type: 'warning', message: 'Já votaste neste jogo!' })
         showVotingModal.value = false
         return
       }
@@ -1959,12 +1968,12 @@ async function submitVotes() {
 
     // 3. Sucesso! Adicionar à lista local para o botão ficar bloqueado imediatamente
     votedMatches.value.push(votingMatch.value.id)
-    $q.notify({ type: 'positive', icon: 'how_to_vote', message: 'Votos registados com sucesso!', position: 'top' })
+    $q.notify({ type: 'positive', icon: 'how_to_vote', message: 'Votos registados com sucesso!' })
     showVotingModal.value = false
     
   } catch (error) {
     console.error("Erro na votação:", error)
-    $q.notify({ type: 'negative', message: 'Erro ao guardar: ' + error.message, position: 'top', timeout: 5000 })
+    $q.notify({ type: 'negative', message: 'Erro ao guardar: ' + error.message, timeout: 5000 })
   } finally {
     savingVotes.value = false
   }
@@ -2171,14 +2180,14 @@ async function autoBalanceTeams() {
       await supabase.from('match_presences').update({ team: 'B' }).eq('id', p.id)
     }
 
-    $q.notify({ type: 'positive', icon: 'shuffle', message: 'Sorteio das equipas concluído!', position: 'top' })
+    $q.notify({ type: 'positive', icon: 'shuffle', message: 'Sorteio das equipas concluído!' })
     
     // Atualiza a lista visualmente
     await openPresencesModal(selectedMatch.value)
 
   } catch (err) {
     console.error("Erro no algoritmo:", err)
-    $q.notify({ type: 'negative', message: 'Erro ao gerar equipas.', position: 'top' })
+    $q.notify({ type: 'negative', message: 'Erro ao gerar equipas.' })
   } finally {
     balancing.value = false
   }
@@ -2522,8 +2531,7 @@ function enforceSquadLimit(newLimit) {
     $q.notify({ 
       type: 'warning', 
       icon: 'content_cut',
-      message: `A lotação desceu para ${newLimit}. Os excedentes da lista de Titulares foram removidos.`, 
-      position: 'top' 
+      message: `A lotação desceu para ${newLimit}. Os excedentes da lista de Titulares foram removidos.`
     })
   }
 }

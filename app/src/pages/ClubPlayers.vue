@@ -40,14 +40,7 @@
           <div class="row q-col-gutter-xl">
             <div v-for="member in groupedMembers[section]" :key="member.id" class="col-6 col-sm-4 col-md-3 col-lg-2 flex flex-center">
               
-              <div 
-                class="fut-card shadow-10" 
-                :class="[
-                  isIcon(member) ? 'card-icon' : (shouldHideStats ? 'card-hidden' : getCardTier(member.overall)), 
-                  (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner) ? 'cursor-pointer hover-lift' : ''
-                ]"
-                @click="openEditModal(member)"
-              >
+              <div class="fut-card shadow-10" :class="[ isIcon(member) ? 'card-icon' : (member.is_in_form ? 'card-inform' : (shouldHideStats ? 'card-hidden' : getCardTier(member.overall))), (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner) ? 'cursor-pointer hover-lift' : '' ]" @click="openEditModal(member)">
                 <div class="fut-card-shine"></div>
                 <div class="fut-card-inner">
                 <!-- TOPO: Oculta o OVR mas mantém a posição -->
@@ -107,7 +100,7 @@
 
                 <div class="fut-bottom-bar text-uppercase">
                   <q-icon name="sports_soccer" size="10px" class="q-mr-xs" /> 
-                  {{ isIcon(member) ? 'ICON' : (member.is_virtual ? 'VIRTUAL' : 'PRO') }}
+                  {{ isIcon(member) ? 'ICON' : (member.is_in_form ? 'IN-FORM' : (member.is_virtual ? 'VIRTUAL' : 'PRO')) }}
                 </div>
               </div>
 
@@ -269,7 +262,7 @@ const groupedMembers = computed(() => {
 const computedOverall = computed(() => {
   if (!editForm.value) return 70
 
-  if (editForm.value.position === 'GK') {
+  if (editForm.value.position === 'Guarda-Redes') {
     return Math.round((
       Number(editForm.value.diving || 70) +
       Number(editForm.value.handling || 70) +
@@ -422,7 +415,10 @@ async function fetchAllMembers() {
     })
   }
 
-  members.value = list
+  await calculateInForms()
+  // Ativa a flag In-Form nas cartas correspondentes
+  members.value = list.map(m => ({ ...m, is_in_form: inFormPlayersIds.value.includes(m.id) }))
+
   loading.value = false
 }
 
@@ -439,6 +435,66 @@ async function createVirtualPlayer() {
   saving.value = false
 }
 
+const inFormPlayersIds = ref([])
+
+// Analisa o MÊS PASSADO e saca o Top 3 das Avaliações (Imune a bugs de Base de Dados)
+async function calculateInForms() {
+  const now = new Date()
+  let year = now.getFullYear()
+  let month = now.getMonth() // No JS o mês começa em 0 (Jan) e acaba em 11 (Dez)
+
+  if (month === 0) {
+    month = 12
+    year -= 1
+  }
+  
+  // String do mês passado (Ex: '2026-09')
+  const prevMonthStr = `${year}-${String(month).padStart(2, '0')}`
+
+  // 1. Puxa TODOS os jogos fechados (evita o erro do .like em colunas timestamp do Supabase)
+  const { data: allMatches } = await supabase.from('matches')
+    .select('id, date')
+    .eq('club_id', props.id)
+    .eq('status', 'fechado')
+
+  if (!allMatches || allMatches.length === 0) return
+
+  // 2. Filtra localmente os jogos que pertencem ao mês passado
+  const prevMonthMatches = allMatches.filter(m => m.date.startsWith(prevMonthStr))
+
+  if (prevMonthMatches.length === 0) return
+
+  const matchIds = prevMonthMatches.map(m => m.id)
+  
+  // 3. Vai buscar apenas os jogadores que receberam notas (> 0) nesses jogos
+  const { data: presences } = await supabase.from('match_presences')
+    .select('profile_id, virtual_player_id, rating_average')
+    .in('match_id', matchIds)
+    .gt('rating_average', 0) 
+
+  if (!presences || presences.length === 0) return
+
+  // 4. Soma as notas e conta os jogos para fazer a média exata
+  const stats = {}
+  presences.forEach(p => {
+    const key = p.profile_id || p.virtual_player_id
+    if (!key) return
+    if (!stats[key]) stats[key] = { id: key, sum: 0, count: 0 }
+    stats[key].sum += Number(p.rating_average)
+    stats[key].count++
+  })
+
+  // 5. Ordena por Nota Média (Desempata pelo nº de jogos realizados)
+  const ranked = Object.values(stats).map(s => ({ id: s.id, avg: s.sum / s.count, count: s.count }))
+    .sort((a, b) => {
+      if (b.avg !== a.avg) return b.avg - a.avg
+      return b.count - a.count 
+    })
+
+  // 6. Guarda o ID dos 3 craques
+  inFormPlayersIds.value = ranked.slice(0, 3).map(r => r.id)
+}
+
 async function savePlayerStats() {
   saving.value = true
   
@@ -447,7 +503,7 @@ async function savePlayerStats() {
     
     // 1. CÁLCULO DIRETO E INFALÍVEL AQUI DENTRO!
     let finalOverall = 70
-    if (editForm.value.position === 'GK') {
+    if (editForm.value.position === 'Guarda-Redes') {
       finalOverall = Math.round((
         Number(editForm.value.diving || 70) +
         Number(editForm.value.handling || 70) +
@@ -768,6 +824,32 @@ function getShortPosition(p) { return p==='Guarda-Redes'?'GR':p==='Defesa'?'DEF'
   background: linear-gradient(135deg, #334155, #0f172a, #000000); /* Tom Dark Slate Premium */
   color: #f8fafc;
 }
+
+/* =========================================
+   CARTAS IN-FORM (EQUIPA DO MÊS)
+   ========================================= */
+   .card-inform {
+  background: linear-gradient(135deg, #111111 0%, #2a2a2a 50%, #000000 100%) !important;
+  color: #facc15 !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4), 0 0 15px rgba(250, 204, 21, 0.4) !important;
+  border: 1px solid rgba(250, 204, 21, 0.5) !important;
+}
+.card-inform .fut-card-inner {
+  border: 1px solid rgba(250, 204, 21, 0.3) !important;
+  background: radial-gradient(circle at 50% 0%, rgba(42, 42, 42, 0.8) 0%, rgba(17, 17, 17, 0.9) 50%, #000 100%) !important;
+  box-shadow: inset 0 0 15px rgba(250, 204, 21, 0.1);
+}
+.card-inform .stat-val { color: #facc15; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+.card-inform .stat-label { color: #a1a1aa; }
+.card-inform .fut-rating, .card-inform .fut-name {
+  background: linear-gradient(to bottom, #fef08a 0%, #eab308 40%, #a16207 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
+}
+.card-inform .silhouette { color: #eab308; opacity: 0.9; filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.2)); }
+.card-inform .fut-bottom-bar { color: #eab308; font-weight: 900; letter-spacing: 2px; }
+
 
 /* --- OS MOTORES DE ANIMAÇÃO 3D --- */
 @keyframes spin-plasma {
