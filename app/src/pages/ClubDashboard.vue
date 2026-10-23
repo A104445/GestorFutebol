@@ -3,37 +3,40 @@
     <q-pull-to-refresh @refresh="refreshPage" color="primary" class="full-height">
       
       <!-- CABEÇALHO DO CLUBE (Bloco Escuro de Contraste) -->
-      <div class="row items-center justify-between q-mb-lg q-pa-md club-header-block text-white">
-        <div class="row items-center q-gutter-x-md">
-          <!-- Ícone do Clube (Caixa Branca para saltar à vista no fundo escuro) -->
-          <div class="bg-white flex flex-center shadow-2" style="width: 44px; height: 44px; border-radius: 12px;">
-            <q-icon name="sports_soccer" size="26px" color="green-9" />
+      <div class="row items-center justify-between q-mb-lg q-pa-md club-header-block text-white no-wrap">
+        
+        <!-- Lado Esquerdo (Nome e Código com Ellipsis) -->
+        <div class="row items-center q-gutter-x-sm col" style="min-width: 0;">
+          <!-- Ícone do Clube (Impedido de encolher) -->
+          <div class="bg-white flex flex-center shadow-2" style="width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;">
+            <q-icon name="sports_soccer" size="24px" color="green-9" />
           </div>
-          <div>
-            <h5 class="q-my-none text-weight-bolder text-white" style="letter-spacing: -0.3px; font-size: 1.4rem;">
+          
+          <div class="col" style="min-width: 0;">
+            <h5 class="q-my-none text-weight-bolder text-white text-ellipsis" style="letter-spacing: -0.3px; font-size: 1.2rem;">
               {{ clubStore.currentClub?.name || 'Carregando...' }}
             </h5>
-            <div v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" class="text-caption text-grey-4 q-mt-xs text-weight-medium">
+            <div v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" class="text-caption text-grey-4 q-mt-xs text-weight-medium text-ellipsis">
               Código: <span class="text-green-4 text-weight-bolder">{{ clubStore.currentClub?.invite_code || 'N/A' }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Menu Discreto -->
-        <div class="row q-gutter-xs items-center">
-          <q-btn v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" flat round icon="person_add" color="grey-3" @click="showRequestsModal = true">
+        <!-- Menu Discreto (Lado Direito fixo e impedido de quebrar) -->
+        <div class="row q-gutter-xs items-center no-wrap" style="flex-shrink: 0;">
+          <q-btn v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" flat round dense icon="person_add" color="grey-3" @click="showRequestsModal = true">
             <q-badge v-if="pendingRequests.length > 0" color="primary" floating rounded>{{ pendingRequests.length }}</q-badge>
           </q-btn>
-          <q-btn v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" flat round icon="manage_accounts" color="grey-3" @click="openStaffManager" />
-          <q-btn v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" flat round icon="settings" color="grey-3" @click="openClubSettings" />
+          <q-btn v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" flat round dense icon="manage_accounts" color="grey-3" @click="openStaffManager" />
+          <q-btn v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" flat round dense icon="settings" color="grey-3" @click="openClubSettings" />
           
-          <q-separator vertical class="q-mx-sm bg-grey-6" style="opacity: 0.5;" />
+          <q-separator vertical class="q-mx-xs bg-grey-6" style="opacity: 0.5;" />
           
-          <q-btn flat round icon="more_vert" color="white">
+          <q-btn flat round dense icon="more_vert" color="white">
             <q-menu auto-close style="border-radius: 12px;">
               <q-list style="min-width: 160px;">
                 <q-item clickable @click="openProfileModal">
-                  <q-item-section avatar><q-icon name="manage_accounts" size="sm" color="primary" /></q-item-section>
+                  <q-item-section avatar><q-icon name="badge" size="sm" color="primary" /></q-item-section>
                   <q-item-section class="text-weight-bold">O Meu Perfil</q-item-section>
                 </q-item>
                 <q-separator />
@@ -558,35 +561,38 @@
               </q-item-section>
               
               <q-item-section side>
-                <div v-if="selectedMatch?.status !== 'fechado' && (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.can_manage_finances)" class="row items-center no-wrap">
-                  <template v-if="clubStore.currentClub?.can_manage_teams">
-                    
-                    <!-- BOTÃO QUADRADO DA EQUIPA A -->
+                <div class="row items-center no-wrap">
+                  
+                  <!-- 1. GESTÃO DE EQUIPAS (Bloqueia se o jogo estiver fechado) -->
+                  <template v-if="selectedMatch?.status !== 'fechado' && clubStore.currentClub?.can_manage_teams">
                     <q-btn 
-                      dense unelevated label="A" class="text-weight-bolder q-mr-xs" 
-                      :color="presence.team === 'A' ? (clubSettings?.default_team_a_color || 'blue') : 'grey-3'" 
+                      dense unelevated label="A" class="text-weight-bolder q-mr-xs"
+                      :color="presence.team === 'A' ? (clubSettings?.default_team_a_color || 'blue') : 'grey-3'"
                       :text-color="presence.team === 'A' ? 'white' : 'grey-8'"
                       style="border-radius: 4px; width: 18px; height: 18px; min-height: 18px; min-width: 18px; padding: 0; font-size: 10px;"
-                      @click="assignTeam(presence, 'A')" 
+                      @click="assignTeam(presence, 'A')"
                     />
-
-                    <!-- BOTÃO QUADRADO DA EQUIPA B -->
                     <q-btn 
-                      dense unelevated label="B" class="text-weight-bolder q-mr-sm" 
-                      :color="presence.team === 'B' ? (clubSettings?.default_team_b_color || 'orange') : 'grey-3'" 
+                      dense unelevated label="B" class="text-weight-bolder q-mr-sm"
+                      :color="presence.team === 'B' ? (clubSettings?.default_team_b_color || 'orange') : 'grey-3'"
                       :text-color="presence.team === 'B' ? 'white' : 'grey-8'"
                       style="border-radius: 4px; width: 18px; height: 18px; min-height: 18px; min-width: 18px; padding: 0; font-size: 10px;"
-                      @click="assignTeam(presence, 'B')" 
+                      @click="assignTeam(presence, 'B')"
                     />
-                    
                   </template>
-                  
-                  <q-btn v-if="clubStore.currentClub?.can_manage_finances || clubStore.currentClub?.is_owner" flat round dense :icon="presence.paid ? 'price_check' : 'currency_exchange'" size="sm" :color="presence.paid ? 'positive' : 'grey-4'" @click="togglePayment(presence)" />
-                  <q-btn v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.can_manage_matches" flat round dense icon="person_remove" size="sm" color="negative" class="q-ml-xs" @click="removePresence(presence)" />
-                </div>
-                <div v-else class="row items-center">
-                  <q-icon v-if="presence.paid" name="payments" color="positive" size="sm" />
-                  <q-icon v-else name="pending" color="grey-4" size="sm" />
+
+                  <!-- 2. GESTÃO FINANCEIRA (SEMPRE DISPONÍVEL para o Tesoureiro/Dono) -->
+                  <template v-if="clubStore.currentClub?.can_manage_finances || clubStore.currentClub?.is_owner">
+                    <q-btn flat round dense :icon="presence.paid ? 'price_check' : 'currency_exchange'" size="sm" :color="presence.paid ? 'positive' : 'grey-4'" @click="togglePayment(presence)" />
+                  </template>
+                  <template v-else>
+                    <!-- Jogadores normais só veem o ícone -->
+                    <q-icon v-if="presence.paid" name="payments" color="positive" size="sm" class="q-ml-xs" />
+                    <q-icon v-else name="pending" color="grey-4" size="sm" class="q-ml-xs" />
+                  </template>
+
+                  <!-- 3. REMOVER JOGADOR (Bloqueia se o jogo estiver fechado) -->
+                  <q-btn v-if="selectedMatch?.status !== 'fechado' && (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.can_manage_matches)" flat round dense icon="person_remove" size="sm" color="negative" class="q-ml-xs" @click="removePresence(presence)" />
                 </div>
               </q-item-section>
             </q-item>
@@ -857,7 +863,9 @@
             <div>
               <div class="text-caption text-weight-bold text-grey-8 q-mb-xs">Financeiro</div>
               <q-input outlined dense type="number" step="0.5" v-model.number="clubSettings.default_price" label="Preço Padrão por Jogo (€)" class="q-mb-sm" bg-color="white" />
-              <q-input outlined dense type="number" step="1" v-model.number="clubSettings.monthly_fee" label="Mensalidade Padrão (€)" bg-color="white" />
+              <q-input outlined dense type="number" step="0.5" v-model.number="clubSettings.monthly_price_per_game" label="Preço p/ Jogo p/ Mensalistas (€)" bg-color="white">
+                <template v-slot:append><q-icon name="info" size="xs" color="grey-5"><q-tooltip>Usado para calcular a mensalidade automaticamente</q-tooltip></q-icon></template>
+              </q-input>
             </div>
 
             <!-- LOGÍSTICA -->
@@ -2424,9 +2432,19 @@ async function addSquadPlayerToMatch() {
 }
   
 async function togglePayment(presence) {
-  const nextStatus = !presence.paid
-  const { error } = await supabase.from('match_presences').update({ paid: nextStatus }).eq('id', presence.id)
-  if (!error) presence.paid = nextStatus
+  const nextPaidStatus = !presence.paid
+  
+  // 1. Atualiza a presença do jogador
+  const { error } = await supabase.from('match_presences').update({ paid: nextPaidStatus }).eq('id', presence.id)
+  
+  if (!error) {
+    presence.paid = nextPaidStatus
+    
+    // 2. Se reverteres o pagamento para "Falta Pagar", reabre o jogo automaticamente na Tesouraria
+    if (nextPaidStatus === false) {
+      await supabase.from('matches').update({ paid: false }).eq('id', presence.match_id)
+    }
+  }
 }
   
 async function assignTeam(presence, teamName) {
@@ -2564,7 +2582,7 @@ const allClubPlayersOptions = ref([])
 const showSettingsModal = ref(false)
 const savingSettings = ref(false)
 const clubSettings = ref({ 
-  default_max_players: 14, default_price: 5, monthly_fee: 20, default_location: '', 
+  default_max_players: 14, default_price: 5, monthly_price_per_game: 4, default_location: '', 
   recurring_day_of_week: 2, recurring_time: '21:00',
   attribute_mode: 'numeric', hide_attributes_from_members: false,
   enable_voting: true,
@@ -2595,7 +2613,7 @@ async function saveClubSettings() {
   const { error } = await supabase.from('clubs').update({
     default_max_players: clubSettings.value.default_max_players,
     default_price: clubSettings.value.default_price,
-    monthly_fee: clubSettings.value.monthly_fee,
+    monthly_price_per_game: clubSettings.value.monthly_price_per_game,
     default_location: clubSettings.value.default_location,
     recurring_day_of_week: clubSettings.value.recurring_day_of_week,
     recurring_time: clubSettings.value.recurring_time,

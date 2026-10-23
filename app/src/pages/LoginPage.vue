@@ -38,7 +38,7 @@
                 <q-icon name="groups" size="6em" color="amber-8" class="q-mb-md" />
                 <div class="text-h4 text-weight-bolder font-fut">O Teu Plantel</div>
                 <div class="text-body1 text-grey-4 q-mt-md px-md">
-                  Equilibra as equipas automaticamente pelo OVR e gere as presenças num piscar de olhos.
+                  Equilibra as equipas automaticamente e gere as presenças num piscar de olhos.
                 </div>
               </q-carousel-slide>
 

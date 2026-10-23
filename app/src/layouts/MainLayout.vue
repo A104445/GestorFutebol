@@ -17,10 +17,10 @@
         dense
         style="height: 65px; background: linear-gradient(135deg, #2E7D32 0%, #0A2E0C 100%);"
       >
-        <!-- Cada tab leva 'col-4' para ocupar exatamente 1/3 e 'custom-tab' para o CSS -->
-        <q-route-tab name="games" icon="calendar_today" label="Jogos" :to="clubLink" exact class="col-4 custom-tab" />
-        <q-route-tab name="players" icon="groups" label="Plantel" :to="playersLink" exact class="col-4 custom-tab" />
-        <q-route-tab name="stats" icon="leaderboard" label="Estatísticas" :to="statsLink" exact class="col-4 custom-tab" />
+        <q-route-tab name="games" icon="calendar_today" label="Jogos" :to="clubLink" exact class="custom-tab" :class="tabClass" />
+        <q-route-tab name="players" icon="groups" label="Plantel" :to="playersLink" exact class="custom-tab" :class="tabClass" />
+        <q-route-tab name="stats" icon="leaderboard" label="Estatísticas" :to="statsLink" exact class="custom-tab" :class="tabClass" />
+        <q-route-tab v-if="isTreasurer" name="finances" icon="account_balance_wallet" label="Caixa" :to="financesLink" exact class="custom-tab col-3" />
       </q-tabs>
     </q-footer>
   </q-layout>
@@ -38,6 +38,12 @@ const tab = ref('games')
 const clubLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}` : '/selector')
 const playersLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/players` : '/selector')
 const statsLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/stats` : '/selector')
+
+
+// NOVAS VARIÁVEIS DE TESOURARIA:
+const isTreasurer = computed(() => clubStore.currentClub?.can_manage_finances || clubStore.currentClub?.is_owner)
+const financesLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/finances` : '/selector')
+const tabClass = computed(() => isTreasurer.value ? 'col-3' : 'col-4')
 </script>
 
 <style scoped>

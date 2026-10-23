@@ -9,7 +9,8 @@ const routes = [
       { path: 'selector', component: () => import('pages/ClubSelector.vue') },
       { path: 'club/:id', component: () => import('pages/ClubDashboard.vue'), props: true },
       { path: 'club/:id/players', component: () => import('pages/ClubPlayers.vue'), props: true },
-      { path: 'club/:id/stats', component: () => import('pages/ClubStats.vue'), props: true } // NOVA ROTA
+      { path: 'club/:id/stats', component: () => import('pages/ClubStats.vue'), props: true },
+      { path: 'club/:id/finances', component: () => import('pages/ClubFinances.vue'), props: true }
     ]
   },
 
