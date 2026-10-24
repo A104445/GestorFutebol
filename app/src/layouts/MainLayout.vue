@@ -29,6 +29,29 @@
       </div>
     </transition>
 
+    <!-- POP-UP DE NOTIFICAÇÕES (Abaixo da PWA) -->
+    <transition name="slide-up">
+      <div v-if="showNotificationPrompt" class="fixed-bottom q-pa-md z-max" style="padding-bottom: 75px;">
+        <q-card class="bg-blue-9 text-white shadow-10 q-pa-sm" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.15);">
+          <q-card-section class="row items-center q-pa-sm">
+            <div class="bg-blue-10 flex flex-center shadow-1 q-mr-md" style="width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;">
+              <q-icon name="notifications_active" size="24px" color="white" />
+            </div>
+            <div class="col" style="min-width: 0;">
+              <div class="text-weight-bold text-subtitle2">Ativar Alertas</div>
+              <div class="text-caption text-blue-2 text-ellipsis">
+                Recebe avisos de convocatórias e quotas.
+              </div>
+            </div>
+            <div class="row q-gutter-x-xs items-center" style="flex-shrink: 0;">
+              <q-btn unelevated color="white" text-color="blue-9" label="Ativar" size="sm" class="text-weight-bold" style="border-radius: 8px;" @click="subscribeToPush" :loading="pushLoading" />
+              <q-btn flat round dense icon="close" color="blue-2" size="sm" @click="dismissNotificationPrompt" />
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
+    </transition>
+
     <!-- Barra de Navegação Inferior Discreta -->
     <q-footer v-if="clubStore.currentClub && route.path !== '/selector'" elevated class="bg-white fixed-bottom" style="z-index: 9999; position: fixed !important; bottom: 0; left: 0; width: 100%;">
       <q-tabs
@@ -53,9 +76,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useClubStore } from 'stores/useClubStore'
+import { useAuthStore } from 'stores/useAuthStore' // <- ADICIONADO
+import { supabase } from 'boot/supabase'           // <- ADICIONADO
+import { useQuasar } from 'quasar'                 // <- ADICIONADO
 
 const route = useRoute()
 const clubStore = useClubStore()
+const authStore = useAuthStore()                   // <- ADICIONADO
+const $q = useQuasar()                             // <- ADICIONADO
 const tab = ref('games')
 
 const clubLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}` : '/selector')
@@ -71,6 +99,12 @@ const tabClass = computed(() => isTreasurer.value ? 'col-3' : 'col-4')
 const showInstallPrompt = ref(false)
 let deferredPrompt = null
 const isIOS = ref(false)
+
+const showNotificationPrompt = ref(false)
+const pushLoading = ref(false)
+
+// Chave Pública VAPID de teste (Permite ligar o browser ao serviço Push)
+const publicVapidKey = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuB3IQIBR3OXj2vR_Ff8cnsxKk'
 
 onMounted(async () => {
   // 1. Deteta se é iOS (iPhone/iPad)
@@ -95,6 +129,17 @@ onMounted(async () => {
       showInstallPrompt.value = true
     }
   })
+
+  // Gatilho do Push: Verifica se o browser suporta e se ainda não foi dispensado
+  if ('serviceWorker' in navigator && 'PushManager' in window) {
+    const permission = Notification.permission
+    if (permission === 'default' && !localStorage.getItem('push_dismissed')) {
+      // Mostra o pop-up com um ligeiro atraso para não colidir com o pop-up da PWA
+      setTimeout(() => {
+        if (!showInstallPrompt.value) showNotificationPrompt.value = true
+      }, 4000)
+    }
+  }
 })
 
 async function installPwa() {
@@ -113,6 +158,56 @@ function dismissInstall() {
   showInstallPrompt.value = false
   // Guarda no localStorage para não chatear o utilizador constantemente
   localStorage.setItem('pwa_dismissed', 'true')
+}
+
+// 2. Funções de Subscrição
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
+}
+
+async function subscribeToPush() {
+  pushLoading.value = true
+  try {
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') {
+      dismissNotificationPrompt()
+      return
+    }
+
+    const registration = await navigator.serviceWorker.ready
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+    })
+
+    if (authStore.user) {
+      const { error } = await supabase.from('push_subscriptions').insert([{
+        profile_id: authStore.user.id,
+        subscription: subscription
+      }])
+      if (error) throw error
+    }
+
+    $q.notify({ type: 'positive', icon: 'notifications', message: 'Alertas ativados com sucesso!' })
+    showNotificationPrompt.value = false
+  } catch (err) {
+    console.error('Erro no Push:', err)
+    $q.notify({ type: 'negative', message: 'Não foi possível ativar as notificações.' })
+  } finally {
+    pushLoading.value = false
+  }
+}
+
+function dismissNotificationPrompt() {
+  showNotificationPrompt.value = false
+  localStorage.setItem('push_dismissed', 'true')
 }
 
 </script>

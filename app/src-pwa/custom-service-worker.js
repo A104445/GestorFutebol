@@ -26,3 +26,25 @@ if (process.env.PROD) {
     )
   )
 }
+
+// Interceta os eventos Push enviados pelo servidor
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.json() : {}
+  const title = data.title || '⚽ Gestor de Futebol'
+  
+  const options = {
+    body: data.body || 'Nova atualização no balneário!',
+    icon: 'icons/icon-192x192.png',
+    badge: 'icons/icon-128x128.png',
+    vibrate: [200, 100, 200],
+    data: { url: data.url || '/' }
+  }
+  
+  event.waitUntil(self.registration.showNotification(title, options))
+})
+
+// Lida com o clique na notificação (Abre a App)
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  event.waitUntil(clients.openWindow(event.notification.data.url))
+})
