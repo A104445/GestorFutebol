@@ -76,22 +76,20 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useClubStore } from 'stores/useClubStore'
-import { useAuthStore } from 'stores/useAuthStore' // <- ADICIONADO
-import { supabase } from 'boot/supabase'           // <- ADICIONADO
-import { useQuasar } from 'quasar'                 // <- ADICIONADO
+import { useAuthStore } from 'stores/useAuthStore' 
+import { supabase } from 'boot/supabase'           
+import { useQuasar } from 'quasar'                 
 
 const route = useRoute()
 const clubStore = useClubStore()
-const authStore = useAuthStore()                   // <- ADICIONADO
-const $q = useQuasar()                             // <- ADICIONADO
+const authStore = useAuthStore()                   
+const $q = useQuasar()                             
 const tab = ref('games')
 
 const clubLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}` : '/selector')
 const playersLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/players` : '/selector')
 const statsLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/stats` : '/selector')
 
-
-// NOVAS VARIÁVEIS DE TESOURARIA:
 const isTreasurer = computed(() => clubStore.currentClub?.can_manage_finances || clubStore.currentClub?.is_owner)
 const financesLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/finances` : '/selector')
 const tabClass = computed(() => isTreasurer.value ? 'col-3' : 'col-4')
@@ -103,38 +101,31 @@ const isIOS = ref(false)
 const showNotificationPrompt = ref(false)
 const pushLoading = ref(false)
 
-// Chave Pública VAPID de teste (Permite ligar o browser ao serviço Push)
-const publicVapidKey = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuB3IQIBR3OXj2vR_Ff8cnsxKk'
+// 1. A chave pública fica aqui, global
+const publicVapidKey = 'BAIWjICJdFp3yAQbUikAgqlj5AMRA-4leNY4dUZ7YnHoNOYEJZnzEQ-NKCf6ntQRdMJ4Uni4oXA3Evt2ejUCloQ'; 
 
 onMounted(async () => {
-  // 1. Deteta se é iOS (iPhone/iPad)
   const ua = window.navigator.userAgent
   isIOS.value = /iphone|ipad|ipod/.test(ua.toLowerCase())
 
-  // Se for iOS e ainda não fechou o aviso, mostra as instruções manuais
   if (isIOS.value && !localStorage.getItem('pwa_dismissed')) {
-    // Verifica se já está em modo standalone (já instalado)
     const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone)
     if (!isInStandaloneMode) {
       showInstallPrompt.value = true
     }
   }
 
-  // 2. Captura o evento nativo de instalação no Android/Desktop
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault()
     deferredPrompt = e
-    // Mostra o pop-up apenas se o utilizador não o dispensou antes nesta sessão
     if (!localStorage.getItem('pwa_dismissed')) {
       showInstallPrompt.value = true
     }
   })
 
-  // Gatilho do Push: Verifica se o browser suporta e se ainda não foi dispensado
   if ('serviceWorker' in navigator && 'PushManager' in window) {
     const permission = Notification.permission
     if (permission === 'default' && !localStorage.getItem('push_dismissed')) {
-      // Mostra o pop-up com um ligeiro atraso para não colidir com o pop-up da PWA
       setTimeout(() => {
         if (!showInstallPrompt.value) showNotificationPrompt.value = true
       }, 4000)
@@ -156,22 +147,24 @@ async function installPwa() {
 
 function dismissInstall() {
   showInstallPrompt.value = false
-  // Guarda no localStorage para não chatear o utilizador constantemente
   localStorage.setItem('pwa_dismissed', 'true')
 }
 
-// 2. Funções de Subscrição
+// 2. Função de conversão
 function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4)
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const rawData = window.atob(base64)
-  const outputArray = new Uint8Array(rawData.length)
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i)
+    outputArray[i] = rawData.charCodeAt(i);
   }
-  return outputArray
+  return outputArray;
 }
 
+// 3. A subscrição que já tens feita (e agora bem formatada)
 async function subscribeToPush() {
   pushLoading.value = true
   try {
@@ -184,7 +177,7 @@ async function subscribeToPush() {
     const registration = await navigator.serviceWorker.ready
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+      applicationServerKey: urlBase64ToUint8Array(publicVapidKey) // Usa a função de conversão!
     })
 
     if (authStore.user) {
