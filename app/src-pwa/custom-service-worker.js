@@ -1,13 +1,9 @@
-// src-pwa/custom-service-worker.js
-
 import { precacheAndRoute } from 'workbox-precaching'
 
-// Injeta o cache offline gerado pelo Quasar (Obrigatório manter esta linha)
 precacheAndRoute(self.__WB_MANIFEST)
 
-// O TEU CÓDIGO DE NOTIFICAÇÕES:
 self.addEventListener('push', function (event) {
-  let data = { title: 'MatchDay', body: 'Nova notificação!', url: '/' };
+  let data = { title: 'MatchDay', body: 'Nova notificação da equipa!', url: '/' };
   
   if (event.data) {
     try {
@@ -21,6 +17,7 @@ self.addEventListener('push', function (event) {
     body: data.body,
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-192x192.png',
+    vibrate: [200, 100, 200],
     data: { url: data.url || '/' }
   };
 
