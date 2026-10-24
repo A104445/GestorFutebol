@@ -1,6 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
-import webPush from "https://esm.sh/web-push@3.6.7"
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+import webpush from "npm:web-push@3.6.7"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,43 +7,54 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Permite chamadas do frontend sem bloqueios de CORS
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  // 1. Tratamento do CORS (Obrigatório para pedidos do Browser)
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
 
   try {
-    const { title, body, url } = await req.json()
+    const body = await req.json()
+    // O frontend ou trigger envia a 'subscription' (da base de dados) e a mensagem
+    const { subscription, title, message, url } = body
 
-    // Configura as tuas credenciais de envio (Garante que os Secrets estão no Supabase)
-    webPush.setVapidDetails(
-      'mailto:admin@gestorfutebol.com', 
-      Deno.env.get('VAPID_PUBLIC_KEY') || '',
-      Deno.env.get('VAPID_PRIVATE_KEY') || ''
+    // 2. Carregar as variáveis de ambiente (Secrets)
+    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
+    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
+    const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:geral@matchday.pt' // Substitui pelo teu email
+
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      throw new Error('As chaves VAPID_PUBLIC_KEY ou VAPID_PRIVATE_KEY não estão definidas nos Secrets.')
+    }
+
+    // 3. Configurar a identidade do servidor para a Google (FCM)
+    webpush.setVapidDetails(
+      vapidSubject,
+      vapidPublicKey,
+      vapidPrivateKey
     )
 
-    // Inicia o Supabase em modo Admin (ignora segurança RLS para poder ler todos os tokens)
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Vai buscar todas as subscrições dos jogadores
-    const { data: subs, error } = await supabaseAdmin.from('push_subscriptions').select('subscription')
-    if (error) throw error
-
-    // Envia o alerta para cada telemóvel registado
-    const payload = JSON.stringify({ title, body, url })
-    const promises = subs.map(sub => 
-      webPush.sendNotification(sub.subscription, payload).catch(e => console.error("Falha ao enviar para token inativo:", e))
-    )
-    
-    await Promise.all(promises)
-
-    return new Response(JSON.stringify({ success: true, sent: subs.length }), { 
-      headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+    // 4. Estruturar o pacote a enviar para o Service Worker
+    const payload = JSON.stringify({
+      title: title || 'MatchDay',
+      body: message || 'Tens um novo aviso da equipa!',
+      url: url || '/'
     })
+
+    // 5. Disparar a notificação
+    const sendResult = await webpush.sendNotification(subscription, payload)
+
+    return new Response(
+      JSON.stringify({ success: true, sent: 1, result: sendResult }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { 
-      status: 400, headers: corsHeaders 
-    })
+    console.error('Erro ao enviar push:', error)
+    
+    // Devolve o erro exato para sabermos o que falhou
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   }
 })
