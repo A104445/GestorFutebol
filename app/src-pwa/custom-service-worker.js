@@ -1,50 +1,37 @@
-/*
- * This file (which will be your service worker)
- * is picked up by the build system ONLY if
- * quasar.config file > pwa > workboxMode is set to "InjectManifest"
- */
+// src-pwa/custom-service-worker.js
 
-import { clientsClaim } from 'workbox-core'
-import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching'
-import { registerRoute, NavigationRoute } from 'workbox-routing'
+import { precacheAndRoute } from 'workbox-precaching'
 
-self.skipWaiting()
-clientsClaim()
-
-// Use with precache injection
+// Injeta o cache offline gerado pelo Quasar (Obrigatório manter esta linha)
 precacheAndRoute(self.__WB_MANIFEST)
 
-cleanupOutdatedCaches()
-
-// Non-SSR fallbacks to index.html
-// Production SSR fallbacks to offline.html (except for dev)
-if (process.env.PROD) {
-  registerRoute(
-    new NavigationRoute(
-      createHandlerBoundToURL(process.env.PWA_FALLBACK_HTML),
-      { denylist: [new RegExp(process.env.PWA_SERVICE_WORKER_REGEX), /workbox-(.)*\.js$/] }
-    )
-  )
-}
-
-// Interceta os eventos Push enviados pelo servidor
-self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : {}
-  const title = data.title || '⚽ Gestor de Futebol'
+// O TEU CÓDIGO DE NOTIFICAÇÕES:
+self.addEventListener('push', function (event) {
+  let data = { title: 'MatchDay', body: 'Nova notificação!', url: '/' };
   
-  const options = {
-    body: data.body || 'Nova atualização no balneário!',
-    icon: 'icons/icon-192x192.png',
-    badge: 'icons/icon-128x128.png',
-    vibrate: [200, 100, 200],
-    data: { url: data.url || '/' }
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data.body = event.data.text();
+    }
   }
-  
-  event.waitUntil(self.registration.showNotification(title, options))
-})
 
-// Lida com o clique na notificação (Abre a App)
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close()
-  event.waitUntil(clients.openWindow(event.notification.data.url))
-})
+  const options = {
+    body: data.body,
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-192x192.png',
+    data: { url: data.url || '/' }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  event.waitUntil(
+    clients.openWindow(event.notification.data.url)
+  );
+});
