@@ -335,14 +335,14 @@
     loading.value = false
   }
   
-  // Função geradora do texto para o WhatsApp
-  function copyReminder() {
-  if (pendentes.value.length === 0) return
-  const text = `⚽ *Aviso da Tesouraria - ${currentMonthLabel.value}*\n\nAinda existem quotas por liquidar.\n\nPor favor, regularizem o vosso pagamento assim que possível para mantermos as contas do clube em ordem. Obrigado! 🤝`
+//   // Função geradora do texto para o WhatsApp
+//   function copyReminder() {
+//   if (pendentes.value.length === 0) return
+//   const text = `⚽ *Aviso da Tesouraria - ${currentMonthLabel.value}*\n\nAinda existem quotas por liquidar.\n\nPor favor, regularizem o vosso pagamento assim que possível para mantermos as contas do clube em ordem. Obrigado! 🤝`
   
-  navigator.clipboard.writeText(text)
-  $q.notify({ type: 'positive', icon: 'whatsapp', message: 'Mensagem gerada e copiada para o WhatsApp!' })
-}
+//   navigator.clipboard.writeText(text)
+//   $q.notify({ type: 'positive', icon: 'whatsapp', message: 'Mensagem gerada e copiada para o WhatsApp!' })
+// }
 
 async function sendPushReminder() {
   if (pendentes.value.length === 0) return
