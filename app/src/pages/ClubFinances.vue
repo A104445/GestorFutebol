@@ -125,16 +125,17 @@
                 <div class="text-subtitle2 text-weight-bold text-orange-9 row items-center">
                 <q-icon name="warning" size="sm" class="q-mr-sm" /> Falta Pagar ({{ pendentes.length }})
                 </div>
-                <q-btn 
-                    v-if="pendentes.length > 0" 
-                    unelevated 
-                    color="green-9" 
-                    text-color="white" 
-                    icon="send" 
-                    label="Avisar Equipa (WhatsApp)" 
-                    class="text-weight-bold shadow-2" 
-                    style="border-radius: 10px; padding: 6px 8px;" 
-                    @click="copyReminder" 
+                <q-btn
+                    v-if="pendentes.length > 0"
+                    unelevated
+                    color="green-9"
+                    text-color="white"
+                    icon="notifications_active"
+                    label="Enviar Lembrete Pagamento"
+                    class="text-weight-bold shadow-2"
+                    style="border-radius: 10px; padding: 6px 8px;"
+                    @click="sendPushReminder"
+                    :loading="saving"
                 />
             </div>
             <q-card flat class="bg-orange-1 shadow-1" style="border-radius: 12px; border: 1px solid #ffcc80;">
@@ -341,6 +342,54 @@
   
   navigator.clipboard.writeText(text)
   $q.notify({ type: 'positive', icon: 'whatsapp', message: 'Mensagem gerada e copiada para o WhatsApp!' })
+}
+
+async function sendPushReminder() {
+  if (pendentes.value.length === 0) return
+
+  $q.notify({ type: 'info', message: 'A contactar servidor...' })
+
+  try {
+    // 1. Extrair os IDs dos jogadores reais que estão em dívida
+    const devedoresIds = pendentes.value
+      .filter(p => !p.is_virtual)
+      .map(p => p.id)
+
+    if (devedoresIds.length === 0) return
+
+    // 2. Ir à base de dados buscar os tokens Push destas pessoas
+    const { data: subs, error: subsError } = await supabase
+      .from('push_subscriptions')
+      .select('subscription')
+      .in('profile_id', devedoresIds)
+
+    if (subsError) throw subsError
+
+    if (!subs || subs.length === 0) {
+      $q.notify({ type: 'warning', message: 'Nenhum devedor tem as notificações da app ativadas.' })
+      return
+    }
+
+    // 3. Disparar a Edge Function para cada token encontrado
+    let sentCount = 0
+    for (const row of subs) {
+      await supabase.functions.invoke('send-push', {
+        body: {
+          subscription: row.subscription,
+          title: 'Tesouraria - MatchDay',
+          message: `Falta liquidar a tua quota de ${currentMonthLabel.value}.`,
+          url: `/club/${props.id}/finances`
+        }
+      })
+      sentCount++
+    }
+
+    $q.notify({ type: 'positive', icon: 'notifications_active', message: `Alerta automático enviado para ${sentCount} telemóveis!` })
+
+  } catch (error) {
+    console.error('Erro ao enviar push:', error)
+    $q.notify({ type: 'negative', message: 'Falha ao enviar notificações Push.' })
+  }
 }
 
 // Função de atualização do modo de pagamento mês a mês com reatividade corrigida
