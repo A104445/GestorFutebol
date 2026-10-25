@@ -151,6 +151,12 @@
                 <q-btn v-if="clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner" flat round dense icon="more_vert" color="grey-6">
                   <q-menu auto-close style="border-radius: 12px; min-width: 140px;">
                     <q-list>
+                      <!-- NOVO BOTÃO DE ALERTA -->
+                      <q-item clickable @click="sendAvailabilityReminder(match)">
+                        <q-item-section avatar><q-icon name="notifications_active" size="sm" color="blue-8" /></q-item-section>
+                        <q-item-section class="text-weight-bold text-blue-9">Pedir Confirmação</q-item-section>
+                      </q-item>
+                      <q-separator />
                       <q-item clickable @click="openEditMatch(match)">
                         <q-item-section avatar><q-icon name="edit" size="sm" color="grey-7" /></q-item-section>
                         <q-item-section class="text-weight-bold">Editar</q-item-section>
@@ -1586,6 +1592,28 @@ function openEditMatch(match) {
   
   newMatch.value = { ...match, date: localIso }
   showCreateModal.value = true
+}
+
+function sendAvailabilityReminder(match) {
+  if (match.confirmedCount === 0) {
+    $q.notify({ type: 'warning', message: 'Ainda não há jogadores convocados para alertar.' })
+    return
+  }
+
+  $q.dialog({
+    title: 'Pedir Confirmação',
+    message: `Vais notificar os ${match.confirmedCount} jogadores atualmente inscritos para confirmarem presença. Avançar?`,
+    cancel: { flat: true, color: 'grey-7' },
+    persistent: true,
+    ok: { label: 'Enviar Alertas', color: 'blue-8', unelevated: true }
+  }).onOk(() => {
+    notifyMatchPlayers(
+      match.id,
+      '🗓️ Confirmação de Presença',
+      'O jogo aproxima-se! Confirma se estás disponível ou se é necessário procurar um substituto.'
+    )
+    $q.notify({ type: 'positive', icon: 'notifications_active', message: 'Alertas enviados aos titulares!' })
+  })
 }
 
 async function saveMatch() {

@@ -8,7 +8,7 @@
         <!-- ECRÃ DE ONBOARDING (Explicação Inicial)                 -->
         <!-- ======================================================= -->
         <transition name="fade">
-          <div v-if="showOnboarding" class="full-width full-height absolute-full column flex-center z-top bg-dark text-white onboarding-bg">
+          <div v-if="showOnboarding" class="fixed-full column flex-center z-max text-white onboarding-bg">
             
             <q-carousel
               v-model="slide"

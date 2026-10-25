@@ -166,33 +166,47 @@ function urlBase64ToUint8Array(base64String) {
 
 // 3. A subscrição que já tens feita (e agora bem formatada)
 async function subscribeToPush() {
-  pushLoading.value = true
   try {
+    // 1. A PERMISSÃO TEM DE SER A PRIMEIRA COISA (Regra de Ouro da Apple)
+    // Sem delays, sem animações de loading antes disto!
     const permission = await Notification.requestPermission()
+    
     if (permission !== 'granted') {
       dismissNotificationPrompt()
       return
     }
 
+    // 2. Agora sim, podemos ligar o ícone de loading no botão
+    pushLoading.value = true 
+
     const registration = await navigator.serviceWorker.ready
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicVapidKey) // Usa a função de conversão!
+      applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
     })
 
+    // 3. OBRIGATÓRIO NO iPHONE: Forçar a conversão para JSON puro
+    const subData = subscription.toJSON ? subscription.toJSON() : subscription
+
+    // 4. Guardar na Base de Dados
     if (authStore.user) {
       const { error } = await supabase.from('push_subscriptions').insert([{
         profile_id: authStore.user.id,
-        subscription: subscription
+        subscription: subData // Usamos os dados purificados aqui
       }])
-      if (error) throw error
+      
+      if (error) {
+        console.error("Erro Supabase:", error)
+        throw error
+      }
     }
 
     $q.notify({ type: 'positive', icon: 'notifications', message: 'Alertas ativados com sucesso!' })
     showNotificationPrompt.value = false
+    
   } catch (err) {
     console.error('Erro no Push:', err)
-    $q.notify({ type: 'negative', message: 'Não foi possível ativar as notificações.' })
+    $q.notify({ type: 'negative', message: 'Ocorreu um erro ao guardar as notificações no servidor.' })
   } finally {
     pushLoading.value = false
   }
