@@ -1964,6 +1964,9 @@ async function closeMatch() {
   // 3. Atualizar a tabela de jogos para encerrar a partida ou abrir votacao
   const nextStatus = clubSettings.value?.enable_voting === true ? 'votacao' : 'fechado'
 
+  if (nextStatus === 'votacao') {
+    notifyMatchPlayers(matchToClose.value.id, '⚽ Votações Abertas!', 'O jogo terminou. Avalia os jogadores e elege o MVP!');
+  }
     const { error: matchError } = await supabase
       .from('matches')
       .update({ 
@@ -2172,6 +2175,7 @@ async function closeVoting(match) {
     $q.notify({ type: 'positive', icon: 'workspace_premium', message: 'Urnas fechadas! MVP apurado com sucesso.' })
     await fetchMatches()
     
+    notifyMatchPlayers(match.id, '🏆 Resultados Finais', 'As urnas fecharam! Descobre quem foi o MVP e as notas da partida.');
     // NOVO: Volta para a aba "Próximo" automaticamente para não bugar o ecrã
     matchViewMode.value = 'next'
     
@@ -2822,7 +2826,45 @@ function getNextRecurringDate(dayOfWeek, timeStr) {
     
   return localIso
 }
-  
+
+// --- SISTEMA DE NOTIFICAÇÕES PUSH ---
+async function notifyMatchPlayers(matchId, title, message) {
+  try {
+    // 1. Vai buscar os IDs reais de quem jogou
+    const { data: presences } = await supabase
+      .from('match_presences')
+      .select('profile_id')
+      .eq('match_id', matchId)
+      .eq('status', 'confirmed')
+      .not('profile_id', 'is', null)
+
+    if (!presences || presences.length === 0) return
+    const profileIds = presences.map(p => p.profile_id)
+
+    // 2. Vai buscar os tokens Push desses jogadores
+    const { data: subs } = await supabase
+      .from('push_subscriptions')
+      .select('subscription')
+      .in('profile_id', profileIds)
+
+    if (!subs || subs.length === 0) return
+
+    // 3. Dispara a Edge Function para cada um
+    for (const row of subs) {
+      supabase.functions.invoke('send-push', {
+        body: {
+          subscription: row.subscription,
+          title: title,
+          message: message,
+          url: `/club/${props.id}`
+        }
+      })
+    }
+  } catch (err) {
+    console.error('Erro ao notificar jogadores:', err)
+  }
+}
+
 async function refreshPage(done) {
   await fetchMatches()
   await fetchPendingRequests()

@@ -131,11 +131,10 @@
                     color="green-9"
                     text-color="white"
                     icon="notifications_active"
-                    label="Enviar Lembrete Pagamento"
-                    class="text-weight-bold shadow-2"
-                    style="border-radius: 10px; padding: 6px 8px;"
+                    label="Lembretes de Pagamento"
+                    class="text-weight-bold shadow-2 q-ml-sm"
+                    style="border-radius: 10px; padding: 6px 12px;"
                     @click="sendPushReminder"
-                    :loading="saving"
                 />
             </div>
             <q-card flat class="bg-orange-1 shadow-1" style="border-radius: 12px; border: 1px solid #ffcc80;">
@@ -335,56 +334,55 @@
     loading.value = false
   }
   
-//   // Função geradora do texto para o WhatsApp
-//   function copyReminder() {
-//   if (pendentes.value.length === 0) return
-//   const text = `⚽ *Aviso da Tesouraria - ${currentMonthLabel.value}*\n\nAinda existem quotas por liquidar.\n\nPor favor, regularizem o vosso pagamento assim que possível para mantermos as contas do clube em ordem. Obrigado! 🤝`
+  async function sendPushReminder() {
+  $q.notify({ type: 'info', message: 'A calcular devedores e a enviar alertas...' })
   
-//   navigator.clipboard.writeText(text)
-//   $q.notify({ type: 'positive', icon: 'whatsapp', message: 'Mensagem gerada e copiada para o WhatsApp!' })
-// }
-
-async function sendPushReminder() {
-  if (pendentes.value.length === 0) return
-
-  $q.notify({ type: 'info', message: 'A contactar servidor...' })
-
   try {
-    // 1. Extrair os IDs dos jogadores reais que estão em dívida
-    const devedoresIds = pendentes.value
-      .filter(p => !p.is_virtual)
-      .map(p => p.id)
+    const devedoresMap = new Map() // Usar Map para não enviar 2 avisos à mesma pessoa
 
-    if (devedoresIds.length === 0) return
+    // 1. Adicionar os devedores mensais (Titulares)
+    pendentes.value.filter(p => !p.is_virtual).forEach(p => {
+      devedoresMap.set(p.id, `Falta liquidar a tua quota mensal de ${currentMonthLabel.value}.`)
+    })
 
-    // 2. Ir à base de dados buscar os tokens Push destas pessoas
-    const { data: subs, error: subsError } = await supabase
-      .from('push_subscriptions')
-      .select('subscription')
-      .in('profile_id', devedoresIds)
+    // 2. Adicionar os devedores por jogo (Jogadores Ocasionais)
+    groupedDebts.value.forEach(match => {
+      match.unpaid_players.filter(p => !p.virtual_player_id).forEach(p => {
+        // Só sobrepõe a mensagem se ele já não for devedor mensal
+        if (!devedoresMap.has(p.profile_id)) {
+          devedoresMap.set(p.profile_id, `Falta liquidar o jogo do dia ${formatDate(match.date)}.`)
+        }
+      })
+    })
 
-    if (subsError) throw subsError
-
-    if (!subs || subs.length === 0) {
-      $q.notify({ type: 'warning', message: 'Nenhum devedor tem as notificações da app ativadas.' })
+    const devedoresIds = Array.from(devedoresMap.keys())
+    if (devedoresIds.length === 0) {
+      $q.notify({ type: 'warning', message: 'Nenhum devedor com conta real para notificar.' })
       return
     }
 
-    // 3. Disparar a Edge Function para cada token encontrado
+    // 3. Buscar tokens e enviar Push
+    const { data: subs } = await supabase.from('push_subscriptions').select('profile_id, subscription').in('profile_id', devedoresIds)
+    if (!subs || subs.length === 0) {
+      $q.notify({ type: 'warning', message: 'Nenhum devedor ativou as notificações no dispositivo.' })
+      return
+    }
+
     let sentCount = 0
     for (const row of subs) {
+      const avisoEspecifico = devedoresMap.get(row.profile_id)
       await supabase.functions.invoke('send-push', {
         body: {
           subscription: row.subscription,
           title: 'Tesouraria - MatchDay',
-          message: `Falta liquidar a tua quota de ${currentMonthLabel.value}.`,
+          message: avisoEspecifico,
           url: `/club/${props.id}/finances`
         }
       })
       sentCount++
     }
 
-    $q.notify({ type: 'positive', icon: 'notifications_active', message: `Alerta automático enviado para ${sentCount} telemóveis!` })
+    $q.notify({ type: 'positive', icon: 'notifications_active', message: `Alertas enviados para ${sentCount} telemóveis!` })
 
   } catch (error) {
     console.error('Erro ao enviar push:', error)
