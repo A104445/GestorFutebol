@@ -1079,10 +1079,11 @@
       </q-card>
     </q-dialog>
 
-    <q-dialog v-model="showTeamsSummaryModal">
-      <q-card style="min-width: 340px; max-width: 680px; width: 100%; border-radius: 16px;">
-            
-        <!-- CABEÇALHO DO MODAL (Agora com o ícone de prancheta 'assignment') -->
+    <q-dialog v-model="showTeamsSummaryModal" transition-show="slide-up" transition-hide="slide-down">
+      <!-- Adicionado margin-bottom: 85px para empurrar o modal fisicamente para cima -->
+      <q-card style="min-width: 340px; max-width: 680px; width: 100%; border-radius: 16px; margin-bottom: 85px;">
+                      
+        <!-- CABEÇALHO DO MODAL -->
         <q-card-section class="row items-center club-header-block text-white q-py-md">
           <div class="text-subtitle1 text-weight-bold row items-center">
             <q-icon name="assignment" size="sm" class="q-mr-sm" /> Resumo das Equipas
@@ -1090,19 +1091,19 @@
           <q-space />
           <q-btn icon="close" flat round dense color="white" v-close-popup />
         </q-card-section>
-
-        <!-- SEPARADORES (Largura total, 50% cada) -->
+        
+        <!-- SEPARADORES -->
         <q-tabs v-model="summaryTab" dense class="text-grey-7 bg-white full-width" active-color="primary">
           <q-tab name="lista" icon="format_list_bulleted" label="Ver Lista" class="text-weight-bold col" />
           <q-tab name="campo" icon="sports_soccer" label="Ver Tática" class="text-weight-bold col" />
         </q-tabs>
-
         <q-separator />
-
-        <q-tab-panels v-model="summaryTab" animated class="bg-grey-1" style="max-height: 75vh;">
-          
-          <!-- ABA 1: LISTA ORDENADA POR SETORES (Com fundos alternados e sem contagens) -->
-          <q-tab-panel name="lista" class="q-pa-md scroll">
+        
+        <!-- Removido o limite de 'max-height: 75vh' -->
+        <q-tab-panels v-model="summaryTab" animated class="bg-grey-1">
+                      
+          <!-- Removida a classe 'scroll' para forçar a janela a expandir-se toda -->
+          <q-tab-panel name="lista" class="q-pa-md">
             
             <!-- EQUIPA A -->
             <div class="q-mb-lg">
