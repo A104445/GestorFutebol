@@ -73,7 +73,11 @@
             <q-td key="rank" :props="props" class="text-left text-weight-bold" :class="getMedalColor(props.rowIndex)">{{ props.rowIndex + 1 }}</q-td>
             <q-td key="jogador" :props="props" class="text-left">
               <div class="text-weight-bold text-dark text-ellipsis" style="max-width: 130px;">{{ props.row.name }}</div>
-              <div class="text-caption text-grey-6" style="line-height: 1;">OVR: {{ props.row.overall }}</div>
+              
+              <!-- OVR protegido nas estatísticas -->
+              <div v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" class="text-caption text-grey-6" style="line-height: 1;">
+                OVR: {{ props.row.overall }}
+              </div>
             </q-td>
             <q-td key="matches" :props="props" class="text-center text-grey-8">{{ props.row.matches }}</q-td>
             <q-td key="goals" :props="props" class="text-center text-green-9 text-weight-bolder" style="font-size: 1.1em;">{{ props.row.goals }}</q-td>

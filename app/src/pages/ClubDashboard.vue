@@ -543,11 +543,17 @@
             <q-item v-for="presence in presences" :key="presence.id" class="bg-white shadow-1 border-radius-12 q-py-sm">
               <q-item-section avatar class="items-center">
                 <div class="column items-center bg-grey-9 text-white q-px-xs q-py-xs shadow-2 text-center" style="border-radius: 8px; min-width: 42px;">
-                  <span class="text-weight-bolder text-subtitle2" :class="(presence.profiles?.overall || presence.virtual_players?.overall || 70) >= 80 ? 'text-amber' : 'text-white'">
+                  
+                  <!-- OVR protegido (Mostra o número a Admins, mostra uma bola aos restantes) -->
+                  <span v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" class="text-weight-bolder text-subtitle2" :class="(presence.profiles?.overall || presence.virtual_players?.overall || 70) >= 80 ? 'text-amber' : 'text-white'">
                     {{ presence.profiles?.overall || presence.virtual_players?.overall || 70 }}
                   </span>
+                  <span v-else class="text-weight-bolder text-subtitle2 text-grey-5 q-mb-xs">
+                    <q-icon name="sports_soccer" size="xs" />
+                  </span>
+
                   <span class="text-grey-4 text-weight-bold" style="font-size: 9px; text-transform: uppercase;">
-                    {{ (presence.profiles?.position || presence.virtual_players?.position || 'MÉD').substring(0,3) }}
+                    {{ (presence.profiles?.position || presence.virtual_players?.position || 'M D').substring(0,3) }}
                   </span>
                 </div>
               </q-item-section>
