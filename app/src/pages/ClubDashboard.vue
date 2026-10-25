@@ -1074,67 +1074,206 @@
     </q-dialog>
 
     <q-dialog v-model="showTeamsSummaryModal">
-      <q-card style="min-width: 340px; max-width: 500px; width: 100%; border-radius: 16px;">
-        
+      <q-card style="min-width: 340px; max-width: 680px; width: 100%; border-radius: 16px;">
+            
+        <!-- CABEÇALHO DO MODAL (Agora com o ícone de prancheta 'assignment') -->
         <q-card-section class="row items-center club-header-block text-white q-py-md">
           <div class="text-subtitle1 text-weight-bold row items-center">
-            <q-icon name="compare_arrows" size="sm" class="q-mr-sm" /> Resumo das Equipas
+            <q-icon name="assignment" size="sm" class="q-mr-sm" /> Resumo das Equipas
           </div>
           <q-space />
           <q-btn icon="close" flat round dense color="white" v-close-popup />
         </q-card-section>
 
-        <q-card-section class="q-pa-md bg-grey-1" style="max-height: 70vh; overflow-y: auto;">
+        <!-- SEPARADORES (Largura total, 50% cada) -->
+        <q-tabs v-model="summaryTab" dense class="text-grey-7 bg-white full-width" active-color="primary">
+          <q-tab name="lista" icon="format_list_bulleted" label="Ver Lista" class="text-weight-bold col" />
+          <q-tab name="campo" icon="sports_soccer" label="Ver Tática" class="text-weight-bold col" />
+        </q-tabs>
+
+        <q-separator />
+
+        <q-tab-panels v-model="summaryTab" animated class="bg-grey-1" style="max-height: 75vh;">
           
-          <!-- EQUIPA A -->
-          <div class="q-mb-md">
-            <div class="row justify-between items-center q-mb-sm q-px-sm">
-              <div class="text-weight-bolder text-uppercase text-subtitle1" :class="`text-${clubSettings?.default_team_a_color || 'blue'}`">
-                <q-icon name="shield" /> {{ selectedMatch?.team_a_name || clubSettings?.default_team_a_name || 'Equipa A' }}
-              </div>
-              <q-chip dense :color="clubSettings?.default_team_a_color || 'blue'" text-color="white" class="text-weight-bold shadow-1">
-                Média OVR: {{ teamASummary.avgOVR }}
-              </q-chip>
-            </div>
-            <div class="bg-white shadow-1 q-pa-sm" style="border-radius: 12px; border: 1px solid #e2e8f0;">
-              <div v-if="teamASummary.players.length === 0" class="text-grey-6 text-center q-pa-sm">Nenhum jogador atribuído</div>
-              
-              <div v-for="p in teamASummary.players" :key="p.id" class="row justify-between items-center q-py-xs" style="border-bottom: 1px solid #f8fafc;">
-                <div class="text-dark text-weight-bold text-ellipsis" style="max-width: 65%;">
-                  {{ p.profiles?.name || p.virtual_players?.name || p.guest_name }}
+          <!-- ABA 1: LISTA ORDENADA POR SETORES (Com fundos alternados e sem contagens) -->
+          <q-tab-panel name="lista" class="q-pa-md scroll">
+            
+            <!-- EQUIPA A -->
+            <div class="q-mb-lg">
+              <div class="row justify-between items-center q-mb-sm q-px-sm">
+                <div class="text-weight-bolder text-uppercase text-subtitle1" :class="`text-${clubSettings?.default_team_a_color || 'blue'}`">
+                  <q-icon name="shield" /> {{ selectedMatch?.team_a_name || clubSettings?.default_team_a_name || 'Equipa A' }}
                 </div>
-                <div class="text-caption text-weight-bolder text-grey-8 bg-grey-2 q-px-sm" style="border-radius: 6px; letter-spacing: 0.5px;">
-                  {{ (p.profiles?.position || p.virtual_players?.position || 'MÉD').substring(0,3) }} | {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}
-                </div>
+                
+                <!-- OVR Médio Restrito -->
+                <q-chip 
+                  v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner"
+                  dense 
+                  :color="clubSettings?.default_team_a_color || 'blue'" 
+                  text-color="white" 
+                  class="text-weight-bold shadow-1"
+                >
+                  Média OVR: {{ teamASummary.avgOVR }}
+                </q-chip>
               </div>
-            </div>
-          </div>
 
-          <!-- EQUIPA B -->
-          <div>
-            <div class="row justify-between items-center q-mb-sm q-px-sm">
-              <div class="text-weight-bolder text-uppercase text-subtitle1" :class="`text-${clubSettings?.default_team_b_color || 'orange'}`">
-                <q-icon name="shield" /> {{ selectedMatch?.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
-              </div>
-              <q-chip dense :color="clubSettings?.default_team_b_color || 'orange'" text-color="white" class="text-weight-bold shadow-1">
-                Média OVR: {{ teamBSummary.avgOVR }}
-              </q-chip>
-            </div>
-            <div class="bg-white shadow-1 q-pa-sm" style="border-radius: 12px; border: 1px solid #e2e8f0;">
-              <div v-if="teamBSummary.players.length === 0" class="text-grey-6 text-center q-pa-sm">Nenhum jogador atribuído</div>
-              
-              <div v-for="p in teamBSummary.players" :key="p.id" class="row justify-between items-center q-py-xs" style="border-bottom: 1px solid #f8fafc;">
-                <div class="text-dark text-weight-bold text-ellipsis" style="max-width: 65%;">
-                  {{ p.profiles?.name || p.virtual_players?.name || p.guest_name }}
+              <div class="bg-white shadow-1 overflow-hidden" style="border-radius: 12px; border: 1px solid #e2e8f0;">
+                <div v-if="teamASummary.players.length === 0" class="text-grey-6 text-center q-pa-md">Nenhum jogador atribuído</div>
+                
+                <!-- LISTA CONTÍNUA DE JOGADORES (Começa na cor mais escura: bg-grey-4) -->
+                <div 
+                  v-for="(p, index) in getTeamSectors(teamASummary.players).flatMap(s => s.players)" 
+                  :key="p.id" 
+                  :class="['row justify-between items-center q-py-sm q-px-md', index % 2 === 0 ? 'bg-grey-4' : 'bg-grey-2']"
+                  :style="index !== teamASummary.players.length - 1 ? 'border-bottom: 1px solid rgba(0,0,0,0.08);' : ''"
+                >
+                  <div class="text-dark text-weight-bold text-ellipsis" style="max-width: 65%;">
+                    {{ p.profiles?.name || p.virtual_players?.name || p.guest_name }}
+                  </div>
+                  <!-- Etiqueta Branca com Controlo de Permissões no OVR -->
+                  <div class="text-caption text-weight-bold text-grey-8 bg-white q-px-sm shadow-1" style="border-radius: 6px; border: 1px solid #e2e8f0;">
+                    {{ (p.profiles?.position || p.virtual_players?.position || 'Méd').substring(0,3) }}
+                    <span v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner">
+                      | {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}
+                    </span>
+                  </div>
                 </div>
-                <div class="text-caption text-weight-bolder text-grey-8 bg-grey-2 q-px-sm" style="border-radius: 6px; letter-spacing: 0.5px;">
-                  {{ (p.profiles?.position || p.virtual_players?.position || 'MÉD').substring(0,3) }} | {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}
-                </div>
               </div>
             </div>
-          </div>
 
-        </q-card-section>
+            <!-- EQUIPA B -->
+            <div>
+              <div class="row justify-between items-center q-mb-sm q-px-sm">
+                <div class="text-weight-bolder text-uppercase text-subtitle1" :class="`text-${clubSettings?.default_team_b_color || 'orange'}`">
+                  <q-icon name="shield" /> {{ selectedMatch?.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
+                </div>
+                
+                <!-- OVR Médio Restrito -->
+                <q-chip 
+                  v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner"
+                  dense 
+                  :color="clubSettings?.default_team_b_color || 'orange'" 
+                  text-color="white" 
+                  class="text-weight-bold shadow-1"
+                >
+                  Média OVR: {{ teamBSummary.avgOVR }}
+                </q-chip>
+              </div>
+
+              <div class="bg-white shadow-1 overflow-hidden" style="border-radius: 12px; border: 1px solid #e2e8f0;">
+                <div v-if="teamBSummary.players.length === 0" class="text-grey-6 text-center q-pa-md">Nenhum jogador atribuído</div>
+                
+                <!-- LISTA CONTÍNUA DE JOGADORES (Começa na cor mais escura: bg-grey-4) -->
+                <div 
+                  v-for="(p, index) in getTeamSectors(teamBSummary.players).flatMap(s => s.players)" 
+                  :key="p.id" 
+                  :class="['row justify-between items-center q-py-sm q-px-md', index % 2 === 0 ? 'bg-grey-4' : 'bg-grey-2']"
+                  :style="index !== teamBSummary.players.length - 1 ? 'border-bottom: 1px solid rgba(0,0,0,0.08);' : ''"
+                >
+                  <div class="text-dark text-weight-bold text-ellipsis" style="max-width: 65%;">
+                    {{ p.profiles?.name || p.virtual_players?.name || p.guest_name }}
+                  </div>
+                  <!-- Etiqueta Branca com Controlo de Permissões no OVR -->
+                  <div class="text-caption text-weight-bold text-grey-8 bg-white q-px-sm shadow-1" style="border-radius: 6px; border: 1px solid #e2e8f0;">
+                    {{ (p.profiles?.position || p.virtual_players?.position || 'Méd').substring(0,3) }}
+                    <span v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner">
+                      | {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </q-tab-panel>
+
+          <!-- ABA 2: O RELVADO TÁTICO AMPLIADO -->
+          <q-tab-panel name="campo" class="q-pa-md bg-white">
+            
+            <!-- AS 3 OPÇÕES DE VISTA (Com botões maiores e mais largos) -->
+            <div class="row justify-center q-mb-md q-px-md">
+              <q-btn-group rounded outline class="shadow-1 full-width" style="max-width: 450px;">
+                <q-btn :outline="viewTeam !== 'A'" :color="clubSettings?.default_team_a_color || 'blue'" :label="selectedMatch?.team_a_name || 'Equipa A'" @click="viewTeam = 'A'" size="md" class="col text-weight-bold" />
+                <q-btn :outline="viewTeam !== 'BOTH'" color="dark" label="Ambas" @click="viewTeam = 'BOTH'" size="md" class="col text-weight-bold" />
+                <q-btn :outline="viewTeam !== 'B'" :color="clubSettings?.default_team_b_color || 'orange'" :label="selectedMatch?.team_b_name || 'Equipa B'" @click="viewTeam = 'B'" size="md" class="col text-weight-bold" />
+              </q-btn-group>
+            </div>
+
+            <!-- RELVADO ÚNICO (Equipa A ou B - Com bolinha, nome em baixo e OVR condicional para Admins) -->
+            <div v-if="viewTeam !== 'BOTH'" class="tactics-pitch-large shadow-3">
+              <div class="pitch-line-center"></div>
+              <div class="pitch-circle"></div>
+              <div class="pitch-area-top"></div>
+              <div class="pitch-area-bottom"></div>
+
+              <div class="pitch-formation">
+                <div v-for="(line, index) in getFormation(viewTeam === 'A' ? teamASummary.players : teamBSummary.players)" :key="index" class="formation-line">
+                  <div v-for="p in line" :key="p.id" class="player-dot-large">
+                    
+                    <!-- Círculo do Jogador -->
+                    <q-avatar 
+                      size="42px" 
+                      :color="viewTeam === 'A' ? (clubSettings?.default_team_a_color || 'blue') : (clubSettings?.default_team_b_color || 'orange')" 
+                      text-color="white" 
+                      class="shadow-3 text-weight-bolder" 
+                      style="border: 2px solid white; box-sizing: border-box;"
+                    >
+                      <!-- O Overall só aparece centrado no círculo para Admins/Donos -->
+                      <div v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" class="flex flex-center full-width full-height" style="font-size: 20px; font-weight: 900;">
+                        {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}
+                      </div>
+                    </q-avatar>
+                    
+                    <!-- Nome do Jogador por baixo -->
+                    <div class="player-name-tactics text-ellipsis">
+                      {{ p.profiles?.name?.split(' ')[0] || p.virtual_players?.name?.split(' ')[0] || p.guest_name }}
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RELVADO PARTILHADO (Ambas as Equipas Frente a Frente) -->
+            <div v-else class="tactics-pitch-large shadow-3 relative-position" style="display: flex; flex-direction: column; justify-content: space-between;">
+              <div class="pitch-line-center"></div>
+              <div class="pitch-circle"></div>
+              <div class="pitch-area-top"></div>
+              <div class="pitch-area-bottom"></div>
+
+              <!-- METADE DE CIMA: EQUIPA B -->
+              <div class="column justify-around full-width" style="height: 48%; z-index: 10; padding: 5px 0;">
+                <div class="text-center text-weight-bolder text-white absolute q-px-sm" style="top: 5px; left: 50%; transform: translateX(-50%); font-size: 10px; background: rgba(0,0,0,0.6); border-radius: 4px;">
+                  {{ selectedMatch?.team_b_name || 'Equipa B' }}
+                </div>
+                
+                <div v-for="(line, index) in getFormationReversed(teamBSummary.players)" :key="'b-'+index" class="formation-line">
+                  <div v-for="p in line" :key="p.id" class="player-dot-large">
+                    <div :class="['player-badge-name', `bg-${clubSettings?.default_team_b_color || 'orange'}`]">
+                      {{ p.profiles?.name?.split(' ')[0] || p.virtual_players?.name?.split(' ')[0] || p.guest_name }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- METADE DE BAIXO: EQUIPA A -->
+              <div class="column justify-around full-width" style="height: 48%; z-index: 10; padding: 5px 0;">
+                <div class="text-center text-weight-bolder text-white absolute q-px-sm" style="bottom: 5px; left: 50%; transform: translateX(-50%); font-size: 10px; background: rgba(0,0,0,0.6); border-radius: 4px;">
+                  {{ selectedMatch?.team_a_name || 'Equipa A' }}
+                </div>
+
+                <div v-for="(line, index) in getFormation(teamASummary.players)" :key="'a-'+index" class="formation-line">
+                  <div v-for="p in line" :key="p.id" class="player-dot-large">
+                    <div :class="['player-badge-name', `bg-${clubSettings?.default_team_a_color || 'blue'}`]">
+                      {{ p.profiles?.name?.split(' ')[0] || p.virtual_players?.name?.split(' ')[0] || p.guest_name }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </q-tab-panel>
+
+        </q-tab-panels>
       </q-card>
     </q-dialog>
 
@@ -1819,6 +1958,96 @@ async function handleLogout() {
   clubStore.setClub(null)
   router.push('/login')
 }
+
+// VARIÁVEIS DO QUADRO TÁTICO
+const summaryTab = ref('lista')
+const viewTeam = ref('A')
+
+// Separa a equipa em "Linhas" de forma dinâmica
+function getFormation(players) {
+  if (!players || players.length === 0) return []
+  
+  // Função inteligente que olha apenas para a 1ª letra (ignora erros de acentos)
+  const getSector = (p) => {
+    const rawPos = p.profiles?.position || p.virtual_players?.position || 'M'
+    const letter = rawPos.trim().toUpperCase().charAt(0)
+    
+    if (letter === 'G') return 'GR'
+    if (letter === 'D') return 'DEF'
+    if (letter === 'A') return 'AV'
+    return 'MED' // Por defeito vai para o meio-campo
+  }
+  
+  // 1. Agrupar quem está em campo por posição
+  const gr = players.filter(p => getSector(p) === 'GR')
+  const def = players.filter(p => getSector(p) === 'DEF')
+  const med = players.filter(p => getSector(p) === 'MED')
+  const av = players.filter(p => getSector(p) === 'AV')
+  
+  // 2. O ".filter" final é o que faz a magia: se uma equipa jogar sem avançados, 
+  // essa linha é apagada e o campo distribui o espaço pelos restantes.
+  return [av, med, def, gr].filter(line => line.length > 0)
+}
+
+// Inverte a formação para a Equipa B atacar de cima para o centro
+function getFormationReversed(players) {
+  if (!players || players.length === 0) return []
+  
+  const getSector = (p) => {
+    const rawPos = p.profiles?.position || p.virtual_players?.position || 'M'
+    const letter = rawPos.trim().toUpperCase().charAt(0)
+    
+    if (letter === 'G') return 'GR'
+    if (letter === 'D') return 'DEF'
+    if (letter === 'A') return 'AV'
+    return 'MED'
+  }
+  
+  const gr = players.filter(p => getSector(p) === 'GR')
+  const def = players.filter(p => getSector(p) === 'DEF')
+  const med = players.filter(p => getSector(p) === 'MED')
+  const av = players.filter(p => getSector(p) === 'AV')
+  
+  // Ordem invertida: GR em cima, depois Defesas, Médios e Avançados encostados ao meio-campo
+  return [gr, def, med, av].filter(line => line.length > 0)
+}
+
+// Agrupa e ordena os jogadores por setores e overall decrescente para a Visão por Lista
+function getTeamSectors(players) {
+  const sectors = {
+    'Guarda-Redes': [],
+    'Defesas': [],
+    'Médios': [],
+    'Avançados': []
+  }
+
+  players.forEach(p => {
+    const rawPos = p.profiles?.position || p.virtual_players?.position || 'Médio'
+    const letter = rawPos.trim().toUpperCase().charAt(0)
+    
+    if (letter === 'G') sectors['Guarda-Redes'].push(p)
+    else if (letter === 'D') sectors['Defesas'].push(p)
+    else if (letter === 'A') sectors['Avançados'].push(p)
+    else sectors['Médios'].push(p)
+  })
+
+  // Ordenar cada setor por Overall decrescente (do melhor para o pior)
+  Object.keys(sectors).forEach(key => {
+    sectors[key].sort((a, b) => {
+      const ovrA = a.profiles?.overall || a.virtual_players?.overall || 70
+      const ovrB = b.profiles?.overall || b.virtual_players?.overall || 70
+      return ovrB - ovrA
+    })
+  })
+
+  return Object.entries(sectors)
+    .filter(entry => entry[1].length > 0)
+    .map(entry => ({
+      name: entry[0],
+      players: entry[1]
+    }))
+}
+
 // --- ESTADO DAS PRESENÇAS ---
 const showPresencesModal = ref(false)
 const selectedMatch = ref(null)
@@ -3108,5 +3337,168 @@ async function refreshPage(done) {
 
 .compact-select :deep(.q-field__append) {
   padding-left: 0 !important;
+}
+
+/* =========================================
+   O RELVADO TÁTICO (CSS PURO)
+========================================= */
+.tactics-pitch {
+  position: relative;
+  background-color: #2E7D32; /* Verde Relvado Base */
+  /* Efeito de cortes na relva (riscas claras e escuras) */
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.05) 40px, rgba(255,255,255,0.05) 80px);
+  border: 3px solid white;
+  border-radius: 8px;
+  height: 480px;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Linhas do Campo */
+.pitch-line-center { position: absolute; top: 50%; left: 0; right: 0; height: 3px; background: white; transform: translateY(-50%); }
+.pitch-circle { position: absolute; top: 50%; left: 50%; width: 80px; height: 80px; border: 3px solid white; border-radius: 50%; transform: translate(-50%, -50%); }
+.pitch-area-top, .pitch-area-bottom { position: absolute; left: 50%; width: 140px; height: 70px; border: 3px solid white; transform: translateX(-50%); }
+.pitch-area-top { top: 0; border-top: none; }
+.pitch-area-bottom { bottom: 0; border-bottom: none; }
+
+/* Nome do jogador em destaque */
+.player-name {
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 3px 6px;
+  border-radius: 4px;
+  margin-top: 6px;
+  max-width: 100%;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+/* Relvado mais alto e espaçoso */
+.tactics-pitch-large {
+  position: relative;
+  background-color: #2E7D32;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 45px, rgba(255,255,255,0.05) 45px, rgba(255,255,255,0.05) 90px);
+  border: 3px solid white;
+  border-radius: 8px;
+  height: 560px; /* Aumentado para dar espaço total */
+  width: 100%;
+  overflow: hidden;
+}
+
+.player-badge-name {
+  color: white;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 6px 10px;
+  border-radius: 16px; /* Formato pílula/bola moderna */
+  border: 2px solid white;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+/* Pílula maior para o modo de equipa única (mais espaço e destaque) */
+.player-badge-single {
+  color: white;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 2.5px solid white;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+/* =========================================
+   AJUSTES TÁTICOS (TAMANHOS E ALINHAMENTO)
+========================================= */
+
+/* 1. Nome do jogador por baixo da bola na tática individual (Aumentado) */
+.player-name-tactics {
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  font-size: 14px; /* Aumentado de 10px para 11px */
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-top: 6px;
+  max-width: 90px;
+  text-align: center;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 2. Pílulas do modo partilhado "Ambas" (Maiores e com alinhamento perfeito ao centro) */
+.player-name-mini {
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  font-size: 10px; /* Aumentado de 8px para 10px */
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+  max-width: 75px; /* Alargado para caber melhor os nomes */
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================================
+   ALINHAMENTO GEOMÉTRICO PERFEITO (CENTRO)
+========================================= */
+
+.pitch-formation, .pitch-formation-mini {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  padding: 15px 10px;
+  z-index: 10;
+}
+
+/* Relvado com largura total e mais margem horizontal */
+.tactics-pitch-large {
+  position: relative;
+  background-color: #2E7D32;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 45px, rgba(255,255,255,0.05) 45px, rgba(255,255,255,0.05) 90px);
+  border: 3px solid white;
+  border-radius: 8px;
+  height: 580px;
+  width: 100%;
+  max-width: 620px; /* Alargado para afastar os jogadores nas pontas */
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+/* Linha com maior espaçamento (gap) entre jogadores */
+.formation-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  gap: 50px; /* Aumentado para afastar mais os colegas na horizontal */
+}
+
+/* Cada slot de jogador tem uma largura fixa para alinhar na perfeição */
+.player-dot, .player-dot-large, .player-dot-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 75px;
 }
 </style>
