@@ -206,7 +206,9 @@
   import { useAuthStore } from 'stores/useAuthStore'
   import { useClubStore } from 'stores/useClubStore'
   import { useQuasar } from 'quasar'
-  
+  import { useRouter } from 'vue-router'
+
+  const router = useRouter()
   const props = defineProps(['id'])
   const authStore = useAuthStore()
   const clubStore = useClubStore()
@@ -455,6 +457,14 @@ async function updateBillingMode(member, newMode) {
     if (authStore.user && (!clubStore.currentClub || clubStore.currentClub.id !== props.id)) {
       const { data } = await supabase.from('club_members').select('*, clubs(*)').eq('club_id', props.id).eq('profile_id', authStore.user.id).single()
       if (data) clubStore.setClub(data.clubs)
+    }
+
+    // BLOQUEIO DE SEGURANÇA URL
+    const isTreasurer = clubStore.currentClub?.can_manage_finances || clubStore.currentClub?.is_owner
+    if (!isTreasurer) {
+      $q.notify({ type: 'negative', icon: 'security', message: 'Acesso restrito à tesouraria.' })
+      router.push(`/club/${props.id}`)
+      return
     }
     await fetchFinances()
   })

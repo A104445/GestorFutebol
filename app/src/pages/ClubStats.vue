@@ -75,7 +75,7 @@
               <div class="text-weight-bold text-dark text-ellipsis" style="max-width: 130px;">{{ props.row.name }}</div>
               
               <!-- OVR protegido nas estatísticas -->
-              <div v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" class="text-caption text-grey-6" style="line-height: 1;">
+              <div v-if="canSeeStats" class="text-caption text-grey-6" style="line-height: 1;">
                 OVR: {{ props.row.overall }}
               </div>
             </q-td>
@@ -102,7 +102,7 @@
 </template>
   
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { supabase } from 'boot/supabase'
 import { useAuthStore } from 'stores/useAuthStore' // <- Importar Auth
 import { useClubStore } from 'stores/useClubStore' // <- Importar Club
@@ -257,6 +257,9 @@ onMounted(async () => {
     }
   }
 
+  const { data: settingsData } = await supabase.from('clubs').select('hide_attributes_from_members').eq('id', props.id).single()
+  if (settingsData) clubSettings.value = settingsData
+
   // 2. Continua com o cálculo das estatísticas
   await calculateStats()
 })
@@ -267,6 +270,13 @@ onMounted(async () => {
     if (index === 2) return 'text-brown-6' // Bronze
     return 'text-grey-9'
   }
+
+  const clubSettings = ref({ hide_attributes_from_members: false })
+
+const canSeeStats = computed(() => {
+  const isManager = clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner
+  return !clubSettings.value?.hide_attributes_from_members || isManager
+})
   
   </script>
 

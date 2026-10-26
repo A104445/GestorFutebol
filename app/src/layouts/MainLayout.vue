@@ -164,49 +164,61 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-// 3. A subscrição que já tens feita (e agora bem formatada)
+// 3. A subscrição que já tens feita (Agora com debug para detetar falhas)
 async function subscribeToPush() {
   try {
-    // 1. A PERMISSÃO TEM DE SER A PRIMEIRA COISA (Regra de Ouro da Apple)
-    // Sem delays, sem animações de loading antes disto!
-    const permission = await Notification.requestPermission()
+    pushLoading.value = true
     
-    if (permission !== 'granted') {
+    // 1. Verificar se o browser suporta Notificações
+    if (!('Notification' in window)) {
+      $q.notify({ type: 'negative', message: 'O teu browser atual não suporta Notificações Web.' })
       dismissNotificationPrompt()
       return
     }
 
-    // 2. Agora sim, podemos ligar o ícone de loading no botão
-    pushLoading.value = true 
+    // 2. Pedir Permissão DIRETAMENTE após o clique
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') {
+      $q.notify({ type: 'warning', message: 'Permissão negada. Ativa as notificações nas definições do browser.' })
+      dismissNotificationPrompt()
+      return
+    }
 
+    // 3. Verificar se o Service Worker existe
+    if (!('serviceWorker' in navigator)) {
+      $q.notify({ type: 'negative', message: 'O Service Worker não está ativo. Estás a correr com "quasar dev -m pwa"?' })
+      return
+    }
+
+    // 4. Efetuar a Subscrição
     const registration = await navigator.serviceWorker.ready
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
     })
 
-    // 3. OBRIGATÓRIO NO iPHONE: Forçar a conversão para JSON puro
+    // 5. Purificação para envio à Base de Dados
     const subData = subscription.toJSON ? subscription.toJSON() : subscription
 
-    // 4. Guardar na Base de Dados
+    // 6. Gravar
     if (authStore.user) {
       const { error } = await supabase.from('push_subscriptions').insert([{
         profile_id: authStore.user.id,
-        subscription: subData // Usamos os dados purificados aqui
+        subscription: subData
       }])
       
-      if (error) {
+      if (error && error.code !== '23505') { // Ignora erro de "já existe"
         console.error("Erro Supabase:", error)
         throw error
       }
     }
-
-    $q.notify({ type: 'positive', icon: 'notifications', message: 'Alertas ativados com sucesso!' })
+    
+    $q.notify({ type: 'positive', icon: 'notifications_active', message: 'Alertas ativados com sucesso!' })
     showNotificationPrompt.value = false
     
   } catch (err) {
     console.error('Erro no Push:', err)
-    $q.notify({ type: 'negative', message: 'Ocorreu um erro ao guardar as notificações no servidor.' })
+    $q.notify({ type: 'negative', message: 'Erro: ' + (err.message || 'Falha ao ativar notificações.') })
   } finally {
     pushLoading.value = false
   }

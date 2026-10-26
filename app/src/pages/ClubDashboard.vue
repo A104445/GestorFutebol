@@ -545,7 +545,7 @@
                 <div class="column items-center bg-grey-9 text-white q-px-xs q-py-xs shadow-2 text-center" style="border-radius: 8px; min-width: 42px;">
                   
                   <!-- OVR protegido (Mostra o número a Admins, mostra uma bola aos restantes) -->
-                  <span v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" class="text-weight-bolder text-subtitle2" :class="(presence.profiles?.overall || presence.virtual_players?.overall || 70) >= 80 ? 'text-amber' : 'text-white'">
+                  <span v-if="canSeeStats" class="text-weight-bolder text-subtitle2" :class="(presence.profiles?.overall || presence.virtual_players?.overall || 70) >= 80 ? 'text-amber' : 'text-white'">
                     {{ presence.profiles?.overall || presence.virtual_players?.overall || 70 }}
                   </span>
                   <span v-else class="text-weight-bolder text-subtitle2 text-grey-5 q-mb-xs">
@@ -593,14 +593,15 @@
                     />
                   </template>
 
-                  <!-- 2. GESTÃO FINANCEIRA (SEMPRE DISPONÍVEL para o Tesoureiro/Dono) -->
+                  <!-- 2. GESTÃO FINANCEIRA (Visível APENAS para Tesoureiro/Dono) -->
                   <template v-if="clubStore.currentClub?.can_manage_finances || clubStore.currentClub?.is_owner">
-                    <q-btn flat round dense :icon="presence.paid ? 'price_check' : 'currency_exchange'" size="sm" :color="presence.paid ? 'positive' : 'grey-4'" @click="togglePayment(presence)" />
-                  </template>
-                  <template v-else>
-                    <!-- Jogadores normais só veem o ícone -->
-                    <q-icon v-if="presence.paid" name="payments" color="positive" size="sm" class="q-ml-xs" />
-                    <q-icon v-else name="pending" color="grey-4" size="sm" class="q-ml-xs" />
+                    <q-btn 
+                      flat round dense 
+                      :icon="presence.paid ? 'price_check' : 'currency_exchange'" 
+                      size="sm" 
+                      :color="presence.paid ? 'positive' : 'grey-4'" 
+                      @click="togglePayment(presence)" 
+                    />
                   </template>
 
                   <!-- 3. REMOVER JOGADOR (Bloqueia se o jogo estiver fechado) -->
@@ -722,27 +723,29 @@
         </q-card-section>
         
         <q-card-actions align="between" class="q-pa-md bg-grey-1" style="border-top: 1px solid #e2e8f0;">
-          <!-- NOVO: Botão de guardar o progresso e manter o jogo aberto -->
-          <q-btn 
-            label="Guardar (Ao Vivo)" 
-            color="blue-8" 
-            icon="save" 
-            unelevated 
-            style="border-radius: 8px;" 
-            :loading="saving" 
-            @click="saveLiveStats" 
+          <!-- Botão de guardar o progresso -->
+          <q-btn
+            v-if="clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner"
+            label="Guardar (Ao Vivo)"
+            color="blue-8"
+            icon="save"
+            unelevated
+            style="border-radius: 8px;"
+            :loading="saving"
+            @click="saveLiveStats"
           />
-          
-          <!-- O teu botão antigo de Trancar, renomeado para ser mais claro -->
-          <q-btn 
-            label="Encerrar Partida" 
-            color="amber-8" 
-            text-color="dark" 
-            class="text-weight-bolder shadow-1" 
-            style="border-radius: 8px;" 
-            unelevated 
-            :loading="saving" 
-            @click="closeMatch" 
+                    
+          <!-- Botão de Encerrar Partida -->
+          <q-btn
+            v-if="clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner"
+            label="Encerrar Partida"
+            color="amber-8"
+            text-color="dark"
+            class="text-weight-bolder shadow-1"
+            style="border-radius: 8px;"
+            unelevated
+            :loading="saving"
+            @click="closeMatch"
           />
         </q-card-actions>
         
@@ -1114,7 +1117,7 @@
                 
                 <!-- OVR Médio Restrito -->
                 <q-chip 
-                  v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner"
+                  v-if="canSeeStats"
                   dense 
                   :color="clubSettings?.default_team_a_color || 'blue'" 
                   text-color="white" 
@@ -1140,7 +1143,7 @@
                   <!-- Etiqueta Branca com Controlo de Permissões no OVR -->
                   <div class="text-caption text-weight-bold text-grey-8 bg-white q-px-sm shadow-1" style="border-radius: 6px; border: 1px solid #e2e8f0;">
                     {{ (p.profiles?.position || p.virtual_players?.position || 'Méd').substring(0,3) }}
-                    <span v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner">
+                    <span v-if="canSeeStats">
                       | {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}
                     </span>
                   </div>
@@ -1157,7 +1160,7 @@
                 
                 <!-- OVR Médio Restrito -->
                 <q-chip 
-                  v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner"
+                  v-if="canSeeStats"
                   dense 
                   :color="clubSettings?.default_team_b_color || 'orange'" 
                   text-color="white" 
@@ -1183,7 +1186,7 @@
                   <!-- Etiqueta Branca com Controlo de Permissões no OVR -->
                   <div class="text-caption text-weight-bold text-grey-8 bg-white q-px-sm shadow-1" style="border-radius: 6px; border: 1px solid #e2e8f0;">
                     {{ (p.profiles?.position || p.virtual_players?.position || 'Méd').substring(0,3) }}
-                    <span v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner">
+                    <span v-if="canSeeStats">
                       | {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}
                     </span>
                   </div>
@@ -1225,7 +1228,7 @@
                       style="border: 2px solid white; box-sizing: border-box;"
                     >
                       <!-- O Overall só aparece centrado no círculo para Admins/Donos -->
-                      <div v-if="clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner" class="flex flex-center full-width full-height" style="font-size: 20px; font-weight: 900;">
+                      <div v-if="canSeeStats" class="flex flex-center full-width full-height" style="font-size: 20px; font-weight: 900;">
                         {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}
                       </div>
                     </q-avatar>
@@ -3090,6 +3093,11 @@ function getNextRecurringDate(dayOfWeek, timeStr) {
     
   return localIso
 }
+
+const canSeeStats = computed(() => {
+  const isManager = clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner
+  return !clubSettings.value?.hide_attributes_from_members || isManager
+})
 
 // --- SISTEMA DE NOTIFICAÇÕES PUSH ---
 async function notifyMatchPlayers(matchId, title, message) {
