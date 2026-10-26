@@ -1,5 +1,5 @@
 // Obriga o telemóvel a instalar a versão mais recente imediatamente
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
@@ -25,7 +25,7 @@ self.addEventListener('push', function(event) {
     else if (data.notification && data.notification.body) mensagem = data.notification.body;
     else mensagem = rawData; 
     
-  } catch (e) {
+  } catch {
     // Se não for JSON (for apenas uma string), a variável 'mensagem' mantém o rawData
   }
 
