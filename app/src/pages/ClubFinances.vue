@@ -337,58 +337,50 @@
   }
   
   async function sendPushReminder() {
-  $q.notify({ type: 'info', message: 'A calcular devedores e a enviar alertas...' })
+  $q.notify({ type: 'info', message: 'A enviar alertas para todos os telemóveis registados...' })
   
   try {
-    const devedoresMap = new Map() // Usar Map para não enviar 2 avisos à mesma pessoa
+    // 1. Vai buscar TODAS as subscrições existentes na tabela (sem filtros de ID)
+    const { data: subs, error: subError } = await supabase
+      .from('push_subscriptions')
+      .select('profile_id, subscription')
 
-    // 1. Adicionar os devedores mensais (Titulares)
-    pendentes.value.filter(p => !p.is_virtual).forEach(p => {
-      devedoresMap.set(p.id, `Falta liquidar a tua quota mensal de ${currentMonthLabel.value}.`)
-    })
-
-    // 2. Adicionar os devedores por jogo (Jogadores Ocasionais)
-    groupedDebts.value.forEach(match => {
-      match.unpaid_players.filter(p => !p.virtual_player_id).forEach(p => {
-        // Só sobrepõe a mensagem se ele já não for devedor mensal
-        if (!devedoresMap.has(p.profile_id)) {
-          devedoresMap.set(p.profile_id, `Falta liquidar o jogo do dia ${formatDate(match.date)}.`)
-        }
-      })
-    })
-
-    const devedoresIds = Array.from(devedoresMap.keys())
-    if (devedoresIds.length === 0) {
-      $q.notify({ type: 'warning', message: 'Nenhum devedor com conta real para notificar.' })
-      return
-    }
-
-    // 3. Buscar tokens e enviar Push
-    const { data: subs } = await supabase.from('push_subscriptions').select('profile_id, subscription').in('profile_id', devedoresIds)
-    if (!subs || subs.length === 0) {
-      $q.notify({ type: 'warning', message: 'Nenhum devedor ativou as notificações no dispositivo.' })
+    if (subError || !subs || subs.length === 0) {
+      $q.notify({ type: 'warning', message: 'Nenhum telemóvel registado nas notificações.' })
       return
     }
 
     let sentCount = 0
+
+    // 2. Dispara a notificação para cada token encontrado na base de dados
     for (const row of subs) {
-      const avisoEspecifico = devedoresMap.get(row.profile_id)
-      await supabase.functions.invoke('send-push', {
+      if (!row.subscription) continue
+
+      const { error: fnError } = await supabase.functions.invoke('send-push', {
         body: {
           subscription: row.subscription,
           title: 'Tesouraria - MatchDay',
-          message: avisoEspecifico,
+          message: `Lembrete: Tens pagamentos pendentes na tesouraria do clube.`,
           url: `/club/${props.id}/finances`
         }
       })
-      sentCount++
+
+      if (!fnError) {
+        sentCount++
+      } else {
+        console.error("Erro ao enviar para o perfil:", row.profile_id, fnError)
+      }
     }
 
-    $q.notify({ type: 'positive', icon: 'notifications_active', message: `Alertas enviados para ${sentCount} telemóveis!` })
+    if (sentCount > 0) {
+      $q.notify({ type: 'positive', icon: 'notifications_active', message: `Alertas enviados com sucesso para ${sentCount} telemóveis!` })
+    } else {
+      $q.notify({ type: 'negative', message: 'Falha ao invocar a Edge Function.' })
+    }
 
   } catch (error) {
     console.error('Erro ao enviar push:', error)
-    $q.notify({ type: 'negative', message: 'Falha ao enviar notificações Push.' })
+    $q.notify({ type: 'negative', message: 'Erro crítico ao enviar notificações.' })
   }
 }
 
