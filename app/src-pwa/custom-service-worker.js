@@ -10,7 +10,7 @@ self.addEventListener('push', function(event) {
     let data = {};
     try {
       data = event.data.json();
-    } catch (e) {
+    } catch {
       // Se não for JSON, apanha como texto puro
       data = { body: event.data.text() };
     }
