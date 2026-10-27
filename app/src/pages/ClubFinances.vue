@@ -337,52 +337,92 @@
   }
   
   async function sendPushReminder() {
-  $q.notify({ type: 'info', message: 'A enviar alertas para todos os telemóveis registados...' })
-  
-  try {
-    // 1. Vai buscar TODAS as subscrições existentes na tabela (sem filtros de ID)
-    const { data: subs, error: subError } = await supabase
-      .from('push_subscriptions')
-      .select('profile_id, subscription')
+    $q.notify({ type: 'info', message: 'A procurar jogadores com pagamentos pendentes...' })
+    
+    try {
+      // 1. Descobrir quem deve a mensalidade (ignorando jogadores virtuais)
+      const devedoresMensalidade = pendentes.value
+        .filter(m => !m.is_virtual)
+        .map(m => m.id)
 
-    if (subError || !subs || subs.length === 0) {
-      $q.notify({ type: 'warning', message: 'Nenhum telemóvel registado nas notificações.' })
-      return
-    }
-
-    let sentCount = 0
-
-    // 2. Dispara a notificação para cada token encontrado na base de dados
-    for (const row of subs) {
-      if (!row.subscription) continue
-
-      const { error: fnError } = await supabase.functions.invoke('send-push', {
-        body: {
-          subscription: row.subscription,
-          title: 'Tesouraria - MatchDay',
-          message: `Lembrete: Tens pagamentos pendentes na tesouraria do clube.`,
-          url: `/club/${props.id}/finances`
-        }
+      // 2. Descobrir quem deve jogos avulso (pagam ao jogo)
+      const devedoresJogos = []
+      groupedDebts.value.forEach(match => {
+        match.unpaid_players.forEach(p => {
+          if (p.profile_id && !devedoresJogos.find(d => d.profile_id === p.profile_id)) {
+            // Guardamos o ID, o local e a data do jogo
+            devedoresJogos.push({ 
+              profile_id: p.profile_id, 
+              location: match.location, 
+              date: match.date 
+            })
+          }
+        })
       })
 
-      if (!fnError) {
-        sentCount++
-      } else {
-        console.error("Erro ao enviar para o perfil:", row.profile_id, fnError)
+      // 3. Junta os IDs únicos de todos os que devem alguma coisa
+      const todosDevedoresIds = [...new Set([...devedoresMensalidade, ...devedoresJogos.map(d => d.profile_id)])]
+
+      if (todosDevedoresIds.length === 0) {
+        $q.notify({ type: 'warning', message: 'Não há dívidas de jogadores com conta na app para alertar.' })
+        return
       }
-    }
 
-    if (sentCount > 0) {
-      $q.notify({ type: 'positive', icon: 'notifications_active', message: `Alertas enviados com sucesso para ${sentCount} telemóveis!` })
-    } else {
-      $q.notify({ type: 'negative', message: 'Falha ao invocar a Edge Function.' })
-    }
+      // 4. Vai buscar SÓ os telemóveis de quem deve dinheiro
+      const { data: subs, error: subError } = await supabase
+        .from('push_subscriptions')
+        .select('profile_id, subscription')
+        .in('profile_id', todosDevedoresIds)
 
-  } catch (error) {
-    console.error('Erro ao enviar push:', error)
-    $q.notify({ type: 'negative', message: 'Erro crítico ao enviar notificações.' })
+      if (subError || !subs || subs.length === 0) {
+        $q.notify({ type: 'warning', message: 'Os devedores não têm as notificações ativadas no telemóvel.' })
+        return
+      }
+
+      let sentCount = 0
+      const mesFormatado = currentMonthLabel.value 
+
+      // 5. Dispara a notificação segmentada para cada utilizador
+      for (const row of subs) {
+        if (!row.subscription) continue
+        
+        let textoNotificacao = ''
+        
+        // Verifica se o jogador deve a mensalidade
+        if (devedoresMensalidade.includes(row.profile_id)) {
+          textoNotificacao = `Tens um pagamento pendente referente a ${mesFormatado}.`
+        } 
+        // Se não deve mensalidade, deve jogos avulso
+        else {
+          const jogo = devedoresJogos.find(d => d.profile_id === row.profile_id)
+          // O formatDate já existe no teu código e converte o timestamp para formato limpo
+          textoNotificacao = `Tens um pagamento pendente referente ao jogo de ${formatDate(jogo.date)} em ${jogo.location}.`
+        }
+
+        const { error: fnError } = await supabase.functions.invoke('send-push', {
+          body: {
+            subscription: row.subscription,
+            title: 'MatchDay', // Título limpo apenas com o nome da App
+            message: textoNotificacao,
+            url: `/club/${props.id}/finances`
+          }
+        })
+
+        if (!fnError) {
+          sentCount++
+        } else {
+          console.error("Erro ao enviar para o perfil:", row.profile_id, fnError)
+        }
+      }
+
+      if (sentCount > 0) {
+        $q.notify({ type: 'positive', icon: 'notifications_active', message: `Alertas enviados com sucesso para ${sentCount} devedores!` })
+      }
+    } catch (error) {
+      console.error('Erro ao enviar push:', error)
+      $q.notify({ type: 'negative', message: 'Erro crítico ao enviar notificações.' })
+    }
   }
-}
 
 // Função de atualização do modo de pagamento mês a mês com reatividade corrigida
 async function updateBillingMode(member, newMode) {
