@@ -277,8 +277,12 @@ async function handleSubmit() {
   if (isRegisterMode.value) {
     const success = await authStore.register(email.value, password.value, name.value)
     if (success) {
-      $q.notify({ type: 'positive', message: 'Conta criada com sucesso!' })
-      redirectUser()
+      $q.dialog({
+        title: 'Confirma o teu Email',
+        message: 'Conta criada com sucesso! Enviámos um link de confirmação para a tua caixa de correio. Por favor, valida o email antes de entrares no balneário.',
+        ok: { label: 'Entendido', color: 'primary', unelevated: true }
+      })
+      isRegisterMode.value = false // Passa para o modo de login
     }
   } else {
     const success = await authStore.login(email.value, password.value)
