@@ -484,9 +484,15 @@
           <div class="row q-gutter-sm justify-center q-px-sm q-py-xs">
             <q-btn 
               v-if="selectedMatch?.status !== 'fechado' && clubStore.currentClub?.can_manage_teams && !clubSettings?.single_team_mode" 
-              dense color="primary" unelevated icon="auto_awesome" label="Auto FUT" 
+              dense color="primary" unelevated icon="auto_awesome" label="Auto" 
               class="col text-weight-bold shadow-1" style="border-radius: 8px; height: 36px;" 
               @click="autoBalanceTeams" 
+            />
+            <q-btn 
+              v-if="selectedMatch?.status !== 'fechado' && clubStore.currentClub?.can_manage_teams" 
+              dense outline color="negative" icon="layers_clear" label="Limpar" 
+              class="col text-weight-bold shadow-1 bg-white" style="border-radius: 8px; height: 36px;" 
+              @click="clearAllTeams" 
             />
             <q-btn 
               dense color="dark" unelevated icon="visibility" 
@@ -1229,10 +1235,10 @@
                 <div v-for="(line, index) in getFormation(clubSettings?.single_team_mode || viewTeam === 'A' ? teamASummary.players : teamBSummary.players, selectedFormation)" :key="index" class="formation-line">
                   <div v-for="p in line" :key="p.id" class="player-dot-large">
                     
-                    <!-- Círculo do Jogador -->
+                    <!-- Círculo do Jogador (Corrigido para forçar a cor A no modo single team) -->
                     <q-avatar 
                       size="42px" 
-                      :color="viewTeam === 'A' ? (clubSettings?.default_team_a_color || 'blue') : (clubSettings?.default_team_b_color || 'orange')" 
+                      :color="(clubSettings?.single_team_mode || viewTeam === 'A') ? (clubSettings?.default_team_a_color || 'blue') : (clubSettings?.default_team_b_color || 'orange')" 
                       text-color="white" 
                       class="shadow-3 text-weight-bolder" 
                       style="border: 2px solid white; box-sizing: border-box;"
@@ -1482,11 +1488,10 @@ function onAvatarSelected(file) {
   }
 }
 
-// 3. Limpar o preview quando se abre o modal
 function openProfileModal() {
   profileForm.value.name = authStore.profile?.name || ''
-  profileForm.value.position = authStore.profile?.position || 'Médio'
-  profileForm.value.specific_position = authStore.profile?.specific_position || '' 
+  profileForm.value.position = myClubMemberData.value?.position || 'Médio'
+  profileForm.value.specific_position = myClubMemberData.value?.specific_position || '' 
   profileForm.value.preferred_foot = authStore.profile?.preferred_foot || 'Direito'
   profileForm.value.newPassword = ''
   profileForm.value.confirmPassword = ''
@@ -1503,63 +1508,57 @@ async function saveProfile() {
     $q.notify({ type: 'warning', message: 'As passwords não coincidem.' })
     return
   }
-  
   savingProfile.value = true
   try {
     let finalAvatarUrl = authStore.profile?.avatar_url
-
-    // SE CLICOU NO LIXO: Apaga o ficheiro e bloqueia a foto do Google com string vazia
     if (profileForm.value.removeAvatar) {
       if (authStore.profile?.avatar_url && authStore.profile.avatar_url !== '') {
         const oldFileName = authStore.profile.avatar_url.split('/').pop()
         await supabase.storage.from('avatars').remove([oldFileName])
       }
       finalAvatarUrl = ''
-    } 
-    // SE ESCOLHEU FOTO NOVA: Faz upload para o Supabase
-    else if (profileForm.value.avatarFile) {
+    } else if (profileForm.value.avatarFile) {
       const file = profileForm.value.avatarFile
       const fileExt = file.name.split('.').pop()
       const fileName = `${authStore.user.id}-${Date.now()}.${fileExt}`
-
       const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true })
       if (uploadError) throw uploadError
-
       const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
       finalAvatarUrl = data.publicUrl
-    }
-    // CORREÇÃO: SE NÃO MEXEU NA FOTO, MAS TEM GOOGLE: Copia a foto do Google para a BD!
-    else if (!finalAvatarUrl && authStore.user?.user_metadata?.avatar_url) {
+    } else if (!finalAvatarUrl && authStore.user?.user_metadata?.avatar_url) {
       finalAvatarUrl = authStore.user.user_metadata.avatar_url
     }
 
-    const updates = {
-      name: profileForm.value.name.trim(),
-      position: profileForm.value.position,
-      specific_position: profileForm.value.specific_position,
-      preferred_foot: profileForm.value.preferred_foot,
-      avatar_url: finalAvatarUrl 
-    }
+    // DIVISÃO DE ÁGUAS: Identidade vai para 'profiles', Posição vai para 'club_members'
+    const profileUpdates = { name: profileForm.value.name.trim(), preferred_foot: profileForm.value.preferred_foot, avatar_url: finalAvatarUrl }
+    const clubUpdates = { position: profileForm.value.position, specific_position: profileForm.value.specific_position }
 
-    const { error: profileError } = await supabase.from('profiles').update(updates).eq('id', authStore.user.id)
+    const { error: profileError } = await supabase.from('profiles').update(profileUpdates).eq('id', authStore.user.id)
     if (profileError) throw profileError
+
+    const { error: clubError } = await supabase.from('club_members').update(clubUpdates).eq('club_id', props.id).eq('profile_id', authStore.user.id)
+    if (clubError) throw clubError
     
     if (authStore.profile) {
-      authStore.profile.name = updates.name
-      authStore.profile.position = updates.position
-      authStore.profile.specific_position = updates.specific_position 
-      authStore.profile.preferred_foot = updates.preferred_foot
-      authStore.profile.avatar_url = updates.avatar_url
+      authStore.profile.name = profileUpdates.name
+      authStore.profile.preferred_foot = profileUpdates.preferred_foot
+      authStore.profile.avatar_url = profileUpdates.avatar_url
+    }
+    if (myClubMemberData.value) {
+      myClubMemberData.value.position = clubUpdates.position
+      myClubMemberData.value.specific_position = clubUpdates.specific_position
+    } else {
+      myClubMemberData.value = {
+        position: clubUpdates.position,
+        specific_position: clubUpdates.specific_position
+      }
     }
     
     if (profileForm.value.newPassword) {
       const { error: passError } = await supabase.auth.updateUser({ password: profileForm.value.newPassword })
       if (passError) throw passError
     }
-    
-    // CORREÇÃO: Carimbo no telemóvel para impedir o modal de abrir nos primeiros 2 minutos
     localStorage.setItem('profile_completed', 'true')
-    
     $q.notify({ type: 'positive', icon: 'check_circle', message: 'Ficha de jogador atualizada!' })
     showProfileModal.value = false
   } catch (err) {
@@ -1744,6 +1743,36 @@ async function reopenMatch(match) {
   })
 }
 
+async function clearAllTeams() {
+  $q.dialog({
+    title: 'Limpar Equipas',
+    message: 'Tens a certeza que queres limpar as escolhas e colocar todos os jogadores sem equipa?',
+    cancel: { flat: true, color: 'grey-7' },
+    persistent: true,
+    ok: { label: 'Sim, Limpar', color: 'negative', unelevated: true }
+  }).onOk(async () => {
+    balancing.value = true // Aproveitamos o loading do Auto FUT
+    
+    // Atualiza todos na base de dados para team: null
+    const { error } = await supabase
+      .from('match_presences')
+      .update({ team: null })
+      .eq('match_id', selectedMatch.value.id)
+    
+    if (!error) {
+      // Limpa visualmente sem recarregar a BD inteira
+      presences.value.forEach(p => p.team = null)
+      $q.notify({ type: 'positive', icon: 'layers_clear', message: 'Todas as escolhas foram limpas!' })
+    } else {
+      $q.notify({ type: 'negative', message: 'Erro ao limpar: ' + error.message })
+    }
+    
+    balancing.value = false
+  })
+}
+
+const myClubMemberData = ref(null)
+
 onMounted(async () => {
   // ANTÍDOTO ANTI-F5: Recuperar sessão do Supabase caso a store tenha esvaziado
   if (!authStore.user) {
@@ -1753,22 +1782,21 @@ onMounted(async () => {
       await authStore.fetchProfile(user.id)
     }
   }
-
-  // NOVO: Se o user existe mas o perfil falhou ao descarregar no login, tenta novamente
   if (authStore.user && !authStore.profile) {
     await authStore.fetchProfile(authStore.user.id)
   }
 
-  // Carregar as chaves de permissões granulares do utilizador para este clube
-  if (authStore.user && (!clubStore.currentClub || clubStore.currentClub.id !== props.id)) {
+  // CORREÇÃO: Removemos o bloqueio (!clubStore.currentClub) para forçar a ler a tua Posição sempre que entras!
+  if (authStore.user) {
     const { data } = await supabase
       .from('club_members')
-      .select('role, is_owner, can_manage_finances, can_manage_teams, can_manage_matches, clubs(id, name, invite_code)')
+      .select('role, is_owner, can_manage_finances, can_manage_teams, can_manage_matches, position, specific_position, clubs(id, name, invite_code)')
       .eq('club_id', props.id)
       .eq('profile_id', authStore.user.id)
       .single()
-
+      
     if (data) {
+      myClubMemberData.value = data // <-- AGORA GUARDA SEMPRE AS TUAS POSIÇÕES LOCAIS
       clubStore.setClub({
         id: data.clubs.id,
         name: data.clubs.name,
@@ -1794,7 +1822,7 @@ onMounted(async () => {
 
   // NOVO: Adiciona a verificação do localStorage para quebrar o loop dos 2 minutos
   const isNewAccount = authStore.user && (new Date() - new Date(authStore.user.created_at) < 120000)
-  const isMissingData = !authStore.profile?.name || !authStore.profile?.position || !authStore.profile?.preferred_foot
+  const isMissingData = !authStore.profile?.name || !myClubMemberData.value?.position || !authStore.profile?.preferred_foot
   const hasCompletedProfile = localStorage.getItem('profile_completed') === 'true'
 
   if ((isNewAccount && !hasCompletedProfile) || isMissingData) {
@@ -2883,18 +2911,10 @@ async function autoBalanceTeams() {
   balancing.value = true
 
   try {
-    const { data: presences, error } = await supabase
-      .from('match_presences')
-      .select('id, profile_id, virtual_player_id, profiles(overall, position), virtual_players(overall, position)')
-      .eq('match_id', selectedMatch.value.id)
-      .eq('status', 'confirmed')
-
-    if (error) throw error
-
-    // 1. Mapear jogadores e posições
-    let players = presences.map(p => {
+    // Esquece a chamada à BD, usa a memória que já está purificada!
+    let players = presences.value.filter(p => p.status === 'confirmed').map(p => {
       const ovr = p.profiles?.overall || p.virtual_players?.overall || 70
-      const pos = p.profiles?.position || p.virtual_players?.position || 'Sem Posição'
+      const pos = p.profiles?.position || p.virtual_players?.position || 'Médio'
       return { ...p, ovr: Number(ovr), position: pos }
     })
 
@@ -2997,15 +3017,28 @@ async function openPresencesModal(match) {
   showPresencesModal.value = true
   loadingPresences.value = true
   
-  // 1. Puxar presenças incluindo a nova relação de virtual_players
-  const { data, error } = await supabase
+  // 1. Puxa as presenças (Só traz a identidade real, os virtuais já trazem as posições)
+  const { data: presData, error } = await supabase
     .from('match_presences')
-    .select('id, status, paid, team, created_at, guest_name, virtual_player_id, profile_id, profiles(name, overall, position, specific_position), virtual_players(name, overall, position, specific_position)')
+    .select('id, status, paid, team, created_at, guest_name, virtual_player_id, profile_id, profiles(name), virtual_players(name, overall, position, specific_position)')
     .eq('match_id', match.id)
+    
+  // 2. Puxa os dados táticos do clube
+  const { data: membersData } = await supabase.from('club_members').select('profile_id, position, specific_position, overall').eq('club_id', props.id)
+
+  if (!error && presData) {
+    presences.value = presData.map(p => {
+       if (p.profile_id) {
+           const cm = membersData?.find(m => m.profile_id === p.profile_id)
+           p.profiles = p.profiles || {} 
+           p.profiles.overall = cm?.overall || 70 // Injeta o Overall do clube
+           p.profiles.position = cm?.position || 'Médio' // Injeta a Posição do clube
+           p.profiles.specific_position = cm?.specific_position || ''
+       }
+       return p
+    })
+  }
   
-  if (!error) presences.value = data
-  
-  // 2. Carregar jogadores disponíveis do plantel para inscrição forçada
   await loadAvailableSquad()
   loadingPresences.value = false
 }

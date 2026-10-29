@@ -170,12 +170,15 @@ async function calculateStats() {
 
   const matchIds = matches.map(m => m.id)
   
-  // Puxamos também a rating_average e is_mvp da base de dados
+  // 1. Altera a Query das presenças (remove o overall dos perfis)
   const { data: presences } = await supabase
     .from('match_presences')
-    .select('match_id, profile_id, guest_name, virtual_player_id, team, goals, assists, rating_average, is_mvp, profiles(name, overall), virtual_players(name, overall)')
+    .select('match_id, profile_id, guest_name, virtual_player_id, team, goals, assists, rating_average, is_mvp, profiles(name), virtual_players(name, overall)')
     .in('match_id', matchIds)
     .eq('status', 'confirmed')
+
+  // 2. ADICIONA ESTA LINHA: Puxa os overalls oficiais deste clube
+  const { data: clubMems } = await supabase.from('club_members').select('profile_id, overall').eq('club_id', props.id)
 
   const statsMap = {}
   matches.forEach(match => {
@@ -190,8 +193,16 @@ async function calculateStats() {
       if (!p.team) return 
       const playerKey = p.profile_id || (p.virtual_player_id ? `virt_${p.virtual_player_id}` : `guest_${p.guest_name}`)
       const playerName = p.profiles?.name || p.virtual_players?.name || p.guest_name || 'Desconhecido'
-      const playerOverall = p.profiles?.overall || p.virtual_players?.overall || 70
       
+      // 3. A MAGIA AQUI: Cruzamento do OVR local
+      let playerOverall = 70;
+      if (p.virtual_player_id) {
+          playerOverall = p.virtual_players?.overall || 70;
+      } else if (p.profile_id) {
+          const cm = clubMems?.find(m => m.profile_id === p.profile_id);
+          playerOverall = cm?.overall || 70;
+      }
+
       if (!statsMap[playerKey]) {
         statsMap[playerKey] = {
           id: playerKey, name: playerName, overall: playerOverall,

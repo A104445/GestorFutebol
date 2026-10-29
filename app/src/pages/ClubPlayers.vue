@@ -436,10 +436,10 @@ function openEditModal(member) {
 async function fetchAllMembers() {
   loading.value = true
   const list = []
-
-  // 1. Carregar utilizadores reais com conta (Adicionado avatar_url no select)
+  
+  // 1. A MAGIA AQUI: Lemos os atributos todos diretamente do 'club_members', e só a foto/nome vêm do 'profiles'
   const { data: realUsers } = await supabase.from('club_members')
-  .select('role, is_owner, profile_id, profiles(name, avatar_url, overall, position, pace, shooting, passing, dribbling, defending, physical, diving, handling, kicking, reflexes, speed, positioning)')
+  .select('role, is_owner, profile_id, position, specific_position, overall, pace, shooting, passing, dribbling, defending, physical, diving, handling, kicking, reflexes, speed, positioning, profiles(name, avatar_url)')
   .eq('club_id', props.id)
 
   if (realUsers) {
@@ -449,20 +449,20 @@ async function fetchAllMembers() {
           id: u.profile_id, id_type: 'real', 
           name: u.profiles.name, 
           avatar_url: u.profiles.avatar_url, 
-          position: u.profiles.position, 
-          specific_position: u.profiles.specific_position,
-          overall: u.profiles.overall || 70,
-          pace: u.profiles.pace || 70, shooting: u.profiles.shooting || 70, passing: u.profiles.passing || 70,
-          dribbling: u.profiles.dribbling || 70, defending: u.profiles.defending || 70, physical: u.profiles.physical || 70,
-          diving: u.profiles.diving || 70, handling: u.profiles.handling || 70, kicking: u.profiles.kicking || 70,
-          reflexes: u.profiles.reflexes || 70, speed: u.profiles.speed || 70, positioning: u.profiles.positioning || 70,
+          position: u.position || 'Médio', 
+          specific_position: u.specific_position || '',
+          overall: u.overall || 70,
+          pace: u.pace || 70, shooting: u.shooting || 70, passing: u.passing || 70,
+          dribbling: u.dribbling || 70, defending: u.defending || 70, physical: u.physical || 70,
+          diving: u.diving || 70, handling: u.handling || 70, kicking: u.kicking || 70,
+          reflexes: u.reflexes || 70, speed: u.speed || 70, positioning: u.positioning || 70,
           is_virtual: false, is_owner: u.is_owner, role: u.role
         })
       }
     })
   }
 
-  // 2. Carregar utilizadores virtuais
+  // 2. Carregar utilizadores virtuais (Mantém-se igual)
   const { data: virtualUsers } = await supabase.from('virtual_players').select('*').eq('club_id', props.id)
   if (virtualUsers) {
     virtualUsers.forEach(v => {
@@ -471,9 +471,7 @@ async function fetchAllMembers() {
   }
 
   await calculateInForms()
-  // Ativa a flag In-Form nas cartas correspondentes
   members.value = list.map(m => ({ ...m, is_in_form: inFormPlayersIds.value.includes(m.id) }))
-
   loading.value = false
 }
 
@@ -554,8 +552,6 @@ async function savePlayerStats() {
   saving.value = true
   
   try {
-    const table = selectedPlayer.value.is_virtual ? 'virtual_players' : 'profiles'
-    
     // 1. CÁLCULO DIRETO E INFALÍVEL AQUI DENTRO!
     let finalOverall = 70
     if (editForm.value.position === 'Guarda-Redes') {
@@ -582,6 +578,7 @@ async function savePlayerStats() {
     const payload = {
       overall: finalOverall, // <--- Agora usa o cálculo exato feito na hora!
       position: editForm.value.position,
+      specific_position: editForm.value.specific_position,
       pace: Number(editForm.value.pace || 70),
       shooting: Number(editForm.value.shooting || 70),
       passing: Number(editForm.value.passing || 70),
@@ -597,16 +594,21 @@ async function savePlayerStats() {
     }
 
     // 3. Grava na Base de Dados
-    const { data, error } = await supabase
-      .from(table)
-      .update(payload)
-      .eq('id', selectedPlayer.value.id)
-      .select()
-
+    let data, error;
+    if (selectedPlayer.value.is_virtual) {
+      // Os virtuais só existem num clube, atualiza direto
+      const res = await supabase.from('virtual_players').update(payload).eq('id', selectedPlayer.value.id).select()
+      data = res.data; error = res.error;
+    } else {
+      // Jogadores reais atualizam a sua carta APENAS neste clube!
+      const res = await supabase.from('club_members').update(payload).eq('club_id', props.id).eq('profile_id', selectedPlayer.value.id).select()
+      data = res.data; error = res.error;
+    }
+    
     if (error) throw error
     if (!data || data.length === 0) throw new Error("Bloqueado por RLS ou ID não encontrado.")
-
-    $q.notify({ type: 'positive', message: 'Atributos FUT atualizados!' })
+    
+    $q.notify({ type: 'positive', message: 'Atributos FUT atualizados no Clube!' })
     showEditModal.value = false
     await fetchAllMembers()
 
