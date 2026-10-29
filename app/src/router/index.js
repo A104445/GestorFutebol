@@ -34,12 +34,23 @@ export default defineRouter((/* { store, ssrContext } */) => {
 
     // 1. CORREÇÃO CRÍTICA GOOGLE AUTH (QUASAR HASH MODE GLITCH)
     // Intercetar o URL de retorno do Google OAuth antes que cause erro 404
+    // 1. CORREÇÃO CRÍTICA GOOGLE AUTH (QUASAR HASH MODE GLITCH)
     if (window.location.hash && window.location.hash.includes('access_token=')) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         authStore.user = user
-        await authStore.fetchProfile(user.id)
         
+        // NOVO: Esperar 1 segundo para o trigger da base de dados criar o perfil
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // NOVO: Extrair o nome diretamente do Google e atualizar o perfil
+        const googleName = user.user_metadata?.full_name || user.user_metadata?.name
+        if (googleName) {
+          await supabase.from('profiles').update({ name: googleName }).eq('id', user.id)
+        }
+
+        await authStore.fetchProfile(user.id)
+                 
         const lastClub = localStorage.getItem('last_club_id')
         if (lastClub) {
           next({ path: `/club/${lastClub}` })

@@ -49,6 +49,18 @@
                   <q-item-section avatar><q-icon name="logout" size="sm" color="negative" /></q-item-section>
                   <q-item-section class="text-negative text-weight-bold">Terminar Sessão</q-item-section>
                 </q-item>
+                <q-separator />
+                <!-- Botão Pedir Ajuda -->
+                <q-item clickable tag="a" href="mailto:picoteappssuport@gmail.com?subject=MatchDay%20-%20Pedido%20de%20Ajuda">
+                  <q-item-section avatar><q-icon name="support_agent" size="sm" color="blue-8" /></q-item-section>
+                  <q-item-section class="text-weight-bold">Pedir Ajuda</q-item-section>
+                </q-item>
+
+                <!-- Botão Enviar Feedback -->
+                <q-item clickable tag="a" href="mailto:picoteappssuport@gmail.com?subject=MatchDay%20-%20Feedback">
+                  <q-item-section avatar><q-icon name="feedback" size="sm" color="orange-8" /></q-item-section>
+                  <q-item-section class="text-weight-bold">Enviar Feedback</q-item-section>
+                </q-item>
               </q-list>
             </q-menu>
           </q-btn>
@@ -119,219 +131,219 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- CARTÕES DE JOGO -->
-      <div v-if="filteredMatches.length > 0" class="row q-col-gutter-lg">
-        <div v-for="match in filteredMatches" :key="match.id" class="col-12 col-md-6 col-lg-4">
-          <q-card flat class="match-card-light">
-            
-            <!-- Topo do Cartão -->
-            <div class="row items-center justify-between q-pa-md" style="border-bottom: 1px solid #f1f5f9;">
-              <div class="text-subtitle2 text-weight-bold text-dark row items-center">
-                <!-- Ícone da Data em Cinza Claro Neutro -->
-                <div class="bg-grey-3 text-grey-8 flex flex-center q-mr-sm" style="width: 28px; height: 28px; border-radius: 6px;">
-                  <q-icon name="calendar_today" size="14px" />
-                </div>
-                {{ formatDate(match.date) }}
-              </div>
+        <!-- CARTÕES DE JOGO -->
+        <div v-if="filteredMatches.length > 0" class="row q-col-gutter-lg">
+          <div v-for="match in filteredMatches" :key="match.id" class="col-12 col-md-6 col-lg-4">
+            <q-card flat class="match-card-light">
               
-              <div class="row items-center q-gutter-x-sm">
-                <q-chip 
-                  dense 
-                  :color="match.status === 'fechado' ? 'grey-3' : (match.status === 'votacao' ? 'blue-2' : 'amber-8')" 
-                  :text-color="match.status === 'fechado' ? 'grey-8' : (match.status === 'votacao' ? 'blue-9' : 'dark')" 
-                  class="text-weight-bolder shadow-1"
-                  style="border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);"
-                >
-                  {{ match.status === 'fechado' ? 'TERMINADO' : (match.status === 'votacao' ? 'EM VOTAÇÃO' : 'ABERTO') }}
-                </q-chip>
+              <!-- Topo do Cartão -->
+              <div class="row items-center justify-between q-pa-md" style="border-bottom: 1px solid #f1f5f9;">
+                <div class="text-subtitle2 text-weight-bold text-dark row items-center">
+                  <!-- Ícone da Data em Cinza Claro Neutro -->
+                  <div class="bg-grey-3 text-grey-8 flex flex-center q-mr-sm" style="width: 28px; height: 28px; border-radius: 6px;">
+                    <q-icon name="calendar_today" size="14px" />
+                  </div>
+                  {{ formatDate(match.date) }}
+                </div>
+                
+                <div class="row items-center q-gutter-x-sm">
+                  <q-chip 
+                    dense 
+                    :color="match.status === 'fechado' ? 'grey-3' : (match.status === 'votacao' ? 'blue-2' : 'amber-8')" 
+                    :text-color="match.status === 'fechado' ? 'grey-8' : (match.status === 'votacao' ? 'blue-9' : 'dark')" 
+                    class="text-weight-bolder shadow-1"
+                    style="border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);"
+                  >
+                    {{ match.status === 'fechado' ? 'TERMINADO' : (match.status === 'votacao' ? 'EM VOTAÇÃO' : 'ABERTO') }}
+                  </q-chip>
 
-                <!-- Menu de Gestão em Cinza Neutro -->
-                <q-btn v-if="clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner" flat round dense icon="more_vert" color="grey-6">
-                  <q-menu auto-close style="border-radius: 12px; min-width: 140px;">
-                    <q-list>
-                      <!-- NOVO BOTÃO DE ALERTA -->
-                      <q-item clickable @click="sendAvailabilityReminder(match)">
-                        <q-item-section avatar><q-icon name="notifications_active" size="sm" color="blue-8" /></q-item-section>
-                        <q-item-section class="text-weight-bold text-blue-9">Pedir Confirmação</q-item-section>
-                      </q-item>
-                      <q-separator />
-                      <q-item clickable @click="openEditMatch(match)">
-                        <q-item-section avatar><q-icon name="edit" size="sm" color="grey-7" /></q-item-section>
-                        <q-item-section class="text-weight-bold">Editar</q-item-section>
-                      </q-item>
-                      <q-separator />
-                      <q-item clickable @click="deleteMatch(match)">
-                        <q-item-section avatar><q-icon name="delete" size="sm" color="negative" /></q-item-section>
-                        <q-item-section class="text-negative text-weight-bold">Apagar</q-item-section>
-                      </q-item>
-                    </q-list>
-                  </q-menu>
-                </q-btn>
+                  <!-- Menu de Gestão em Cinza Neutro -->
+                  <q-btn v-if="clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner" flat round dense icon="more_vert" color="grey-6">
+                    <q-menu auto-close style="border-radius: 12px; min-width: 140px;">
+                      <q-list>
+                        <!-- NOVO BOTÃO DE ALERTA -->
+                        <q-item clickable @click="sendAvailabilityReminder(match)">
+                          <q-item-section avatar><q-icon name="notifications_active" size="sm" color="blue-8" /></q-item-section>
+                          <q-item-section class="text-weight-bold text-blue-9">Pedir Confirmação</q-item-section>
+                        </q-item>
+                        <q-separator />
+                        <q-item clickable @click="openEditMatch(match)">
+                          <q-item-section avatar><q-icon name="edit" size="sm" color="grey-7" /></q-item-section>
+                          <q-item-section class="text-weight-bold">Editar</q-item-section>
+                        </q-item>
+                        <q-separator />
+                        <q-item clickable @click="deleteMatch(match)">
+                          <q-item-section avatar><q-icon name="delete" size="sm" color="negative" /></q-item-section>
+                          <q-item-section class="text-negative text-weight-bold">Apagar</q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-menu>
+                  </q-btn>
+                </div>
               </div>
-            </div>
 
-            <q-card-section class="q-pa-md">
-              <!-- JOGO FECHADO -->
-              <div v-if="match.status === 'fechado'" class="q-py-sm">
-                <div class="row items-center justify-center no-wrap full-width text-center scoreboard-box q-pa-md">
+              <q-card-section class="q-pa-md">
+                <!-- JOGO FECHADO -->
+                <div v-if="match.status === 'fechado'" class="q-py-sm">
+                  <div class="row items-center justify-center no-wrap full-width text-center scoreboard-box q-pa-md">
+                    
+                    <!-- Equipa A -->
+                    <div class="col-4 column items-center">
+                      <q-avatar size="44px" :color="matchSettingsColor(match, 'A')" text-color="white" icon="shield" class="shadow-2" />
+                      <div class="text-weight-bold text-grey-3 q-mt-sm text-uppercase text-ellipsis full-width" style="font-size: 11px;">
+                        {{ match.team_a_name || clubSettings?.default_team_a_name || 'Equipa A' }}
+                      </div>
+                    </div>
+                                      
+                    <!-- Placar -->
+                    <div class="col-4 row items-center justify-center no-wrap q-gutter-x-sm">
+                      <div class="text-weight-bolder text-white" style="font-size: 2.2rem; line-height: 1;">{{ match.team_a_goals ?? '-' }}</div>
+                      <div class="text-blue-grey-3 text-h6 text-weight-bold">-</div>
+                      <div class="text-weight-bolder text-white" style="font-size: 2.2rem; line-height: 1;">{{ match.team_b_goals ?? '-' }}</div>
+                    </div>                      
+
+                    <!-- Equipa B -->
+                    <div class="col-4 column items-center">
+                      <q-avatar size="44px" :color="matchSettingsColor(match, 'B')" text-color="white" icon="shield" class="shadow-2" />
+                      <div class="text-weight-bold text-grey-3 q-mt-sm text-uppercase text-ellipsis full-width" style="font-size: 11px;">
+                        {{ match.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                <!-- JOGO ABERTO -->
+                <div v-else class="row items-center justify-between inner-info-box q-pa-sm">
+                  <div class="col-5 q-pl-sm">
+                    <div class="text-caption text-grey-6 text-uppercase text-weight-bold" style="font-size: 10px;">Local</div>
+                    <div class="text-body2 text-weight-bold text-dark text-ellipsis">{{ match.location }}</div>
+                  </div>
                   
-                  <!-- Equipa A -->
-                  <div class="col-4 column items-center">
-                    <q-avatar size="44px" :color="matchSettingsColor(match, 'A')" text-color="white" icon="shield" class="shadow-2" />
-                    <div class="text-weight-bold text-grey-3 q-mt-sm text-uppercase text-ellipsis full-width" style="font-size: 11px;">
-                      {{ match.team_a_name || clubSettings?.default_team_a_name || 'Equipa A' }}
+                  <q-separator vertical class="bg-grey-3" />
+                  
+                  <div class="col-3 text-center">
+                    <div class="text-caption text-grey-6 text-uppercase text-weight-bold" style="font-size: 10px;">Lotação</div>
+                    <!-- A cor muda para vermelho se estiver cheio -->
+                    <div class="text-body2 text-weight-bold" :class="match.confirmedCount >= match.max_players ? 'text-negative' : 'text-dark'">
+                      {{ match.confirmedCount || 0 }} / {{ match.max_players }}
                     </div>
                   </div>
-                                    
-                  <!-- Placar -->
-                  <div class="col-4 row items-center justify-center no-wrap q-gutter-x-sm">
-                    <div class="text-weight-bolder text-white" style="font-size: 2.2rem; line-height: 1;">{{ match.team_a_goals ?? '-' }}</div>
-                    <div class="text-blue-grey-3 text-h6 text-weight-bold">-</div>
-                    <div class="text-weight-bolder text-white" style="font-size: 2.2rem; line-height: 1;">{{ match.team_b_goals ?? '-' }}</div>
-                  </div>                      
-
-                  <!-- Equipa B -->
-                  <div class="col-4 column items-center">
-                    <q-avatar size="44px" :color="matchSettingsColor(match, 'B')" text-color="white" icon="shield" class="shadow-2" />
-                    <div class="text-weight-bold text-grey-3 q-mt-sm text-uppercase text-ellipsis full-width" style="font-size: 11px;">
-                      {{ match.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              <!-- JOGO ABERTO -->
-              <div v-else class="row items-center justify-between inner-info-box q-pa-sm">
-                <div class="col-5 q-pl-sm">
-                  <div class="text-caption text-grey-6 text-uppercase text-weight-bold" style="font-size: 10px;">Local</div>
-                  <div class="text-body2 text-weight-bold text-dark text-ellipsis">{{ match.location }}</div>
-                </div>
-                
-                <q-separator vertical class="bg-grey-3" />
-                
-                <div class="col-3 text-center">
-                  <div class="text-caption text-grey-6 text-uppercase text-weight-bold" style="font-size: 10px;">Lotação</div>
-                  <!-- A cor muda para vermelho se estiver cheio -->
-                  <div class="text-body2 text-weight-bold" :class="match.confirmedCount >= match.max_players ? 'text-negative' : 'text-dark'">
-                    {{ match.confirmedCount || 0 }} / {{ match.max_players }}
+                  
+                  <q-separator vertical class="bg-grey-3" />
+                  
+                  <div class="col-3 text-right q-pr-sm">
+                    <div class="text-caption text-grey-6 text-uppercase text-weight-bold" style="font-size: 10px;">Preço</div>
+                    <!-- Preço a Verde Escuro em vez de Azul -->
+                    <div class="text-body2 text-weight-bolder text-green-9">{{ match.price_per_player }}€</div>
                   </div>
                 </div>
-                
-                <q-separator vertical class="bg-grey-3" />
-                
-                <div class="col-3 text-right q-pr-sm">
-                  <div class="text-caption text-grey-6 text-uppercase text-weight-bold" style="font-size: 10px;">Preço</div>
-                  <!-- Preço a Verde Escuro em vez de Azul -->
-                  <div class="text-body2 text-weight-bolder text-green-9">{{ match.price_per_player }}€</div>
+              </q-card-section>
+
+              <!-- Rodapé do Cartão -->
+              <q-card-actions class="q-px-md q-pb-md q-pt-none row items-center justify-between">
+                <q-btn flat color="grey-8" icon="groups" label="Plantel" class="text-weight-bold bg-grey-3" style="border-radius: 8px;" @click="openPresencesModal(match)" />
+
+                <div class="row q-gutter-sm items-center">
+                  <q-btn
+                    v-if="(!match.status || match.status === 'aberto') && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)"
+                    color="negative" flat round dense icon="sports" @click="openCloseModal(match)"
+                  >
+                    <q-tooltip>Fechar Jogo</q-tooltip>
+                  </q-btn>
+                  
+                  <!-- Botão JÁ INSCRITO (Aparece se o utilizador já faz parte do plantel deste jogo) -->
+                  <q-btn
+                    v-if="(!match.status || match.status === 'aberto') && match.isUserInscribed"
+                    color="green-9" text-color="white" unelevated disable label="Inscrito" icon="check_circle" class="text-weight-bold q-px-md shadow-1" style="border-radius: 8px;"
+                  />
+
+                  <!-- Botão VOU JOGAR (Aparece se houver vagas E o utilizador ainda não estiver inscrito) -->
+                  <q-btn
+                    v-else-if="(!match.status || match.status === 'aberto') && (match.confirmedCount < match.max_players)"
+                    color="amber-8" text-color="dark" unelevated label="Vou Jogar" class="text-weight-bolder q-px-md shadow-2" style="border-radius: 8px;"
+                    @click="joinMatch(match)"
+                  />
+
+                  <!-- Botão ESGOTADO (Aparece se já estiver no limite E o utilizador não estiver inscrito) -->
+                  <q-btn
+                    v-else-if="(!match.status || match.status === 'aberto') && (match.confirmedCount >= match.max_players)"
+                    color="negative" text-color="white" unelevated disable label="Completo" class="text-weight-bolder q-px-md shadow-1" style="border-radius: 8px;"
+                  />
+
+                  <!-- BOTÃO PARA REABRIR JOGO FECHADO (Admin/Dono) -->
+                  <q-btn 
+                    v-if="match.status === 'fechado' && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)"
+                    flat dense round 
+                    color="amber-8" 
+                    icon="edit" 
+                    @click="reopenMatch(match)"
+                  >
+                    <q-tooltip>Editar / Reabrir Jogo</q-tooltip>
+                  </q-btn>
+
+                  <!-- Botão AVALIAR JOGO (Apenas se ainda não votou) -->
+                  <q-btn 
+                    v-if="match.status === 'votacao' && !votedMatches.includes(match.id)" 
+                    color="blue-8" 
+                    text-color="white" 
+                    unelevated 
+                    label="Avaliar Jogo" 
+                    icon="how_to_vote" 
+                    class="text-weight-bolder q-px-md shadow-2" 
+                    style="border-radius: 8px;"
+                    @click="openVotingModal(match)" 
+                  />
+
+                  <!-- Botão JÁ VOTASTE (Bloqueado) -->
+                  <q-btn 
+                    v-if="match.status === 'votacao' && votedMatches.includes(match.id)" 
+                    color="grey-4" 
+                    text-color="grey-7" 
+                    unelevated 
+                    disable
+                    label="Voto Registado" 
+                    icon="check_circle" 
+                    class="text-weight-bold q-px-md shadow-1" 
+                    style="border-radius: 8px;"
+                  />
+
+                  <!-- Botão ENCERRAR VOTAÇÕES e APURAR (Para os Admins) -->
+                  <q-btn 
+                    v-if="match.status === 'votacao' && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)"
+                    color="negative" 
+                    flat round dense 
+                    icon="gavel" 
+                    @click="closeVoting(match)"
+                  >
+                    <q-tooltip>Encerrar Urnas e Apurar MVP</q-tooltip>
+                  </q-btn>
+
+                  <!-- BOTÃO PARA VER RESULTADOS DO JOGO FECHADO -->
+                  <q-btn 
+                    v-if="match.status === 'fechado'" 
+                    flat dense 
+                    color="amber-9" 
+                    icon="emoji_events" 
+                    label="Resultados" 
+                    class="text-weight-bold"
+                    @click="openResultsModal(match)"
+                  />
                 </div>
-              </div>
-            </q-card-section>
-
-            <!-- Rodapé do Cartão -->
-            <q-card-actions class="q-px-md q-pb-md q-pt-none row items-center justify-between">
-              <q-btn flat color="grey-8" icon="groups" label="Plantel" class="text-weight-bold bg-grey-3" style="border-radius: 8px;" @click="openPresencesModal(match)" />
-
-              <div class="row q-gutter-sm items-center">
-                <q-btn
-                  v-if="(!match.status || match.status === 'aberto') && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)"
-                  color="negative" flat round dense icon="sports" @click="openCloseModal(match)"
-                >
-                  <q-tooltip>Fechar Jogo</q-tooltip>
-                </q-btn>
-                
-                <!-- Botão JÁ INSCRITO (Aparece se o utilizador já faz parte do plantel deste jogo) -->
-                <q-btn
-                  v-if="(!match.status || match.status === 'aberto') && match.isUserInscribed"
-                  color="green-9" text-color="white" unelevated disable label="Inscrito" icon="check_circle" class="text-weight-bold q-px-md shadow-1" style="border-radius: 8px;"
-                />
-
-                <!-- Botão VOU JOGAR (Aparece se houver vagas E o utilizador ainda não estiver inscrito) -->
-                <q-btn
-                  v-else-if="(!match.status || match.status === 'aberto') && (match.confirmedCount < match.max_players)"
-                  color="amber-8" text-color="dark" unelevated label="Vou Jogar" class="text-weight-bolder q-px-md shadow-2" style="border-radius: 8px;"
-                  @click="joinMatch(match)"
-                />
-
-                <!-- Botão ESGOTADO (Aparece se já estiver no limite E o utilizador não estiver inscrito) -->
-                <q-btn
-                  v-else-if="(!match.status || match.status === 'aberto') && (match.confirmedCount >= match.max_players)"
-                  color="negative" text-color="white" unelevated disable label="Completo" class="text-weight-bolder q-px-md shadow-1" style="border-radius: 8px;"
-                />
-
-                <!-- BOTÃO PARA REABRIR JOGO FECHADO (Admin/Dono) -->
-                <q-btn 
-                  v-if="match.status === 'fechado' && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)"
-                  flat dense round 
-                  color="amber-8" 
-                  icon="edit" 
-                  @click="reopenMatch(match)"
-                >
-                  <q-tooltip>Editar / Reabrir Jogo</q-tooltip>
-                </q-btn>
-
-                <!-- Botão AVALIAR JOGO (Apenas se ainda não votou) -->
-                <q-btn 
-                  v-if="match.status === 'votacao' && !votedMatches.includes(match.id)" 
-                  color="blue-8" 
-                  text-color="white" 
-                  unelevated 
-                  label="Avaliar Jogo" 
-                  icon="how_to_vote" 
-                  class="text-weight-bolder q-px-md shadow-2" 
-                  style="border-radius: 8px;"
-                  @click="openVotingModal(match)" 
-                />
-
-                <!-- Botão JÁ VOTASTE (Bloqueado) -->
-                <q-btn 
-                  v-if="match.status === 'votacao' && votedMatches.includes(match.id)" 
-                  color="grey-4" 
-                  text-color="grey-7" 
-                  unelevated 
-                  disable
-                  label="Voto Registado" 
-                  icon="check_circle" 
-                  class="text-weight-bold q-px-md shadow-1" 
-                  style="border-radius: 8px;"
-                />
-
-                <!-- Botão ENCERRAR VOTAÇÕES e APURAR (Para os Admins) -->
-                <q-btn 
-                  v-if="match.status === 'votacao' && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)"
-                  color="negative" 
-                  flat round dense 
-                  icon="gavel" 
-                  @click="closeVoting(match)"
-                >
-                  <q-tooltip>Encerrar Urnas e Apurar MVP</q-tooltip>
-                </q-btn>
-
-                <!-- BOTÃO PARA VER RESULTADOS DO JOGO FECHADO -->
-                <q-btn 
-                  v-if="match.status === 'fechado'" 
-                  flat dense 
-                  color="amber-9" 
-                  icon="emoji_events" 
-                  label="Resultados" 
-                  class="text-weight-bold"
-                  @click="openResultsModal(match)"
-                />
-              </div>
-            </q-card-actions>
-          </q-card>
+              </q-card-actions>
+            </q-card>
+          </div>
         </div>
-      </div>
-      
-      <!-- NOVO: MENSAGEM DE FILTRO VAZIO -->
-      <div v-else class="text-center q-pa-xl match-card-light q-mt-md">
-        <q-icon name="event_busy" size="4em" class="text-grey-4 q-mb-sm" />
-        <div class="text-subtitle1 text-weight-bold text-dark">Nenhum jogo nesta vista</div>
-        <p class="text-caption text-grey-6 q-px-md q-mt-xs">
-          Não encontrámos partidas para esta pesquisa. Muda de aba para acederes aos jogos passados ou marca um novo desafio.
-        </p>
+        
+        <!-- NOVO: MENSAGEM DE FILTRO VAZIO -->
+        <div v-else class="text-center q-pa-xl match-card-light q-mt-md">
+          <q-icon name="event_busy" size="4em" class="text-grey-4 q-mb-sm" />
+          <div class="text-subtitle1 text-weight-bold text-dark">Nenhum jogo nesta vista</div>
+          <p class="text-caption text-grey-6 q-px-md q-mt-xs">
+            Não encontrámos partidas para esta pesquisa. Muda de aba para acederes aos jogos passados ou marca um novo desafio.
+          </p>
+        </div>
       </div>
     </q-pull-to-refresh>
 
@@ -379,16 +391,17 @@
 
             <q-input rounded outlined dense v-model="newMatch.location" label="Local / Campo" :disable="useDefaultSettings" :rules="[val => !!val || 'Obrigatório']" />
 
-            <!-- BLOCO 1: Lotação e Preço -->
+            <!-- BLOCO 1: Lotação, Titulares e Preço -->
             <div class="row no-wrap" style="gap: 16px;">
-              <q-input class="col" rounded outlined dense v-model.number="newMatch.max_players" type="number" label="Máx Jogadores" :disable="useDefaultSettings" />
+              <q-input class="col" rounded outlined dense v-model.number="newMatch.max_players" type="number" label="Lotação" :disable="useDefaultSettings" />
+              <q-input class="col" rounded outlined dense v-model.number="newMatch.starters_per_team" type="number" label="Titulares" :disable="useDefaultSettings" />
               <q-input class="col" rounded outlined dense v-model.number="newMatch.price_per_player" type="number" step="0.5" label="Preço (€)" :disable="useDefaultSettings" />
             </div>
 
             <!-- BLOCO 2: Nomes das Equipas -->
             <div class="row no-wrap" style="gap: 16px;">
-              <q-input class="col" rounded outlined dense v-model="newMatch.team_a_name" label="Equipa A" :disable="useDefaultSettings" />
-              <q-input class="col" rounded outlined dense v-model="newMatch.team_b_name" label="Equipa B" :disable="useDefaultSettings" />
+              <q-input :class="clubSettings.single_team_mode ? 'col-12' : 'col'" rounded outlined dense v-model="newMatch.team_a_name" :label="clubSettings.single_team_mode ? 'Nome da Equipa' : 'Equipa A'" :disable="useDefaultSettings" />
+              <q-input v-if="!clubSettings.single_team_mode" class="col" rounded outlined dense v-model="newMatch.team_b_name" label="Equipa B" :disable="useDefaultSettings" />
             </div>
 
             <!-- Checkbox para aplicar a todos os jogos futuros (Só aparece ao Editar) -->
@@ -441,7 +454,7 @@
     </q-dialog>
   
     <q-dialog v-model="showPresencesModal" transition-show="slide-up" transition-hide="slide-down">
-      <q-card style="min-width: 340px; max-width: 480px; width: 100%; border-radius: 24px; overflow: hidden; margin-bottom: 75px;">
+      <q-card class="modal-safe-footer" style="min-width: 340px; max-width: 480px; width: 100%; border-radius: 24px; overflow: hidden;">
         <q-card-section class="row items-center bg-dark text-white q-py-md">
           <div>
             <div class="text-subtitle1 text-weight-bolder row items-center"><q-icon name="groups" color="primary" class="q-mr-sm" />Convocatória & Equipas</div>
@@ -450,12 +463,38 @@
           <q-space /><q-btn icon="close" flat round dense color="grey-4" v-close-popup />
         </q-card-section>
   
-        <q-card-section v-if="presences.length > 0 && selectedMatch?.status !== 'fechado'" class="bg-grey-3 q-py-sm row q-gutter-sm justify-center" style="border-bottom: 1px solid #e2e8f0;">
-          <!-- Botão de Sorteio (Apenas para Admins) -->
-          <q-btn v-if="clubStore.currentClub?.can_manage_teams" color="primary" unelevated icon="auto_awesome" label="Auto FUT" class="col text-weight-bold" style="border-radius: 10px;" @click="autoBalanceTeams" />
+        <!-- SECÇÃO DO MISTER (Agora visível mesmo em jogos fechados para podermos ver a tática) -->
+        <q-card-section v-if="presences.length > 0" class="bg-grey-3 q-py-sm column q-gutter-y-sm" style="border-bottom: 1px solid #e2e8f0;">
           
-          <!-- NOVO: Botão do Popup de Leitura (Para todos verem) -->
-          <q-btn color="dark" unelevated icon="visibility" label="Ver Equipas" class="col text-weight-bold" style="border-radius: 10px;" @click="showTeamsSummaryModal = true" />
+          <!-- NOVO: MENU DE ESCOLHA DA TÁTICA (Mister) -->
+          <div v-if="clubSettings?.single_team_mode" class="row items-center q-px-sm q-mt-xs">
+            <q-select
+              v-model="selectedFormation"
+              :options="availableFormations"
+              dense outlined color="green-9" bg-color="white"
+              emit-value map-options label="Quadro Tático (Mister)"
+              class="full-width shadow-1"
+              style="border-radius: 8px;"
+            >
+              <template v-slot:prepend><q-icon name="sports_esports" color="green-9" /></template>
+            </q-select>
+          </div>
+
+          <!-- BOTÕES DE AÇÃO (Largura total, mas altura compacta) -->
+          <div class="row q-gutter-sm justify-center q-px-sm q-py-xs">
+            <q-btn 
+              v-if="selectedMatch?.status !== 'fechado' && clubStore.currentClub?.can_manage_teams && !clubSettings?.single_team_mode" 
+              dense color="primary" unelevated icon="auto_awesome" label="Auto FUT" 
+              class="col text-weight-bold shadow-1" style="border-radius: 8px; height: 36px;" 
+              @click="autoBalanceTeams" 
+            />
+            <q-btn 
+              dense color="dark" unelevated icon="visibility" 
+              :label="clubSettings?.single_team_mode ? 'Ver Tática' : 'Resumo'" 
+              class="col text-weight-bold shadow-2" style="border-radius: 8px; height: 36px;" 
+              @click="showTeamsSummaryModal = true" 
+            />
+          </div>
         </q-card-section>
 
         <q-card-section v-if="selectedMatch?.status !== 'fechado' && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)" class="q-pa-md bg-grey-3 border-bottom">
@@ -561,8 +600,10 @@
               <q-item-section>
                 <q-item-label class="text-weight-bold text-dark row items-center">
                   {{ presence.profiles?.name || presence.virtual_players?.name || presence.guest_name }}
-                  <q-badge v-if="presence.team" :color="presence.team === 'A' ? (clubSettings?.default_team_a_color || 'blue') : (clubSettings?.default_team_b_color || 'orange')" class="q-ml-sm text-weight-bold">
-                    {{ presence.team }}
+                  <q-badge v-if="presence.team" 
+                           :color="presence.team === 'A' ? (clubSettings?.single_team_mode ? 'green-9' : (clubSettings?.default_team_a_color || 'blue')) : (clubSettings?.single_team_mode ? 'amber-9' : (clubSettings?.default_team_b_color || 'orange'))" 
+                           class="q-ml-sm text-weight-bold">
+                    {{ clubSettings?.single_team_mode ? (presence.team === 'A' ? 'Titular' : 'Banco') : presence.team }}
                   </q-badge>
                 </q-item-label>
                 <q-item-label caption>
@@ -577,20 +618,19 @@
                   
                   <!-- 1. GESTÃO DE EQUIPAS (Bloqueia se o jogo estiver fechado) -->
                   <template v-if="selectedMatch?.status !== 'fechado' && clubStore.currentClub?.can_manage_teams">
-                    <q-btn 
-                      dense unelevated label="A" class="text-weight-bolder q-mr-xs"
-                      :color="presence.team === 'A' ? (clubSettings?.default_team_a_color || 'blue') : 'grey-3'"
-                      :text-color="presence.team === 'A' ? 'white' : 'grey-8'"
-                      style="border-radius: 4px; width: 18px; height: 18px; min-height: 18px; min-width: 18px; padding: 0; font-size: 10px;"
-                      @click="assignTeam(presence, 'A')"
-                    />
-                    <q-btn 
-                      dense unelevated label="B" class="text-weight-bolder q-mr-sm"
-                      :color="presence.team === 'B' ? (clubSettings?.default_team_b_color || 'orange') : 'grey-3'"
-                      :text-color="presence.team === 'B' ? 'white' : 'grey-8'"
-                      style="border-radius: 4px; width: 18px; height: 18px; min-height: 18px; min-width: 18px; padding: 0; font-size: 10px;"
-                      @click="assignTeam(presence, 'B')"
-                    />
+                    
+                    <!-- MODO NORMAL (Equipa A e B) -->
+                    <template v-if="!clubSettings?.single_team_mode">
+                      <q-btn dense unelevated label="A" class="text-weight-bolder q-mr-xs" :color="presence.team === 'A' ? (clubSettings?.default_team_a_color || 'blue') : 'grey-3'" :text-color="presence.team === 'A' ? 'white' : 'grey-8'" style="border-radius: 4px; width: 18px; height: 18px; min-height: 18px; min-width: 18px; padding: 0; font-size: 10px;" @click="assignTeam(presence, 'A')" />
+                      <q-btn dense unelevated label="B" class="text-weight-bolder q-mr-sm" :color="presence.team === 'B' ? (clubSettings?.default_team_b_color || 'orange') : 'grey-3'" :text-color="presence.team === 'B' ? 'white' : 'grey-8'" style="border-radius: 4px; width: 18px; height: 18px; min-height: 18px; min-width: 18px; padding: 0; font-size: 10px;" @click="assignTeam(presence, 'B')" />
+                    </template>
+
+                    <!-- MODO EQUIPA ÚNICA (Titular vs Banco) -->
+                    <template v-else>
+                      <q-btn dense unelevated icon="sports_soccer" class="text-weight-bolder q-mr-xs" :color="presence.team === 'A' ? 'green-9' : 'grey-3'" :text-color="presence.team === 'A' ? 'white' : 'grey-8'" style="border-radius: 4px; width: 24px; height: 24px; min-height: 24px; min-width: 24px; padding: 0; font-size: 13px;" @click="assignTeam(presence, 'A')"><q-tooltip>Titular</q-tooltip></q-btn>
+                      <q-btn dense unelevated icon="event_seat" class="text-weight-bolder q-mr-sm" :color="presence.team === 'B' ? 'amber-9' : 'grey-3'" :text-color="presence.team === 'B' ? 'white' : 'grey-8'" style="border-radius: 4px; width: 24px; height: 24px; min-height: 24px; min-width: 24px; padding: 0; font-size: 13px;" @click="assignTeam(presence, 'B')"><q-tooltip>Banco de Suplentes</q-tooltip></q-btn>
+                    </template>
+
                   </template>
 
                   <!-- 2. GESTÃO FINANCEIRA (Visível APENAS para Tesoureiro/Dono) -->
@@ -616,7 +656,7 @@
     </q-dialog>
 
     <q-dialog v-model="showCloseModal" persistent>
-      <q-card style="min-width: 340px; max-width: 600px; width: 100%; border-radius: 16px; background: #ffffff;">
+      <q-card class="modal-safe-footer" style="min-width: 340px; max-width: 600px; width: 100%; border-radius: 16px; background: #ffffff;">
         
         <!-- Cabeçalho com o tema principal do clube -->
         <q-card-section class="row items-center club-header-block text-white">
@@ -636,8 +676,8 @@
                 <div :class="`text-caption text-weight-bold text-uppercase text-${clubSettings?.default_team_a_color || 'blue'}`">{{ matchToClose?.team_a_name || 'EQUIPA A' }}</div>
                 <div :class="`text-h2 text-weight-bolder text-${clubSettings?.default_team_a_color || 'blue'}`" style="line-height: 1;">{{ computedScoreA }}</div>
               </div>
-              <div class="col-2 text-h4 text-grey-4 text-weight-bold">-</div>
-              <div class="col-4">
+              <div v-if="!clubSettings?.single_team_mode" class="col-2 text-h4 text-grey-4 text-weight-bold">-</div>
+              <div v-if="!clubSettings?.single_team_mode" class="col-4">
                 <div :class="`text-caption text-weight-bold text-uppercase text-${clubSettings?.default_team_b_color || 'orange'}`">{{ matchToClose?.team_b_name || 'EQUIPA B' }}</div>
                 <div :class="`text-h2 text-weight-bolder text-${clubSettings?.default_team_b_color || 'orange'}`" style="line-height: 1;">{{ computedScoreB }}</div>
               </div>
@@ -683,42 +723,44 @@
 
 
             <!-- LISTA DA EQUIPA B -->
-            <div :class="`text-${matchSettingsColor(matchToClose, 'B')} text-weight-bold q-mt-lg q-mb-sm q-ml-sm row items-center text-uppercase`">
-              <q-icon name="shield" class="q-mr-xs"/> {{ matchToClose?.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
-            </div>
-
-            <div v-for="player in matchPlayersStats.teamB" :key="player.id" class="row no-wrap items-center justify-between q-mb-sm bg-white q-pa-sm shadow-1" :style="`border-radius: 12px; border: 1px solid #f1f5f9; border-left: 4px solid var(--q-${clubSettings?.default_team_b_color || 'orange'});`">
-              
-              <!-- Nome do Jogador -->
-              <div class="text-body2 text-ellipsis text-weight-bold text-dark" style="flex: 1; min-width: 0; padding-right: 8px;">
-                {{ player.name }}
+            <template v-if="!clubSettings?.single_team_mode">
+              <div :class="`text-${matchSettingsColor(matchToClose, 'B')} text-weight-bold q-mt-lg q-mb-sm q-ml-sm row items-center text-uppercase`">
+                <q-icon name="shield" class="q-mr-xs"/> {{ matchToClose?.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
               </div>
-              
-              <!-- Controlos Customizados (+ / -) Clean Design -->
-              <div class="row no-wrap q-gutter-x-md" style="width: auto;">
+
+              <div v-for="player in matchPlayersStats.teamB" :key="player.id" class="row no-wrap items-center justify-between q-mb-sm bg-white q-pa-sm shadow-1" :style="`border-radius: 12px; border: 1px solid #f1f5f9; border-left: 4px solid var(--q-${clubSettings?.default_team_b_color || 'orange'});`">
                 
-                <!-- Golos -->
-                <div class="column items-center">
-                  <div class="text-grey-6 text-weight-bold q-mb-xs" style="font-size: 9px; letter-spacing: 0.5px;">GOLOS</div>
-                  <div class="row items-center no-wrap bg-grey-2" style="border-radius: 20px; padding: 2px;">
-                    <q-btn round dense flat icon="remove" size="10px" :color="player.goals > 0 ? 'dark' : 'grey-4'" :disable="player.goals <= 0" @click="player.goals--" />
-                    <div class="text-weight-bolder text-dark text-center" style="width: 22px; font-size: 14px;">{{ player.goals }}</div>
-                    <q-btn round dense flat icon="add" size="10px" color="dark" @click="player.goals++" />
-                  </div>
+                <!-- Nome do Jogador -->
+                <div class="text-body2 text-ellipsis text-weight-bold text-dark" style="flex: 1; min-width: 0; padding-right: 8px;">
+                  {{ player.name }}
                 </div>
                 
-                <!-- Assistências -->
-                <div class="column items-center">
-                  <div class="text-grey-6 text-weight-bold q-mb-xs" style="font-size: 9px; letter-spacing: 0.5px;">ASSIS</div>
-                  <div class="row items-center no-wrap bg-grey-2" style="border-radius: 20px; padding: 2px;">
-                    <q-btn round dense flat icon="remove" size="10px" :color="player.assists > 0 ? 'dark' : 'grey-4'" :disable="player.assists <= 0" @click="player.assists--" />
-                    <div class="text-weight-bolder text-dark text-center" style="width: 22px; font-size: 14px;">{{ player.assists }}</div>
-                    <q-btn round dense flat icon="add" size="10px" color="dark" @click="player.assists++" />
+                <!-- Controlos Customizados (+ / -) Clean Design -->
+                <div class="row no-wrap q-gutter-x-md" style="width: auto;">
+                  
+                  <!-- Golos -->
+                  <div class="column items-center">
+                    <div class="text-grey-6 text-weight-bold q-mb-xs" style="font-size: 9px; letter-spacing: 0.5px;">GOLOS</div>
+                    <div class="row items-center no-wrap bg-grey-2" style="border-radius: 20px; padding: 2px;">
+                      <q-btn round dense flat icon="remove" size="10px" :color="player.goals > 0 ? 'dark' : 'grey-4'" :disable="player.goals <= 0" @click="player.goals--" />
+                      <div class="text-weight-bolder text-dark text-center" style="width: 22px; font-size: 14px;">{{ player.goals }}</div>
+                      <q-btn round dense flat icon="add" size="10px" color="dark" @click="player.goals++" />
+                    </div>
                   </div>
-                </div>
+                  
+                  <!-- Assistências -->
+                  <div class="column items-center">
+                    <div class="text-grey-6 text-weight-bold q-mb-xs" style="font-size: 9px; letter-spacing: 0.5px;">ASSIS</div>
+                    <div class="row items-center no-wrap bg-grey-2" style="border-radius: 20px; padding: 2px;">
+                      <q-btn round dense flat icon="remove" size="10px" :color="player.assists > 0 ? 'dark' : 'grey-4'" :disable="player.assists <= 0" @click="player.assists--" />
+                      <div class="text-weight-bolder text-dark text-center" style="width: 22px; font-size: 14px;">{{ player.assists }}</div>
+                      <q-btn round dense flat icon="add" size="10px" color="dark" @click="player.assists++" />
+                    </div>
+                  </div>
 
+                </div>
               </div>
-            </div>
+            </template>
           </div>
         </q-card-section>
         
@@ -754,7 +796,7 @@
 
     <!-- MODAL DA EQUIPA TÉCNICA -->
     <q-dialog v-model="showStaffModal">
-      <q-card style="min-width: 350px; max-width: 550px; width: 100%; border-radius: 12px;">
+      <q-card class="modal-safe-footer" style="min-width: 350px; max-width: 550px; width: 100%; border-radius: 12px;">
         
         <q-card-section class="row items-center bg-dark text-white">
           <div class="text-subtitle1 text-weight-bold">Equipa Técnica & Permissões</div>
@@ -857,8 +899,7 @@
     </q-dialog>
 
     <q-dialog v-model="showSettingsModal" transition-show="slide-up" transition-hide="slide-down">
-      <!-- Adicionámos 'margin-bottom: 75px;' para o empurrar para cima e descolar do footer -->
-      <q-card style="width: 100%; max-width: 500px; max-height: 85vh; border-radius: 24px; background: #ffffff; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 75px;">
+      <q-card class="modal-safe-footer" style="width: 100%; max-width: 500px; max-height: 85vh; border-radius: 24px; background: #ffffff; display: flex; flex-direction: column; overflow: hidden;">
 
         <!-- 1. CABEÇALHO PRETO FIXO -->
         <q-card-section class="bg-dark text-white q-py-md" style="flex-shrink: 0;">
@@ -887,29 +928,32 @@
             <div>
               <div class="text-caption text-weight-bold text-grey-8 q-mb-xs">Logística</div>
               <q-input outlined dense v-model="clubSettings.default_location" label="Campo / Local Fixo" class="q-mb-sm" bg-color="white" />
-              <q-input 
-                outlined dense type="number" :min="2"
-                v-model.number="clubSettings.default_max_players" 
-                label="Nº Lotação Máxima" 
-                bg-color="white" 
-                @update:model-value="enforceSquadLimit"
-              />
+              
+              <div class="row q-col-gutter-sm">
+                <div class="col-6">
+                  <q-input outlined dense type="number" :min="2" v-model.number="clubSettings.default_max_players" label="Lotação Máx" bg-color="white" @update:model-value="enforceSquadLimit" />
+                </div>
+                <div class="col-6">
+                  <!-- NOVO CAMPO: Titulares por Equipa -->
+                  <q-input outlined dense type="number" :min="1" v-model.number="clubSettings.default_starters_per_team" label="Titulares (Ex: 11, 7)" bg-color="white" />
+                </div>
+              </div>
             </div>
             
             <!-- EQUIPAS -->
             <div>
               <div class="text-caption text-weight-bold text-grey-8 q-mb-xs">Equipas</div>
-              <q-input outlined dense v-model="clubSettings.default_team_a_name" label="Nome Equipa A" class="q-mb-sm" bg-color="white" />
-              <q-input outlined dense v-model="clubSettings.default_team_b_name" label="Nome Equipa B" bg-color="white" />
+              <q-input outlined dense v-model="clubSettings.default_team_a_name" :label="clubSettings.single_team_mode ? 'Nome da Equipa' : 'Nome Equipa A'" class="q-mb-sm" bg-color="white" />
+              <q-input v-if="!clubSettings.single_team_mode" outlined dense v-model="clubSettings.default_team_b_name" label="Nome Equipa B" bg-color="white" />
             </div>
             
             <!-- CORES -->
             <div>
               <div class="text-caption text-weight-bold text-grey-8 q-mb-xs">Cores Padrão</div>
-              <q-select outlined dense emit-value map-options v-model="clubSettings.default_team_a_color" :options="[{label: 'Bordeaux', value: 'red-10'}, {label: 'Vermelho', value: 'red-8'}, {label: 'Laranja', value: 'orange-8'}, {label: 'Amarelo', value: 'yellow-7'}, {label: 'Verde', value: 'positive'}, {label: 'Verde Tropa', value: 'green-10'}, {label: 'Ciano', value: 'cyan-7'}, {label: 'Azul', value: 'blue'}, {label: 'Azul Marinho', value: 'blue-10'}, {label: 'Roxo', value: 'purple'}, {label: 'Rosa', value: 'pink-6'}, {label: 'Castanho', value: 'brown-6'}, {label: 'Cinzento', value: 'grey-7'}, {label: 'Preto', value: 'dark'}]" label="Cor Equipa A" class="q-mb-sm" bg-color="white">
+              <q-select outlined dense emit-value map-options v-model="clubSettings.default_team_a_color" :options="[{label: 'Bordeaux', value: 'red-10'}, {label: 'Vermelho', value: 'red-8'}, {label: 'Laranja', value: 'orange-8'}, {label: 'Amarelo', value: 'yellow-7'}, {label: 'Verde', value: 'positive'}, {label: 'Verde Tropa', value: 'green-10'}, {label: 'Ciano', value: 'cyan-7'}, {label: 'Azul', value: 'blue'}, {label: 'Azul Marinho', value: 'blue-10'}, {label: 'Roxo', value: 'purple'}, {label: 'Rosa', value: 'pink-6'}, {label: 'Castanho', value: 'brown-6'}, {label: 'Cinzento', value: 'grey-7'}, {label: 'Preto', value: 'dark'}]" :label="clubSettings.single_team_mode ? 'Cor da Equipa' : 'Cor Equipa A'" class="q-mb-sm" bg-color="white">
                 <template v-slot:option="scope"><q-item v-bind="scope.itemProps" class="q-py-xs"><q-item-section avatar><q-avatar :color="scope.opt.value" size="xs" /></q-item-section><q-item-section>{{ scope.opt.label }}</q-item-section></q-item></template>
               </q-select>             
-              <q-select outlined dense emit-value map-options v-model="clubSettings.default_team_b_color" :options="[{label: 'Bordeaux', value: 'red-10'}, {label: 'Vermelho', value: 'negative'}, {label: 'Laranja', value: 'orange'}, {label: 'Amarelo', value: 'yellow-8'}, {label: 'Verde', value: 'positive'}, {label: 'Verde Tropa', value: 'green-10'}, {label: 'Ciano', value: 'cyan-7'}, {label: 'Azul', value: 'blue'}, {label: 'Azul Marinho', value: 'blue-10'}, {label: 'Roxo', value: 'purple'}, {label: 'Rosa', value: 'pink-6'}, {label: 'Castanho', value: 'brown-6'}, {label: 'Cinzento', value: 'grey-7'}, {label: 'Preto', value: 'dark'}]" label="Cor Equipa B" bg-color="white">
+              <q-select v-if="!clubSettings.single_team_mode" outlined dense emit-value map-options v-model="clubSettings.default_team_b_color" :options="[{label: 'Bordeaux', value: 'red-10'}, {label: 'Vermelho', value: 'negative'}, {label: 'Laranja', value: 'orange'}, {label: 'Amarelo', value: 'yellow-8'}, {label: 'Verde', value: 'positive'}, {label: 'Verde Tropa', value: 'green-10'}, {label: 'Ciano', value: 'cyan-7'}, {label: 'Azul', value: 'blue'}, {label: 'Azul Marinho', value: 'blue-10'}, {label: 'Roxo', value: 'purple'}, {label: 'Rosa', value: 'pink-6'}, {label: 'Castanho', value: 'brown-6'}, {label: 'Cinzento', value: 'grey-7'}, {label: 'Preto', value: 'dark'}]" label="Cor Equipa B" bg-color="white">
                 <template v-slot:option="scope"><q-item v-bind="scope.itemProps" class="q-py-xs"><q-item-section avatar><q-avatar :color="scope.opt.value" size="xs" /></q-item-section><q-item-section>{{ scope.opt.label }}</q-item-section></q-item></template>
               </q-select>           
             </div>
@@ -928,6 +972,7 @@
               <div class="column q-gutter-y-sm bg-grey-2 q-pa-sm" style="border-radius: 8px;">
                 <q-toggle v-model="clubSettings.hide_attributes_from_members" color="negative" label="Ocultar Ratings/OVR dos membros" class="text-caption" dense />
                 <q-toggle v-model="clubSettings.enable_voting" color="blue" label="Ativar Votação de MVP pós-jogo" class="text-caption" dense />
+                <q-toggle v-model="clubSettings.single_team_mode" color="yellow-9" label="Modo de Equipa Única" class="text-caption" dense />
               </div>
             </div>
 
@@ -978,7 +1023,7 @@
 
     <!-- MODAL DE VOTAÇÃO (AVALIAÇÕES E MVP) -->
     <q-dialog v-model="showVotingModal" persistent>
-      <q-card class="column no-wrap" style="min-width: 340px; max-width: 500px; width: 100%; border-radius: 16px; max-height: 85vh;">
+      <q-card class="modal-safe-footer column no-wrap" style="min-width: 340px; max-width: 500px; width: 100%; border-radius: 16px; max-height: 85vh;">
         
         <q-card-section class="row items-center col-auto text-white bg-blue-9 q-py-md">
           <div class="text-subtitle1 text-weight-bold row items-center">
@@ -1030,7 +1075,7 @@
 
     <!-- MODAL DOS RESULTADOS FINAIS (MVP E NOTAS) -->
     <q-dialog v-model="showResultsModal">
-      <q-card style="min-width: 340px; max-width: 500px; width: 100%; border-radius: 16px;">
+      <q-card class="modal-safe-footer" style="min-width: 340px; max-width: 500px; width: 100%; border-radius: 16px;">
         
         <q-card-section class="row items-center bg-dark text-white q-py-md">
           <div class="text-subtitle1 text-weight-bold row items-center">
@@ -1083,8 +1128,7 @@
     </q-dialog>
 
     <q-dialog v-model="showTeamsSummaryModal" transition-show="slide-up" transition-hide="slide-down">
-      <!-- Adicionado margin-bottom: 85px para empurrar o modal fisicamente para cima -->
-      <q-card style="min-width: 340px; max-width: 680px; width: 100%; border-radius: 16px; margin-bottom: 85px;">
+      <q-card class="modal-safe-footer" style="min-width: 340px; max-width: 680px; width: 100%; border-radius: 16px;">
                       
         <!-- CABEÇALHO DO MODAL -->
         <q-card-section class="row items-center club-header-block text-white q-py-md">
@@ -1105,90 +1149,55 @@
         <!-- Removido o limite de 'max-height: 75vh' -->
         <q-tab-panels v-model="summaryTab" animated class="bg-grey-1">
                       
-          <!-- Removida a classe 'scroll' para forçar a janela a expandir-se toda -->
           <q-tab-panel name="lista" class="q-pa-md">
             
-            <!-- EQUIPA A -->
+            <!-- EQUIPA A / TITULARES -->
             <div class="q-mb-lg">
               <div class="row justify-between items-center q-mb-sm q-px-sm">
-                <div class="text-weight-bolder text-uppercase text-subtitle1" :class="`text-${clubSettings?.default_team_a_color || 'blue'}`">
-                  <q-icon name="shield" /> {{ selectedMatch?.team_a_name || clubSettings?.default_team_a_name || 'Equipa A' }}
+                <div class="text-weight-bolder text-uppercase text-subtitle1" :class="clubSettings?.single_team_mode ? 'text-green-9' : `text-${clubSettings?.default_team_a_color || 'blue'}`">
+                  <q-icon :name="clubSettings?.single_team_mode ? 'sports_soccer' : 'shield'" /> 
+                  {{ clubSettings?.single_team_mode ? 'Em Campo (Titulares)' : (selectedMatch?.team_a_name || clubSettings?.default_team_a_name || 'Equipa A') }}
                 </div>
-                
-                <!-- OVR Médio Restrito -->
-                <q-chip 
-                  v-if="canSeeStats"
-                  dense 
-                  :color="clubSettings?.default_team_a_color || 'blue'" 
-                  text-color="white" 
-                  class="text-weight-bold shadow-1"
-                >
+                <q-chip v-if="canSeeStats" dense :color="clubSettings?.single_team_mode ? 'green-9' : (clubSettings?.default_team_a_color || 'blue')" text-color="white" class="text-weight-bold shadow-1">
                   Média OVR: {{ teamASummary.avgOVR }}
                 </q-chip>
               </div>
 
               <div class="bg-white shadow-1 overflow-hidden" style="border-radius: 12px; border: 1px solid #e2e8f0;">
                 <div v-if="teamASummary.players.length === 0" class="text-grey-6 text-center q-pa-md">Nenhum jogador atribuído</div>
-                
-                <!-- LISTA CONTÍNUA DE JOGADORES (Começa na cor mais escura: bg-grey-4) -->
-                <div 
-                  v-for="(p, index) in getTeamSectors(teamASummary.players).flatMap(s => s.players)" 
-                  :key="p.id" 
-                  :class="['row justify-between items-center q-py-sm q-px-md', index % 2 === 0 ? 'bg-grey-4' : 'bg-grey-2']"
-                  :style="index !== teamASummary.players.length - 1 ? 'border-bottom: 1px solid rgba(0,0,0,0.08);' : ''"
-                >
+                <div v-for="(p, index) in getTeamSectors(teamASummary.players).flatMap(s => s.players)" :key="p.id" :class="['row justify-between items-center q-py-sm q-px-md', index % 2 === 0 ? 'bg-grey-4' : 'bg-grey-2']" :style="index !== teamASummary.players.length - 1 ? 'border-bottom: 1px solid rgba(0,0,0,0.08);' : ''">
                   <div class="text-dark text-weight-bold text-ellipsis" style="max-width: 65%;">
                     {{ p.profiles?.name || p.virtual_players?.name || p.guest_name }}
                   </div>
-                  <!-- Etiqueta Branca com Controlo de Permissões no OVR -->
                   <div class="text-caption text-weight-bold text-grey-8 bg-white q-px-sm shadow-1" style="border-radius: 6px; border: 1px solid #e2e8f0;">
-                    {{ (p.profiles?.position || p.virtual_players?.position || 'Méd').substring(0,3) }}
-                    <span v-if="canSeeStats">
-                      | {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}
-                    </span>
+                    {{ p.profiles?.specific_position || p.virtual_players?.specific_position || (p.profiles?.position || p.virtual_players?.position || 'Méd').substring(0,3) }}
+                    <span v-if="canSeeStats"> | {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- EQUIPA B -->
-            <div>
+            <!-- EQUIPA B / BANCO (Agora aparece sempre se houver Suplentes) -->
+            <div v-if="!clubSettings?.single_team_mode || teamBSummary.players.length > 0">
               <div class="row justify-between items-center q-mb-sm q-px-sm">
-                <div class="text-weight-bolder text-uppercase text-subtitle1" :class="`text-${clubSettings?.default_team_b_color || 'orange'}`">
-                  <q-icon name="shield" /> {{ selectedMatch?.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
+                <div class="text-weight-bolder text-uppercase text-subtitle1" :class="clubSettings?.single_team_mode ? 'text-amber-9' : `text-${clubSettings?.default_team_b_color || 'orange'}`">
+                  <q-icon :name="clubSettings?.single_team_mode ? 'event_seat' : 'shield'" /> 
+                  {{ clubSettings?.single_team_mode ? 'Banco de Suplentes' : (selectedMatch?.team_b_name || clubSettings?.default_team_b_name || 'Equipa B') }}
                 </div>
-                
-                <!-- OVR Médio Restrito -->
-                <q-chip 
-                  v-if="canSeeStats"
-                  dense 
-                  :color="clubSettings?.default_team_b_color || 'orange'" 
-                  text-color="white" 
-                  class="text-weight-bold shadow-1"
-                >
+                <q-chip v-if="canSeeStats" dense :color="clubSettings?.single_team_mode ? 'amber-9' : (clubSettings?.default_team_b_color || 'orange')" text-color="white" class="text-weight-bold shadow-1">
                   Média OVR: {{ teamBSummary.avgOVR }}
                 </q-chip>
               </div>
 
               <div class="bg-white shadow-1 overflow-hidden" style="border-radius: 12px; border: 1px solid #e2e8f0;">
                 <div v-if="teamBSummary.players.length === 0" class="text-grey-6 text-center q-pa-md">Nenhum jogador atribuído</div>
-                
-                <!-- LISTA CONTÍNUA DE JOGADORES (Começa na cor mais escura: bg-grey-4) -->
-                <div 
-                  v-for="(p, index) in getTeamSectors(teamBSummary.players).flatMap(s => s.players)" 
-                  :key="p.id" 
-                  :class="['row justify-between items-center q-py-sm q-px-md', index % 2 === 0 ? 'bg-grey-4' : 'bg-grey-2']"
-                  :style="index !== teamBSummary.players.length - 1 ? 'border-bottom: 1px solid rgba(0,0,0,0.08);' : ''"
-                >
+                <div v-for="(p, index) in getTeamSectors(teamBSummary.players).flatMap(s => s.players)" :key="p.id" :class="['row justify-between items-center q-py-sm q-px-md', index % 2 === 0 ? 'bg-grey-4' : 'bg-grey-2']" :style="index !== teamBSummary.players.length - 1 ? 'border-bottom: 1px solid rgba(0,0,0,0.08);' : ''">
                   <div class="text-dark text-weight-bold text-ellipsis" style="max-width: 65%;">
                     {{ p.profiles?.name || p.virtual_players?.name || p.guest_name }}
                   </div>
-                  <!-- Etiqueta Branca com Controlo de Permissões no OVR -->
                   <div class="text-caption text-weight-bold text-grey-8 bg-white q-px-sm shadow-1" style="border-radius: 6px; border: 1px solid #e2e8f0;">
-                    {{ (p.profiles?.position || p.virtual_players?.position || 'Méd').substring(0,3) }}
-                    <span v-if="canSeeStats">
-                      | {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}
-                    </span>
+                    {{ p.profiles?.specific_position || p.virtual_players?.specific_position || (p.profiles?.position || p.virtual_players?.position || 'Méd').substring(0,3) }}
+                    <span v-if="canSeeStats"> | {{ p.profiles?.overall || p.virtual_players?.overall || 70 }}</span>
                   </div>
                 </div>
               </div>
@@ -1199,8 +1208,8 @@
           <!-- ABA 2: O RELVADO TÁTICO AMPLIADO -->
           <q-tab-panel name="campo" class="q-pa-md bg-white">
             
-            <!-- AS 3 OPÇÕES DE VISTA (Com botões maiores e mais largos) -->
-            <div class="row justify-center q-mb-md q-px-md">
+            <!-- OPÇÕES DE VISTA (Desaparecem no Single Team) -->
+            <div v-if="!clubSettings?.single_team_mode" class="row justify-center q-mb-md q-px-md">
               <q-btn-group rounded outline class="shadow-1 full-width" style="max-width: 450px;">
                 <q-btn :outline="viewTeam !== 'A'" :color="clubSettings?.default_team_a_color || 'blue'" :label="selectedMatch?.team_a_name || 'Equipa A'" @click="viewTeam = 'A'" size="md" class="col text-weight-bold" />
                 <q-btn :outline="viewTeam !== 'BOTH'" color="dark" label="Ambas" @click="viewTeam = 'BOTH'" size="md" class="col text-weight-bold" />
@@ -1208,15 +1217,16 @@
               </q-btn-group>
             </div>
 
-            <!-- RELVADO ÚNICO (Equipa A ou B - Com bolinha, nome em baixo e OVR condicional para Admins) -->
-            <div v-if="viewTeam !== 'BOTH'" class="tactics-pitch-large shadow-3">
+            <!-- RELVADO ÚNICO -->
+            <div v-if="clubSettings?.single_team_mode || viewTeam !== 'BOTH'" class="tactics-pitch-large shadow-3">
               <div class="pitch-line-center"></div>
               <div class="pitch-circle"></div>
               <div class="pitch-area-top"></div>
               <div class="pitch-area-bottom"></div>
 
               <div class="pitch-formation">
-                <div v-for="(line, index) in getFormation(viewTeam === 'A' ? teamASummary.players : teamBSummary.players)" :key="index" class="formation-line">
+                <!-- AQUI ENVIAMOS A TÁTICA SELECIONADA PARA A FUNÇÃO -->
+                <div v-for="(line, index) in getFormation(clubSettings?.single_team_mode || viewTeam === 'A' ? teamASummary.players : teamBSummary.players, selectedFormation)" :key="index" class="formation-line">
                   <div v-for="p in line" :key="p.id" class="player-dot-large">
                     
                     <!-- Círculo do Jogador -->
@@ -1288,8 +1298,8 @@
     </q-dialog>
 
     <!-- MODAL DO PERFIL PESSOAL -->
-    <q-dialog v-model="showProfileModal">
-      <q-card style="min-width: 340px; max-width: 450px; width: 100%; border-radius: 16px;">
+    <q-dialog v-model="showProfileModal" persistent>
+      <q-card class="modal-safe-footer" style="min-width: 340px; max-width: 450px; width: 100%; border-radius: 16px;">
         <q-card-section class="row items-center bg-dark text-white q-py-md">
           <div class="text-subtitle1 text-weight-bold row items-center">
             <q-icon name="badge" class="q-mr-sm text-primary" size="sm" /> O Meu Perfil
@@ -1300,6 +1310,44 @@
         <q-card-section class="q-pa-md scroll" style="max-height: 70vh;">
           <div class="column q-gutter-y-md">
             
+            <!-- ZONA DA FOTO DE PERFIL -->
+            <div class="column items-center q-mb-sm">
+              <q-avatar size="90px" class="shadow-3 bg-grey-3 relative-position">
+                
+                <!-- Renderiza a foto escolhida, ou a da base de dados, ou do Google -->
+                <img v-if="computedAvatar" :src="computedAvatar" />
+                <q-icon v-else name="person" size="60px" color="grey-5" />
+                
+                <!-- BOTÃO DE APAGAR (Topo Esquerdo) - Só aparece se houver imagem -->
+                <q-badge 
+                  v-if="computedAvatar" 
+                  color="negative" 
+                  rounded 
+                  class="absolute shadow-2 cursor-pointer" 
+                  style="padding: 6px; left: -4px; top: -4px; z-index: 2;" 
+                  @click="clearAvatar"
+                >
+                  <q-icon name="delete" size="sm" />
+                </q-badge>
+
+                <!-- BOTÃO DE EDITAR/ADICIONAR (Topo Direito) - Sempre visível -->
+                <q-badge 
+                  color="primary" 
+                  rounded 
+                  class="absolute shadow-2 cursor-pointer" 
+                  style="padding: 6px; right: -4px; top: -4px; z-index: 2;" 
+                  @click="$refs.filePicker.pickFiles()"
+                >
+                  <!-- Muda inteligentemente de ícone (câmara se não tiver foto, lápis se tiver) -->
+                  <q-icon :name="computedAvatar ? 'edit' : 'add_a_photo'" size="sm" />
+                </q-badge>
+
+              </q-avatar>
+              
+              <!-- Input de Ficheiro Oculto -->
+              <q-file v-show="false" ref="filePicker" v-model="profileForm.avatarFile" accept="image/*" @update:model-value="onAvatarSelected" />
+            </div>
+
             <div class="text-caption text-weight-bold text-grey-8">Dados Pessoais</div>
             
             <q-input outlined dense v-model="profileForm.name" label="Nome de Jogador" color="primary" bg-color="grey-1">
@@ -1310,12 +1358,19 @@
             <div class="text-caption text-weight-bold text-grey-8">Preferências de Campo</div>
 
             <div class="row q-col-gutter-sm">
-              <div class="col-6">
-                <q-select outlined dense v-model="profileForm.position" :options="['Guarda-Redes', 'Defesa', 'Médio', 'Avançado']" label="Posição" color="primary" bg-color="grey-1">
+              <div class="col-12 col-sm-6">
+                <!-- Se mudares a Posição Geral, a Específica é limpa -->
+                <q-select outlined dense v-model="profileForm.position" :options="['Guarda-Redes', 'Defesa', 'Médio', 'Avançado']" label="Posição Geral" color="primary" bg-color="grey-1" @update:model-value="profileForm.specific_position = ''">
                   <template v-slot:prepend><q-icon name="sports_soccer" color="grey-7" size="xs" /></template>
                 </q-select>
               </div>
-              <div class="col-6">
+              <div class="col-12 col-sm-6">
+                <!-- Mostra apenas as posições específicas consoante o que escolheste na Geral -->
+                <q-select outlined dense v-model="profileForm.specific_position" :options="specificPositionsMap[profileForm.position]" emit-value map-options label="Posição Específica" color="primary" bg-color="grey-1">
+                  <template v-slot:prepend><q-icon name="explore" color="grey-7" size="xs" /></template>
+                </q-select>
+              </div>
+              <div class="col-12">
                 <q-select outlined dense v-model="profileForm.preferred_foot" :options="['Direito', 'Esquerdo', 'Ambos']" label="Pé Preferido" color="primary" bg-color="grey-1">
                   <template v-slot:prepend><q-icon name="do_not_step" color="grey-7" size="xs" /></template>
                 </q-select>
@@ -1354,7 +1409,7 @@
 </template>
   
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from 'stores/useAuthStore'
 import { useClubStore } from 'stores/useClubStore'
 import { supabase } from 'boot/supabase'
@@ -1376,6 +1431,37 @@ let realtimeChannel
 const matchViewMode = ref('next')
 const selectedMonth = ref(null)
 
+// NOVO: Dicionário de posições específicas
+const specificPositionsMap = {
+  'Guarda-Redes': [{ label: 'Guarda-Redes (GR)', value: 'GR' }],
+  'Defesa': [
+    { label: 'Defesa Central (DC)', value: 'DC' },
+    { label: 'Lateral Direito (LD)', value: 'LD' },
+    { label: 'Lateral Esquerdo (LE)', value: 'LE' },
+    { label: 'Ala Direito (AD)', value: 'AD' },
+    { label: 'Ala Esquerdo (AE)', value: 'AE' }
+  ],
+  'Médio': [
+    { label: 'Trinco / Defensivo (MDC)', value: 'MDC' },
+    { label: 'Médio Centro (MC)', value: 'MC' },
+    { label: 'Médio Ofensivo (MCO)', value: 'MCO' },
+    { label: 'Médio Direito (MD)', value: 'MD' },
+    { label: 'Médio Esquerdo (ME)', value: 'ME' }
+  ],
+  'Avançado': [
+    { label: 'Ponta de Lança (PL)', value: 'PL' },
+    { label: 'Segundo Avançado (SA)', value: 'SA' },
+    { label: 'Extremo Direito (ED)', value: 'ED' },
+    { label: 'Extremo Esquerdo (EE)', value: 'EE' }
+  ]
+}
+
+// 1. Atualizar o Profile Form
+const profileForm = ref({ 
+  name: '', position: 'Médio', specific_position: '', preferred_foot: 'Direito', // <-- ADICIONADO specific_position
+  newPassword: '', confirmPassword: '', avatarFile: null, previewUrl: null, removeAvatar: false
+})
+
 function matchSettingsColor(match, teamType) {
   if (teamType === 'A') {
     return clubSettings.value?.default_team_a_color || 'blue'
@@ -1389,53 +1475,90 @@ const showProfileModal = ref(false)
 const savingProfile = ref(false)
 const isPwdProfile1 = ref(true)
 const isPwdProfile2 = ref(true)
-const profileForm = ref({ name: '', position: 'Médio', preferred_foot: 'Direito', newPassword: '', confirmPassword: '' })
 
+function onAvatarSelected(file) {
+  if (file) {
+    profileForm.value.previewUrl = URL.createObjectURL(file)
+  }
+}
+
+// 3. Limpar o preview quando se abre o modal
 function openProfileModal() {
   profileForm.value.name = authStore.profile?.name || ''
   profileForm.value.position = authStore.profile?.position || 'Médio'
+  profileForm.value.specific_position = authStore.profile?.specific_position || '' 
   profileForm.value.preferred_foot = authStore.profile?.preferred_foot || 'Direito'
   profileForm.value.newPassword = ''
   profileForm.value.confirmPassword = ''
+  profileForm.value.avatarFile = null
+  profileForm.value.previewUrl = null
+  profileForm.value.removeAvatar = false
   isPwdProfile1.value = true
   isPwdProfile2.value = true
   showProfileModal.value = true
 }
 
 async function saveProfile() {
-  // Verifica se as passwords coincidem antes de enviar para o servidor
   if (profileForm.value.newPassword && profileForm.value.newPassword !== profileForm.value.confirmPassword) {
     $q.notify({ type: 'warning', message: 'As passwords não coincidem.' })
     return
   }
-
+  
   savingProfile.value = true
   try {
+    let finalAvatarUrl = authStore.profile?.avatar_url
+
+    // SE CLICOU NO LIXO: Apaga o ficheiro e bloqueia a foto do Google com string vazia
+    if (profileForm.value.removeAvatar) {
+      if (authStore.profile?.avatar_url && authStore.profile.avatar_url !== '') {
+        const oldFileName = authStore.profile.avatar_url.split('/').pop()
+        await supabase.storage.from('avatars').remove([oldFileName])
+      }
+      finalAvatarUrl = ''
+    } 
+    // SE ESCOLHEU FOTO NOVA: Faz upload para o Supabase
+    else if (profileForm.value.avatarFile) {
+      const file = profileForm.value.avatarFile
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${authStore.user.id}-${Date.now()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true })
+      if (uploadError) throw uploadError
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      finalAvatarUrl = data.publicUrl
+    }
+    // CORREÇÃO: SE NÃO MEXEU NA FOTO, MAS TEM GOOGLE: Copia a foto do Google para a BD!
+    else if (!finalAvatarUrl && authStore.user?.user_metadata?.avatar_url) {
+      finalAvatarUrl = authStore.user.user_metadata.avatar_url
+    }
+
     const updates = {
       name: profileForm.value.name.trim(),
       position: profileForm.value.position,
-      preferred_foot: profileForm.value.preferred_foot
+      specific_position: profileForm.value.specific_position,
+      preferred_foot: profileForm.value.preferred_foot,
+      avatar_url: finalAvatarUrl 
     }
 
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', authStore.user.id)
-    
+    const { error: profileError } = await supabase.from('profiles').update(updates).eq('id', authStore.user.id)
     if (profileError) throw profileError
     
     if (authStore.profile) {
       authStore.profile.name = updates.name
       authStore.profile.position = updates.position
+      authStore.profile.specific_position = updates.specific_position 
       authStore.profile.preferred_foot = updates.preferred_foot
+      authStore.profile.avatar_url = updates.avatar_url
     }
     
     if (profileForm.value.newPassword) {
-      const { error: passError } = await supabase.auth.updateUser({ 
-        password: profileForm.value.newPassword 
-      })
+      const { error: passError } = await supabase.auth.updateUser({ password: profileForm.value.newPassword })
       if (passError) throw passError
     }
+    
+    // CORREÇÃO: Carimbo no telemóvel para impedir o modal de abrir nos primeiros 2 minutos
+    localStorage.setItem('profile_completed', 'true')
     
     $q.notify({ type: 'positive', icon: 'check_circle', message: 'Ficha de jogador atualizada!' })
     showProfileModal.value = false
@@ -1445,6 +1568,35 @@ async function saveProfile() {
     savingProfile.value = false
   }
 }
+
+// 2. Cria a função que limpa a vista após confirmação
+function clearAvatar() {
+  $q.dialog({
+    title: 'Remover Foto',
+    message: 'Tens a certeza que queres apagar a tua foto de perfil?',
+    cancel: { label: 'Cancelar', flat: true, color: 'grey-7' },
+    ok: { label: 'Sim, Apagar', color: 'negative', unelevated: true },
+    persistent: true
+  }).onOk(() => {
+    profileForm.value.avatarFile = null
+    profileForm.value.previewUrl = null
+    profileForm.value.removeAvatar = true
+  })
+}
+
+// 3. Força a esconder se a flag estiver ativa
+const computedAvatar = computed(() => {
+  if (profileForm.value.removeAvatar) return null;
+  if (profileForm.value.previewUrl) return profileForm.value.previewUrl;
+  
+  // NOVO: Se o campo tiver uma string vazia, o utilizador forçou a remoção. Bloqueia o Google.
+  if (authStore.profile?.avatar_url === '') return null; 
+  
+  if (authStore.profile?.avatar_url) return authStore.profile.avatar_url;
+  if (authStore.user?.user_metadata?.avatar_url) return authStore.user.user_metadata.avatar_url;
+  
+  return null;
+})
 
 // Função para a seta da Direita
 function nextFilter() {
@@ -1602,25 +1754,36 @@ onMounted(async () => {
     }
   }
 
+  // NOVO: Se o user existe mas o perfil falhou ao descarregar no login, tenta novamente
+  if (authStore.user && !authStore.profile) {
+    await authStore.fetchProfile(authStore.user.id)
+  }
+
   // Carregar as chaves de permissões granulares do utilizador para este clube
   if (authStore.user && (!clubStore.currentClub || clubStore.currentClub.id !== props.id)) {
     const { data } = await supabase
       .from('club_members')
-      .select('role, is_owner, can_manage_finances, can_manage_teams, can_manage_matches, clubs(id, name)')
+      .select('role, is_owner, can_manage_finances, can_manage_teams, can_manage_matches, clubs(id, name, invite_code)')
       .eq('club_id', props.id)
       .eq('profile_id', authStore.user.id)
       .single()
-      
+
     if (data) {
       clubStore.setClub({
         id: data.clubs.id,
         name: data.clubs.name,
+        invite_code: data.clubs.invite_code, 
         role: data.role,
         is_owner: data.is_owner,
         can_manage_finances: data.can_manage_finances,
         can_manage_teams: data.can_manage_teams,
         can_manage_matches: data.can_manage_matches
       })
+    } else {
+      // CORREÇÃO CRÍTICA: Se a base de dados rejeitar (ex: cookie antigo), limpa o erro e recambia o jogador!
+      clubStore.setClub(null) 
+      router.push('/selector')
+      return // Aborta o carregamento! Impede que o pop-up do perfil abra no ecrã vazio.
     }
   }
   
@@ -1628,6 +1791,20 @@ onMounted(async () => {
   await fetchMatches()
   await fetchUserVotes()
   await fetchPendingRequests()
+
+  // NOVO: Adiciona a verificação do localStorage para quebrar o loop dos 2 minutos
+  const isNewAccount = authStore.user && (new Date() - new Date(authStore.user.created_at) < 120000)
+  const isMissingData = !authStore.profile?.name || !authStore.profile?.position || !authStore.profile?.preferred_foot
+  const hasCompletedProfile = localStorage.getItem('profile_completed') === 'true'
+
+  if ((isNewAccount && !hasCompletedProfile) || isMissingData) {
+    openProfileModal()
+    
+    // Auto-preenche o nome com os dados do Google se o formulário estiver vazio
+    if (!profileForm.value.name && authStore.user?.user_metadata?.full_name) {
+      profileForm.value.name = authStore.user.user_metadata.full_name
+    }
+  }
 
   realtimeChannel = supabase
     .channel('presences-channel')
@@ -1662,17 +1839,20 @@ const pendingRequests = ref([])
 
 async function fetchPendingRequests() {
   if (!clubStore.currentClub?.can_manage_teams && !clubStore.currentClub?.is_owner) return
-  
   const { data, error } = await supabase
     .from('club_members')
-    .select('profile_id, profiles(name)') // Removido o 'id' que não existe
+    .select('profile_id, profiles(name)')
     .eq('club_id', props.id)
     .eq('status', 'pending')
-    
+       
   if (error) {
     $q.notify({ type: 'negative', message: 'Erro ao carregar pedidos: ' + error.message })
-  } else if (data) {
+  } else if (data && data.length > 0) {
     pendingRequests.value = data
+    // Abre o pop-up automaticamente mal deteta pedidos pendentes
+    showRequestsModal.value = true
+  } else {
+    pendingRequests.value = []
   }
 }
 
@@ -1702,6 +1882,7 @@ function applyDefaults(isToggled) {
   if (isToggled) {
     newMatch.value.location = clubSettings.value?.default_location || ''
     newMatch.value.max_players = clubSettings.value?.default_max_players || 14
+    newMatch.value.starters_per_team = clubSettings.value?.default_starters_per_team || 11
     newMatch.value.price_per_player = clubSettings.value?.default_price || 5.00
     newMatch.value.team_a_name = clubSettings.value?.default_team_a_name || 'Equipa A' 
     newMatch.value.team_b_name = clubSettings.value?.default_team_b_name || 'Equipa B' 
@@ -1795,26 +1976,31 @@ async function saveMatch() {
 }
 
 async function executeSaveMatch() {
-  // A SOLUÇÃO: Converter a data do input para o formato UTC oficial antes de enviar para o Supabase
+  // Converter a data do input para o formato UTC oficial
   const dateToSave = new Date(newMatch.value.date).toISOString()
   
   if (newMatch.value.id) {
     if (applyToFuture.value) {
-      await supabase.from('matches').update({
+      const { error } = await supabase.from('matches').update({
         date: dateToSave, 
         location: newMatch.value.location,
         max_players: newMatch.value.max_players, 
+        starters_per_team: newMatch.value.starters_per_team,
         price_per_player: newMatch.value.price_per_player
       }).eq('id', newMatch.value.id)
       
-      const { error } = await supabase.from('matches').update({
+      await supabase.from('matches').update({
         location: newMatch.value.location, 
         max_players: newMatch.value.max_players, 
         price_per_player: newMatch.value.price_per_player
       }).eq('club_id', clubStore.currentClub.id).eq('status', 'aberto').gt('date', dateToSave)
       
-      if (!error) $q.notify({ type: 'positive', message: 'Jogo atualizado e regras aplicadas ao calendário futuro!' })
-      else $q.notify({ type: 'negative', message: 'Erro: ' + error.message })
+      if (!error) {
+        $q.notify({ type: 'positive', message: 'Jogo atualizado e regras aplicadas ao calendário futuro!' })
+        await fetchMatches(true) // <-- MAGIA: Atualiza a lista por trás sem o utilizador notar
+      } else {
+        $q.notify({ type: 'negative', message: 'Erro: ' + error.message })
+      }
     } else {
       const { error } = await supabase.from('matches').update({
         date: dateToSave, 
@@ -1823,8 +2009,12 @@ async function executeSaveMatch() {
         price_per_player: newMatch.value.price_per_player
       }).eq('id', newMatch.value.id)
       
-      if (!error) $q.notify({ type: 'positive', message: 'Jogo atualizado com sucesso!' })
-      else $q.notify({ type: 'negative', message: 'Erro: ' + error.message })
+      if (!error) {
+        $q.notify({ type: 'positive', message: 'Jogo atualizado com sucesso!' })
+        await fetchMatches(true) // <-- MAGIA: Atualiza a lista
+      } else {
+        $q.notify({ type: 'negative', message: 'Erro: ' + error.message })
+      }
     }
     showCreateModal.value = false
   } else {
@@ -1832,6 +2022,7 @@ async function executeSaveMatch() {
       date: dateToSave, 
       location: newMatch.value.location,
       max_players: newMatch.value.max_players, 
+      starters_per_team: newMatch.value.starters_per_team,
       price_per_player: newMatch.value.price_per_player,
       team_a_name: newMatch.value.team_a_name, 
       team_b_name: newMatch.value.team_b_name, 
@@ -1839,31 +2030,29 @@ async function executeSaveMatch() {
       status: 'aberto' 
     }
     
-    // O .select().single() no final é vital para recebermos o ID do jogo acabado de criar!
     const { data: newMatchData, error } = await supabase.from('matches').insert([matchToInsert]).select().single()
 
     if (!error) {
-      // A MAGIA: Se bloqueaste com definições de clube E tens titulares definidos...
       if (useDefaultSettings.value && clubSettings.value.default_squad?.length > 0) {
-        
-        // Empacota os titulares todos
         const autoPresences = clubSettings.value.default_squad.map(p => ({
           match_id: newMatchData.id,
           status: 'confirmed',
           profile_id: p.type === 'real' ? p.value : null,
           virtual_player_id: p.type === 'virtual' ? p.value : null
         }))
-        
-        // Inscreve-os numa única viagem à Base de Dados
         await supabase.from('match_presences').insert(autoPresences)
       }
 
       $q.notify({ type: 'positive', message: 'Pelada agendada com sucesso!' })
       showCreateModal.value = false
+      await fetchMatches(true) // <-- MAGIA: O jogo acabado de criar aparece INSTANTANEAMENTE
     } else {
       $q.notify({ type: 'negative', message: 'Erro ao criar: ' + error.message })
     }
   }
+  
+  // Garante que o botão de "Criar Partida" nunca fica encravado em loading
+  saving.value = false
 }
 
 async function deleteMatch(match) {
@@ -1892,7 +2081,7 @@ async function deleteMatch(match) {
     } else {
       // Correu tudo bem e a linha foi mesmo apagada
       $q.notify({ type: 'positive', icon: 'delete', message: 'Jogo apagado do calendário.' });
-      await fetchMatches(); // Atualiza a lista visualmente
+      await fetchMatches(true); // Atualiza a lista visualmente
     }
     
     saving.value = false;
@@ -1972,55 +2161,7 @@ async function handleLogout() {
 // VARIÁVEIS DO QUADRO TÁTICO
 const summaryTab = ref('lista')
 const viewTeam = ref('A')
-
-// Separa a equipa em "Linhas" de forma dinâmica
-function getFormation(players) {
-  if (!players || players.length === 0) return []
-  
-  // Função inteligente que olha apenas para a 1ª letra (ignora erros de acentos)
-  const getSector = (p) => {
-    const rawPos = p.profiles?.position || p.virtual_players?.position || 'M'
-    const letter = rawPos.trim().toUpperCase().charAt(0)
-    
-    if (letter === 'G') return 'GR'
-    if (letter === 'D') return 'DEF'
-    if (letter === 'A') return 'AV'
-    return 'MED' // Por defeito vai para o meio-campo
-  }
-  
-  // 1. Agrupar quem está em campo por posição
-  const gr = players.filter(p => getSector(p) === 'GR')
-  const def = players.filter(p => getSector(p) === 'DEF')
-  const med = players.filter(p => getSector(p) === 'MED')
-  const av = players.filter(p => getSector(p) === 'AV')
-  
-  // 2. O ".filter" final é o que faz a magia: se uma equipa jogar sem avançados, 
-  // essa linha é apagada e o campo distribui o espaço pelos restantes.
-  return [av, med, def, gr].filter(line => line.length > 0)
-}
-
-// Inverte a formação para a Equipa B atacar de cima para o centro
-function getFormationReversed(players) {
-  if (!players || players.length === 0) return []
-  
-  const getSector = (p) => {
-    const rawPos = p.profiles?.position || p.virtual_players?.position || 'M'
-    const letter = rawPos.trim().toUpperCase().charAt(0)
-    
-    if (letter === 'G') return 'GR'
-    if (letter === 'D') return 'DEF'
-    if (letter === 'A') return 'AV'
-    return 'MED'
-  }
-  
-  const gr = players.filter(p => getSector(p) === 'GR')
-  const def = players.filter(p => getSector(p) === 'DEF')
-  const med = players.filter(p => getSector(p) === 'MED')
-  const av = players.filter(p => getSector(p) === 'AV')
-  
-  // Ordem invertida: GR em cima, depois Defesas, Médios e Avançados encostados ao meio-campo
-  return [gr, def, med, av].filter(line => line.length > 0)
-}
+const selectedFormation = ref('4-3-3')
 
 // Agrupa e ordena os jogadores por setores e overall decrescente para a Visão por Lista
 function getTeamSectors(players) {
@@ -2066,21 +2207,269 @@ const loadingPresences = ref(false)
 
 const showTeamsSummaryModal = ref(false)
 
-// Agrupa e calcula as estatísticas da Equipa A
-const teamASummary = computed(() => {
-  const players = presences.value.filter(p => p.team === 'A' && p.status === 'confirmed')
-  const totalOVR = players.reduce((sum, p) => sum + Number(p.profiles?.overall || p.virtual_players?.overall || 70), 0)
-  const avgOVR = players.length > 0 ? Math.round(totalOVR / players.length) : 0
-  return { players, avgOVR, count: players.length }
+const clubSettings = ref({ 
+  default_max_players: 14, default_price: 5, monthly_price_per_game: 4, default_location: '', 
+  recurring_day_of_week: 2, recurring_time: '21:00',
+  attribute_mode: 'numeric', hide_attributes_from_members: false,
+  enable_voting: true,
+  single_team_mode: false,
+  default_starters_per_team: 11,
+  default_team_a_name: 'Equipa A', default_team_b_name: 'Equipa B',
+  default_squad: []
 })
 
-// Agrupa e calcula as estatísticas da Equipa B
-const teamBSummary = computed(() => {
-  const players = presences.value.filter(p => p.team === 'B' && p.status === 'confirmed')
+const newMatch = ref({ 
+  id: null, date: '', location: '', max_players: 14, price_per_player: 5.00,
+  starters_per_team: 11,
+  team_a_name: 'Equipa A', team_b_name: 'Equipa B' // <- NOVO
+})
+
+const matchStarters = computed(() => selectedMatch.value?.starters_per_team || clubSettings.value?.default_starters_per_team || 11)
+
+function getSummaryStats(players) {
   const totalOVR = players.reduce((sum, p) => sum + Number(p.profiles?.overall || p.virtual_players?.overall || 70), 0)
   const avgOVR = players.length > 0 ? Math.round(totalOVR / players.length) : 0
   return { players, avgOVR, count: players.length }
-})
+}
+
+// A INTELIGÊNCIA: Escolhe os titulares ESPECIFICAMENTE para cumprir a tática (trazendo sempre 1 GR)
+const singleTeamDistribution = computed(() => {
+  let pool = presences.value.filter(p => p.status === 'confirmed' && p.team !== 'B');
+  let bench = presences.value.filter(p => p.status === 'confirmed' && p.team === 'B');
+
+  // Ordenar a pool pelos melhores OVR primeiro
+  pool.sort((a, b) => {
+     const ovrA = a.profiles?.overall || a.virtual_players?.overall || 70;
+     const ovrB = b.profiles?.overall || b.virtual_players?.overall || 70;
+     return ovrB - ovrA;
+  });
+
+  const maxStarters = matchStarters.value;
+  let starters = [];
+
+  if (!selectedFormation.value) {
+     starters = pool.splice(0, maxStarters);
+     bench.push(...pool);
+     return { starters, bench };
+  }
+
+  // Descodifica qualquer tática (Mesmo "4-2-3-1" é convertida corretamente para D:4, M:5, A:1)
+  const parts = selectedFormation.value.split('-').map(Number);
+  let d_req = parts[0];
+  let a_req = parts[parts.length - 1];
+  let m_req = parts.slice(1, parts.length - 1).reduce((sum, val) => sum + val, 0);
+
+  function getPlayerGenPos(p) { return p.profiles?.position || p.virtual_players?.position || 'Médio'; }
+
+  const extractPlayers = (count, prefGen, altGen = []) => {
+    let selected = [];
+    // 1º: Procura os jogadores que marcaste manualmente a 'A' e que são da posição correta
+    for (let i = 0; i < pool.length && selected.length < count; i++) {
+      if (pool[i].team === 'A' && getPlayerGenPos(pool[i]) === prefGen) { selected.push(pool.splice(i, 1)[0]); i--; }
+    }
+    // 2º: Procura os melhores jogadores da posição (que não estavam marcados)
+    for (let i = 0; i < pool.length && selected.length < count; i++) {
+      if (getPlayerGenPos(pool[i]) === prefGen) { selected.push(pool.splice(i, 1)[0]); i--; }
+    }
+    // 3º: Procura adaptações possíveis (Ex: Pôr médios à defesa se faltarem defesas)
+    for (let alt of altGen) {
+      for (let i = 0; i < pool.length && selected.length < count; i++) {
+        if (getPlayerGenPos(pool[i]) === alt) { selected.push(pool.splice(i, 1)[0]); i--; }
+      }
+    }
+    // 4º: Força os manuais 'A' que sobraram (mesmo fora de posição) e enche o resto
+    for (let i = 0; i < pool.length && selected.length < count; i++) {
+      if (pool[i].team === 'A') { selected.push(pool.splice(i, 1)[0]); i--; }
+    }
+    while (selected.length < count && pool.length > 0) { selected.push(pool.shift()); }
+    return selected;
+  };
+
+  // Garante a extração na ordem certa: 1º GR, 2º Defesas, 3º Avançados, e deixa os Médios (mais versáteis) para o fim
+  let grLine = extractPlayers(1, 'Guarda-Redes', ['Defesa']);
+  let defLine = extractPlayers(d_req, 'Defesa', ['Médio']);
+  let attLine = extractPlayers(a_req, 'Avançado', ['Médio']);
+  let midLine = extractPlayers(m_req, 'Médio', ['Defesa', 'Avançado']);
+
+  starters = [...grLine, ...defLine, ...midLine, ...attLine];
+
+  // Se a matemática da tática falhar em chegar ao total, compõe com quem sobrou
+  while (starters.length < maxStarters && pool.length > 0) {
+    starters.push(pool.shift());
+  }
+
+  bench.push(...pool); // Quem não foi puxado, vai para o banco
+
+  return { starters, bench };
+});
+
+const teamASummary = computed(() => {
+  if (clubSettings.value?.single_team_mode) return getSummaryStats(singleTeamDistribution.value.starters);
+  return getSummaryStats(presences.value.filter(p => p.status === 'confirmed' && p.team === 'A'));
+});
+
+const teamBSummary = computed(() => {
+  if (clubSettings.value?.single_team_mode) return getSummaryStats(singleTeamDistribution.value.bench);
+  return getSummaryStats(presences.value.filter(p => p.status === 'confirmed' && p.team === 'B'));
+});
+
+const tacticalMap = {
+  // Ordenação Horizontal: 1 (Esquerda), 2 (Centro), 3 (Direita)
+  horizontal: {
+    'LE': 1, 'AE': 1, 'ME': 1, 'EE': 1,
+    'DC': 2, 'MDC': 2, 'MC': 2, 'MCO': 2, 'SA': 2, 'PL': 2, 'GR': 2,
+    'LD': 3, 'AD': 3, 'MD': 3, 'ED': 3
+  },
+  // Ordenação Vertical Clássica (para quando são 2 equipas frente a frente)
+  vertical: {
+    'PL': 1, 'SA': 1, 'EE': 2, 'MCO': 2, 'ED': 2,
+    'ME': 3, 'MC': 3, 'MD': 3, 'AE': 3, 'AD': 3,
+    'MDC': 4, 'LE': 5, 'DC': 5, 'LD': 5, 'GR': 6
+  }
+}
+
+// Gera TODAS as combinações matemáticas possíveis sem filtrar por quem está no plantel!
+const availableFormations = computed(() => {
+  const outfield = matchStarters.value - 1; // Retira o GR
+  let allForms = [];
+
+  const minD = Math.max(1, Math.floor(outfield * 0.2)); 
+  const maxD = Math.min(outfield - 2, 5); // Max 5 defesas               
+  const minM = Math.max(1, Math.floor(outfield * 0.2)); 
+  const maxM = Math.min(outfield - 1, 5); // Max 5 médios
+  const minA = 0;
+  const maxA = Math.min(outfield - 2, 4); // Max 4 avançados
+
+  for (let d = minD; d <= maxD; d++) {
+    for (let m = minM; m <= maxM; m++) {
+      let a = outfield - d - m;
+      if (a >= minA && a <= maxA) {
+        allForms.push({ label: `${d}-${m}-${a}`, value: `${d}-${m}-${a}` });
+      }
+    }
+  }
+  
+  // Adiciona opções híbridas famosas manualmente, se estiverem a jogar Futebol 11
+  if (outfield === 10) {
+    allForms.push({ label: '4-2-3-1', value: '4-2-3-1' });
+    allForms.push({ label: '4-1-2-1-2', value: '4-1-2-1-2' });
+  }
+
+  // Ordena por ordem alfabética inversa (para que o 4-3-3 e 4-4-2 fiquem no topo)
+  return allForms.sort((a,b) => b.value.localeCompare(a.value));
+});
+
+watch(availableFormations, (newForms) => {
+  if (!newForms.find(f => f.value === selectedFormation.value) && newForms.length > 0) {
+    selectedFormation.value = newForms[0].value;
+  }
+});
+
+function getPlayerSpecificPos(p) { return p.profiles?.specific_position || p.virtual_players?.specific_position || null; }
+function getPlayerGenPos(p) { return p.profiles?.position || p.virtual_players?.position || 'Médio'; }
+
+// CONSTRUTOR DO CAMPO 
+function getFormation(players, formationStr = null) {
+  if (!players || players.length === 0) return [];
+
+  if (clubSettings.value?.single_team_mode && formationStr) {
+    
+    // 1. A "Piscina" de jogadores selecionados para titulares
+    let pool = [...players].sort((a, b) => {
+       const ovrA = a.profiles?.overall || a.virtual_players?.overall || 70;
+       const ovrB = b.profiles?.overall || b.virtual_players?.overall || 70;
+       return ovrB - ovrA; 
+    });
+    
+    // Motor de extração por prioridades de posição genérica
+    const extractPlayers = (count, prefGen, altGen = []) => {
+      let selected = [];
+      for (let i = 0; i < pool.length && selected.length < count; i++) {
+        if (getPlayerGenPos(pool[i]) === prefGen) { selected.push(pool.splice(i, 1)[0]); i--; }
+      }
+      for (let alt of altGen) {
+        for (let i = 0; i < pool.length && selected.length < count; i++) {
+          if (getPlayerGenPos(pool[i]) === alt) { selected.push(pool.splice(i, 1)[0]); i--; }
+        }
+      }
+      while (selected.length < count && pool.length > 0) { selected.push(pool.shift()); }
+      return selected;
+    };
+
+    // 2. DESCODIFICADOR DE TÁTICAS (Lê quantos traços tem a tática)
+    const parts = formationStr.split('-').map(Number);
+    
+    // Linhas fixas para Guarda-Redes, Defesas (1º número) e Avançados (Último número)
+    let grLine = extractPlayers(1, 'Guarda-Redes', ['Defesa']);
+    let defLine = extractPlayers(parts[0], 'Defesa', ['Médio']);
+    let attLine = extractPlayers(parts[parts.length - 1], 'Avançado', ['Médio']);
+    
+    let layoutLines = { 1: attLine, 5: defLine, 6: grLine };
+    
+    // 3. A MAGIA: Constrói as linhas do meio campo com base nos traços da tática!
+    if (parts.length === 3) {
+      // Ex: 4-3-3 ou 4-4-2 -> 1 linha central (Linha 3)
+      layoutLines[3] = extractPlayers(parts[1], 'Médio', ['Defesa', 'Avançado']);
+    } 
+    else if (parts.length === 4) {
+      // Ex: 4-2-3-1 -> Trincos (Linha 4) + Médios Ofensivos/Alas (Linha 2)
+      layoutLines[4] = extractPlayers(parts[1], 'Médio', ['Defesa']);
+      layoutLines[2] = extractPlayers(parts[2], 'Médio', ['Avançado', 'Defesa']);
+    } 
+    else if (parts.length === 5) {
+      // Ex: 4-1-2-1-2 (Losango) -> Trinco (L4) + Médios (L3) + MCO (L2)
+      layoutLines[4] = extractPlayers(parts[1], 'Médio', ['Defesa']);
+      layoutLines[3] = extractPlayers(parts[2], 'Médio', ['Defesa', 'Avançado']);
+      layoutLines[2] = extractPlayers(parts[3], 'Médio', ['Avançado']);
+    }
+
+    // 4. Montar o Campo e ordenar lateralmente (Esquerda para a Direita)
+    let finalLayout = [];
+    for (let i = 1; i <= 6; i++) {
+       if (layoutLines[i] && layoutLines[i].length > 0) {
+          layoutLines[i].forEach(p => { p.sortX = tacticalMap.horizontal[getPlayerSpecificPos(p)] || 2; });
+          layoutLines[i].sort((a, b) => a.sortX - b.sortX);
+          finalLayout.push(layoutLines[i]);
+       }
+    }
+    
+    return finalLayout;
+  }
+  
+  // --- MODO CLÁSSICO DE 2 EQUIPAS (Fallback) ---
+  const lines = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] }
+  players.forEach(p => {
+    const spec = getPlayerSpecificPos(p); const gen = getPlayerGenPos(p);
+    const fallback = gen === 'Avançado' ? 'PL' : (gen === 'Defesa' ? 'DC' : (gen === 'Guarda-Redes' ? 'GR' : 'MC')); 
+    const y = tacticalMap.vertical[spec || fallback] || 3;
+    lines[y].push({ ...p, sortX: tacticalMap.horizontal[spec || fallback] || 2 });
+  })
+  Object.keys(lines).forEach(k => lines[k].sort((a, b) => a.sortX - b.sortX))
+  return [lines[1], lines[2], lines[3], lines[4], lines[5], lines[6]].filter(line => line.length > 0)
+}
+
+// Inverte a formação para a Equipa B atacar de cima para o centro
+function getFormationReversed(players) {
+  if (!players || players.length === 0) return []
+  
+  const getSector = (p) => {
+    const rawPos = p.profiles?.position || p.virtual_players?.position || 'M'
+    const letter = rawPos.trim().toUpperCase().charAt(0)
+    
+    if (letter === 'G') return 'GR'
+    if (letter === 'D') return 'DEF'
+    if (letter === 'A') return 'AV'
+    return 'MED'
+  }
+  
+  const gr = players.filter(p => getSector(p) === 'GR')
+  const def = players.filter(p => getSector(p) === 'DEF')
+  const med = players.filter(p => getSector(p) === 'MED')
+  const av = players.filter(p => getSector(p) === 'AV')
+  
+  // Ordem invertida: GR em cima, depois Defesas, Médios e Avançados encostados ao meio-campo
+  return [gr, def, med, av].filter(line => line.length > 0)
+}
 
 async function joinMatch(match) {
   if (!authStore.user) return
@@ -2181,7 +2570,7 @@ async function openCloseModal(match) {
         team: p.team 
       }
       
-      if (p.team === 'A') teamA.push(playerObj)
+      if (p.team === 'A' || clubSettings.value?.single_team_mode) teamA.push(playerObj)
       else if (p.team === 'B') teamB.push(playerObj)
     })
     matchPlayersStats.value = { teamA, teamB }
@@ -2252,7 +2641,7 @@ async function closeMatch() {
          message: nextStatus === 'votacao' ? 'Golos guardados! Votações abertas.' : 'Partida encerrada com sucesso!' 
        })
       showCloseModal.value = false
-      await fetchMatches() // Atualiza a listagem no ecrã principal
+      await fetchMatches(true) // Atualiza a listagem no ecrã principal
     }
   } catch (err) {
     console.error('Erro inesperado:', err)
@@ -2440,7 +2829,7 @@ async function closeVoting(match) {
     await supabase.from('matches').update({ status: 'fechado' }).eq('id', match.id)
     
     $q.notify({ type: 'positive', icon: 'workspace_premium', message: 'Urnas fechadas! MVP apurado com sucesso.' })
-    await fetchMatches()
+    await fetchMatches(true)
     
     notifyMatchPlayers(match.id, '🏆 Resultados Finais', 'As urnas fecharam! Descobre quem foi o MVP e as notas da partida.');
     // NOVO: Volta para a aba "Próximo" automaticamente para não bugar o ecrã
@@ -2611,7 +3000,7 @@ async function openPresencesModal(match) {
   // 1. Puxar presenças incluindo a nova relação de virtual_players
   const { data, error } = await supabase
     .from('match_presences')
-    .select('id, status, paid, team, created_at, guest_name, virtual_player_id, profile_id, profiles(name, overall, position), virtual_players(name, overall, position)')
+    .select('id, status, paid, team, created_at, guest_name, virtual_player_id, profile_id, profiles(name, overall, position, specific_position), virtual_players(name, overall, position, specific_position)')
     .eq('match_id', match.id)
   
   if (!error) presences.value = data
@@ -2792,6 +3181,12 @@ async function addAdmin() {
 
   if (!error) {
     $q.notify({ type: 'positive', message: 'Membro promovido a Administrador!' })
+    
+    // MAGIA: Atualiza o teu cargo em tempo real se a edição for na tua conta
+    if (profileId === authStore.user.id && clubStore.currentClub) {
+      clubStore.currentClub.role = 'admin'
+    }
+
     selectedNewAdmin.value = null
     await openStaffManager() // Atualiza as duas listas automaticamente
   } else {
@@ -2807,7 +3202,6 @@ async function removeAdmin(profileId) {
     cancel: true,
     persistent: true
   }).onOk(async () => {
-    // Retira o cargo de admin e desativa todos os toggles de permissão por segurança
     const { error } = await supabase
       .from('club_members')
       .update({ 
@@ -2821,12 +3215,21 @@ async function removeAdmin(profileId) {
 
     if (!error) {
       $q.notify({ type: 'info', message: 'Membro removido da Equipa Técnica.' })
-      await openStaffManager() // Atualiza as listas
+      
+      // MAGIA: Remove as tuas próprias permissões locais se te despromoveres a ti próprio
+      if (profileId === authStore.user.id && clubStore.currentClub) {
+        clubStore.currentClub.role = 'member'
+        clubStore.currentClub.can_manage_matches = false
+        clubStore.currentClub.can_manage_teams = false
+        clubStore.currentClub.can_manage_finances = false
+      }
+      
+      await openStaffManager()
     }
   })
 }
 
-// ATUALIZAR PERMISSÕES GRANULARES (Mantém a que já tinhas, apenas adicionei "position: top")
+// ATUALIZAR PERMISSÕES GRANULARES
 async function updatePermission(profileId, field, value) {
   const updateData = {}
   updateData[field] = value
@@ -2846,25 +3249,17 @@ async function updatePermission(profileId, field, value) {
     await openStaffManager()
   } else {
     $q.notify({ type: 'positive', message: 'Permissões atualizadas!' })
+    
+    // MAGIA: Os teus botões de "Novo Jogo" ou "Gestor de Equipas" aparecem/desaparecem INSTANTANEAMENTE
+    if (profileId === authStore.user.id && clubStore.currentClub) {
+      clubStore.currentClub[field] = value
+    }
   }
 }
 
 const allClubPlayersOptions = ref([])
 const showSettingsModal = ref(false)
 const savingSettings = ref(false)
-const clubSettings = ref({ 
-  default_max_players: 14, default_price: 5, monthly_price_per_game: 4, default_location: '', 
-  recurring_day_of_week: 2, recurring_time: '21:00',
-  attribute_mode: 'numeric', hide_attributes_from_members: false,
-  enable_voting: true,
-  default_team_a_name: 'Equipa A', default_team_b_name: 'Equipa B',
-  default_squad: []
-})
-
-const newMatch = ref({ 
-  id: null, date: '', location: '', max_players: 14, price_per_player: 5.00,
-  team_a_name: 'Equipa A', team_b_name: 'Equipa B' // <- NOVO
-})
 
 async function openClubSettings() {
   showSettingsModal.value = true
@@ -2891,6 +3286,8 @@ async function saveClubSettings() {
     attribute_mode: clubSettings.value.attribute_mode,
     hide_attributes_from_members: clubSettings.value.hide_attributes_from_members,
     enable_voting: clubSettings.value.enable_voting, 
+    single_team_mode: clubSettings.value.single_team_mode,
+    default_starters_per_team: clubSettings.value.default_starters_per_team,
     default_team_a_name: clubSettings.value.default_team_a_name, 
     default_team_b_name: clubSettings.value.default_team_b_name,
     default_team_a_color: clubSettings.value.default_team_a_color,
@@ -3437,23 +3834,6 @@ async function refreshPage(done) {
    AJUSTES TÁTICOS (TAMANHOS E ALINHAMENTO)
 ========================================= */
 
-/* 1. Nome do jogador por baixo da bola na tática individual (Aumentado) */
-.player-name-tactics {
-  background: rgba(0, 0, 0, 0.75);
-  color: white;
-  font-size: 14px; /* Aumentado de 10px para 11px */
-  font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 6px;
-  margin-top: 6px;
-  max-width: 90px;
-  text-align: center;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* 2. Pílulas do modo partilhado "Ambas" (Maiores e com alinhamento perfeito ao centro) */
 .player-name-mini {
   background: rgba(0, 0, 0, 0.75);
@@ -3474,16 +3854,6 @@ async function refreshPage(done) {
    ALINHAMENTO GEOMÉTRICO PERFEITO (CENTRO)
 ========================================= */
 
-.pitch-formation, .pitch-formation-mini {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  padding: 15px 10px;
-  z-index: 10;
-}
-
 /* Relvado com largura total e mais margem horizontal */
 .tactics-pitch-large {
   position: relative;
@@ -3498,22 +3868,54 @@ async function refreshPage(done) {
   overflow: hidden;
 }
 
-/* Linha com maior espaçamento (gap) entre jogadores */
+/* =========================================
+   ALINHAMENTO GEOMÉTRICO PERFEITO (FLEXBOX FLUIDO)
+========================================= */
+
+.pitch-formation, .pitch-formation-mini {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  padding: 15px 5px; /* Menos padding lateral para dar mais espaço */
+  z-index: 10;
+}
+
+/* Linha fluida: Esquece o "gap" forçado, a net calcula a distância! */
 .formation-line {
   display: flex;
   flex-direction: row;
-  justify-content: center;
+  justify-content: space-evenly; /* O Segredo! Distribui os jogadores matematicamente */
   align-items: center;
   width: 100%;
-  gap: 50px; /* Aumentado para afastar mais os colegas na horizontal */
 }
 
-/* Cada slot de jogador tem uma largura fixa para alinhar na perfeição */
+/* Cada jogador adapta-se ao ecrã */
 .player-dot, .player-dot-large, .player-dot-mini {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 75px;
+  width: 18%; /* Garante que cabem 5 jogadores numa linha (5 * 18 = 90%) */
+  max-width: 75px; 
+  min-width: 50px; /* Pequeno o suficiente para não cortar em telemóveis */
+}
+
+/* 1. Nome do jogador por baixo da bola (Reduzido para não empurrar os vizinhos) */
+.player-name-tactics {
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  font-size: 10px; /* Reduzido para encaixar sempre */
+  font-weight: 800;
+  padding: 3px 4px;
+  border-radius: 6px;
+  margin-top: 6px;
+  width: 100%;
+  max-width: 80px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

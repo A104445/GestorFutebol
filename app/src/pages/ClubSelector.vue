@@ -163,13 +163,18 @@ async function createClub() {
     return
   }
 
-  // 2. Adiciona o utilizador que criou como 'admin' na tabela 'club_members'
+  // 2. Adiciona o utilizador que criou como 'admin' E 'is_owner' na tabela 'club_members'
   const { error: memberError } = await supabase
     .from('club_members')
     .insert([{ 
       club_id: clubData.id, 
       profile_id: authStore.user.id, 
-      role: 'admin' 
+      role: 'admin',
+      is_owner: true,                
+      can_manage_matches: true,      
+      can_manage_teams: true,        
+      can_manage_finances: true,     
+      status: 'approved'             
     }])
 
   if (!memberError) {

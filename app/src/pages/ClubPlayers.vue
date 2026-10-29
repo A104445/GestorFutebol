@@ -40,13 +40,15 @@
           <div class="row q-col-gutter-xl">
             <div v-for="member in groupedMembers[section]" :key="member.id" class="col-6 col-sm-4 col-md-3 col-lg-2 flex flex-center">
               
-              <div class="fut-card shadow-10" :class="[ isIcon(member) ? 'card-icon' : (member.is_in_form ? 'card-inform' : (shouldHideStats ? 'card-hidden' : getCardTier(member.overall))), (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner) ? 'cursor-pointer hover-lift' : '' ]" @click="openEditModal(member)">
+              <div class="fut-card shadow-10" :class="[ isIcon(member) ? 'card-icon' : (member.is_in_form ? 'card-inform' : (shouldHideStats ? 'card-hidden' : getCardTier(member.overall))), (clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner || clubStore.currentClub?.role === 'admin') ? 'cursor-pointer hover-lift' : '' ]" @click="openEditModal(member)">
                 <div class="fut-card-shine"></div>
                 <div class="fut-card-inner">
                 <!-- TOPO: Oculta o OVR mas mantém a posição -->
                 <div class="fut-top-info">
                   <div v-if="!shouldHideStats" class="fut-rating">{{ member.overall }}</div>
-                  <div class="fut-position" :class="{'q-mt-sm': shouldHideStats}">{{ getShortPosition(member.position) }}</div>
+                  <div class="fut-position" :class="{'q-mt-sm': shouldHideStats}">
+                      {{ member.specific_position || getShortPosition(member.position) }}
+                  </div>
                 </div>
 
                 <q-icon v-if="member.is_virtual" name="construction" :color="isIcon(member) ? 'dark' : 'amber-9'" size="xs" class="absolute-top-right q-ma-sm" style="opacity: 0.8;">
@@ -55,7 +57,15 @@
 
                 <!-- FOTO: Desce ligeiramente se a carta for a versão resumida -->
                 <div class="fut-portrait" :style="shouldHideStats ? 'margin-top: 35px;' : 'margin-top: 15px;'">
-                  <q-icon name="person" size="5rem" class="silhouette" />
+                  
+                  <!-- Se o jogador tiver foto -->
+                  <q-avatar v-if="member.avatar_url && member.avatar_url !== ''" size="65px" class="shadow-4" style="border: 2px solid rgba(255,255,255,0.3);">
+                    <img :src="member.avatar_url" style="object-fit: cover;" />
+                  </q-avatar>
+                  
+                  <!-- Se NÃO tiver foto (Silhueta clássica) -->
+                  <q-icon v-else name="person" size="5rem" class="silhouette" />
+                  
                 </div>
 
                 <div class="fut-name text-ellipsis row items-center justify-center" :class="{'q-mt-md': shouldHideStats}">
@@ -103,7 +113,6 @@
                   {{ isIcon(member) ? 'ICON' : (member.is_in_form ? 'IN-FORM' : (member.is_virtual ? 'VIRTUAL' : 'PRO')) }}
                 </div>
               </div>
-
             </div>
           </div>
         </div>
@@ -120,7 +129,8 @@
         </q-card-section>
         <q-card-section class="q-gutter-md q-pt-lg">
           <q-input outlined dense color="green-9" v-model="newVirtualPlayer.name" label="Nome do Jogador" />
-          <q-select outlined dense color="green-9" v-model="newVirtualPlayer.position" :options="['Guarda-Redes', 'Defesa', 'Médio', 'Avançado']" label="Posição Inicial" />
+          <q-select outlined dense color="green-9" v-model="newVirtualPlayer.position" :options="['Guarda-Redes', 'Defesa', 'Médio', 'Avançado']" label="Posição Geral" @update:model-value="newVirtualPlayer.specific_position = ''" />
+          <q-select outlined dense color="green-9" v-model="newVirtualPlayer.specific_position" :options="specificPositionsMap[newVirtualPlayer.position]" emit-value map-options label="Posição Específica" />
         </q-card-section>
         <q-card-actions align="right" class="q-pa-md bg-grey-1">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
@@ -143,17 +153,21 @@
         <!-- 2. CORPO COM SCROLL (Aqui é que a magia acontece) -->
         <q-card-section class="scroll" style="max-height: 65vh;">
           <div class="text-h5 text-center text-weight-bolder text-dark q-mb-lg text-uppercase font-fut">{{ selectedPlayer?.name }}</div>
-          <div class="row q-col-gutter-md items-center q-mb-md">
-            <div class="col-12 col-sm-6">
-              <q-select outlined dense color="green-9" v-model="editForm.position" :options="['Guarda-Redes', 'Defesa', 'Médio', 'Avançado']" label="Posição" />
-            </div>
-            <div class="col-12 col-sm-6 flex flex-center">
-              <div class="text-center bg-grey-2 q-px-xl q-py-sm shadow-2" style="border-radius: 8px; border: 1px solid #e2e8f0;">
-                <div class="text-caption text-grey-7 text-weight-bold">OVERALL</div>
-                <div class="text-h3 text-weight-bolder text-green-9" style="line-height: 1;">{{ computedOverall }}</div>
+            <div class="row q-col-gutter-md items-center q-mb-md">
+              <div class="col-12 col-sm-4">
+                <q-select outlined dense color="green-9" v-model="editForm.position" :options="['Guarda-Redes', 'Defesa', 'Médio', 'Avançado']" label="Posição" @update:model-value="editForm.specific_position = ''" />
+              </div>
+              <div class="col-12 col-sm-4">
+                <q-select outlined dense color="green-9" v-model="editForm.specific_position" :options="specificPositionsMap[editForm.position]" emit-value map-options label="Específica" />
+              </div>
+              <div class="col-12 col-sm-4 flex flex-center">
+                <!-- Aqui fica a tua caixa verde do OVERALL -->
+                <div class="text-center bg-grey-2 q-px-xl q-py-sm shadow-2" style="border-radius: 8px; border: 1px solid #e2e8f0;">
+                  <div class="text-caption text-grey-7 text-weight-bold">OVERALL</div>
+                  <div class="text-h3 text-weight-bolder text-green-9" style="line-height: 1;">{{ computedOverall }}</div>
+                </div>
               </div>
             </div>
-          </div>
 
           <q-separator class="q-my-md bg-grey-3" />
           
@@ -239,9 +253,34 @@ const showEditModal = ref(false)
 const showCreateVirtualModal = ref(false)
 const selectedPlayer = ref(null)
 
-const newVirtualPlayer = ref({ name: '', position: 'Médio' })
+// 1. O DICIONÁRIO QUE FALTAVA NESTE FICHEIRO
+const specificPositionsMap = {
+  'Guarda-Redes': [{ label: 'Guarda-Redes (GR)', value: 'GR' }],
+  'Defesa': [
+    { label: 'Defesa Central (DC)', value: 'DC' },
+    { label: 'Lateral Direito (LD)', value: 'LD' },
+    { label: 'Lateral Esquerdo (LE)', value: 'LE' },
+    { label: 'Ala Direito (AD)', value: 'AD' },
+    { label: 'Ala Esquerdo (AE)', value: 'AE' }
+  ],
+  'Médio': [
+    { label: 'Trinco / Defensivo (MDC)', value: 'MDC' },
+    { label: 'Médio Centro (MC)', value: 'MC' },
+    { label: 'Médio Ofensivo (MCO)', value: 'MCO' },
+    { label: 'Médio Direito (MD)', value: 'MD' },
+    { label: 'Médio Esquerdo (ME)', value: 'ME' }
+  ],
+  'Avançado': [
+    { label: 'Ponta de Lança (PL)', value: 'PL' },
+    { label: 'Segundo Avançado (SA)', value: 'SA' },
+    { label: 'Extremo Direito (ED)', value: 'ED' },
+    { label: 'Extremo Esquerdo (EE)', value: 'EE' }
+  ]
+}
+
+const newVirtualPlayer = ref({ name: '', position: 'Médio', specific_position: '' }) 
 const editForm = ref({ 
-  position: 'M dio', 
+  position: 'Médio', specific_position: '', 
   pace: 70, shooting: 70, passing: 70, dribbling: 70, defending: 70, physical: 70,
   diving: 70, handling: 70, kicking: 70, reflexes: 70, speed: 70, positioning: 70 
 })
@@ -359,7 +398,15 @@ function snapToCategory(val) {
 }
 
 function openEditModal(member) {
-  if (!clubStore.currentClub?.can_manage_teams && !clubStore.currentClub?.is_owner) return
+  // 1. Verificamos se o utilizador tem permissões reais OU se é um Admin a tentar salvar a situação
+  const canEdit = clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner || clubStore.currentClub?.role === 'admin'
+  
+  // 2. Se não tiver permissão, agora avisa em vez de morrer em silêncio!
+  if (!canEdit) {
+    $q.notify({ type: 'warning', icon: 'security', message: 'Apenas a equipa técnica pode editar jogadores.' })
+    return
+  }
+
   selectedPlayer.value = member
   
   // Criar uma cópia do jogador
@@ -378,6 +425,9 @@ function openEditModal(member) {
     }
   })
   
+  // Puxar a posição específica
+  f.specific_position = member.specific_position || ''
+  
   // Agora sim, passamos para o form e o Vue já consegue "espiar" as alterações
   editForm.value = f
   showEditModal.value = true
@@ -387,16 +437,21 @@ async function fetchAllMembers() {
   loading.value = true
   const list = []
 
-  // 1. Carregar utilizadores reais com conta
+  // 1. Carregar utilizadores reais com conta (Adicionado avatar_url no select)
   const { data: realUsers } = await supabase.from('club_members')
-  .select('role, is_owner, profile_id, profiles(name, overall, position, pace, shooting, passing, dribbling, defending, physical, diving, handling, kicking, reflexes, speed, positioning)')
+  .select('role, is_owner, profile_id, profiles(name, avatar_url, overall, position, pace, shooting, passing, dribbling, defending, physical, diving, handling, kicking, reflexes, speed, positioning)')
   .eq('club_id', props.id)
 
   if (realUsers) {
     realUsers.forEach(u => {
       if (u.profiles) {
         list.push({
-          id: u.profile_id, id_type: 'real', name: u.profiles.name, position: u.profiles.position, overall: u.profiles.overall || 70,
+          id: u.profile_id, id_type: 'real', 
+          name: u.profiles.name, 
+          avatar_url: u.profiles.avatar_url, 
+          position: u.profiles.position, 
+          specific_position: u.profiles.specific_position,
+          overall: u.profiles.overall || 70,
           pace: u.profiles.pace || 70, shooting: u.profiles.shooting || 70, passing: u.profiles.passing || 70,
           dribbling: u.profiles.dribbling || 70, defending: u.profiles.defending || 70, physical: u.profiles.physical || 70,
           diving: u.profiles.diving || 70, handling: u.profiles.handling || 70, kicking: u.profiles.kicking || 70,
@@ -425,7 +480,7 @@ async function fetchAllMembers() {
 async function createVirtualPlayer() {
   if (!newVirtualPlayer.value.name.trim()) return
   saving.value = true
-  const { error } = await supabase.from('virtual_players').insert([{ club_id: props.id, name: newVirtualPlayer.value.name.trim(), position: newVirtualPlayer.value.position }])
+  const { error } = await supabase.from('virtual_players').insert([{ club_id: props.id, name: newVirtualPlayer.value.name.trim(), position: newVirtualPlayer.value.position, specific_position: newVirtualPlayer.value.specific_position }])
   if (!error) {
     $q.notify({ type: 'positive', message: 'Jogador Virtual contratado!' })
     showCreateVirtualModal.value = false
