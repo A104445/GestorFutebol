@@ -298,28 +298,56 @@ const groupedMembers = computed(() => {
   return groups
 })
 
-const computedOverall = computed(() => {
-  if (!editForm.value) return 70
-
-  if (editForm.value.position === 'Guarda-Redes') {
-    return Math.round((
-      Number(editForm.value.diving || 70) +
-      Number(editForm.value.handling || 70) +
-      Number(editForm.value.kicking || 70) +
-      Number(editForm.value.reflexes || 70) +
-      Number(editForm.value.speed || 70) +
-      Number(editForm.value.positioning || 70)
-    ) / 6)
+// MOTOR DE PESOS DO OVERALL
+function calculateWeightedOVR(p) {
+  if (!p) return 70;
+  
+  if (p.position === 'Guarda-Redes') {
+    // GR: Reflexos(25%), Mergulho(25%), Posicionamento(20%), Jogo de Mãos(20%), Pontapé(5%), Velocidade(5%)
+    return Math.round(
+      (Number(p.reflexes || 70) * 0.25) +
+      (Number(p.diving || 70) * 0.25) +
+      (Number(p.positioning || 70) * 0.20) +
+      (Number(p.handling || 70) * 0.20) +
+      (Number(p.kicking || 70) * 0.05) +
+      (Number(p.speed || 70) * 0.05)
+    )
+  } else if (p.position === 'Defesa') {
+    // DEF: Defesa(35%), Físico(25%), Ritmo(15%), Passe(15%), Drible(5%), Remate(5%)
+    return Math.round(
+      (Number(p.defending || 70) * 0.35) +
+      (Number(p.physical || 70) * 0.25) +
+      (Number(p.pace || 70) * 0.15) +
+      (Number(p.passing || 70) * 0.15) +
+      (Number(p.dribbling || 70) * 0.05) +
+      (Number(p.shooting || 70) * 0.05)
+    )
+  } else if (p.position === 'Médio') {
+    // MED: Passe(30%), Drible(25%), Remate(15%), Físico(10%), Defesa(10%), Ritmo(10%)
+    return Math.round(
+      (Number(p.passing || 70) * 0.30) +
+      (Number(p.dribbling || 70) * 0.25) +
+      (Number(p.shooting || 70) * 0.15) +
+      (Number(p.physical || 70) * 0.10) +
+      (Number(p.defending || 70) * 0.10) +
+      (Number(p.pace || 70) * 0.10)
+    )
   } else {
-    return Math.round((
-      Number(editForm.value.pace || 70) +
-      Number(editForm.value.shooting || 70) +
-      Number(editForm.value.passing || 70) +
-      Number(editForm.value.dribbling || 70) +
-      Number(editForm.value.defending || 70) +
-      Number(editForm.value.physical || 70)
-    ) / 6)
+    // AVANÇADO: Remate(35%), Ritmo(25%), Drible(20%), Físico(10%), Passe(10%), Defesa(0%)
+    return Math.round(
+      (Number(p.shooting || 70) * 0.35) +
+      (Number(p.pace || 70) * 0.25) +
+      (Number(p.dribbling || 70) * 0.20) +
+      (Number(p.physical || 70) * 0.10) +
+      (Number(p.passing || 70) * 0.10) +
+      (Number(p.defending || 70) * 0.00) // O defesa não afeta nada o avançado!
+    )
   }
+}
+
+// O computed agora apenas chama o nosso motor em tempo real
+const computedOverall = computed(() => {
+  return calculateWeightedOVR(editForm.value);
 })
 
 const clubSettings = ref({ attribute_mode: 'numeric', hide_attributes_from_members: false })
@@ -550,33 +578,13 @@ async function calculateInForms() {
 
 async function savePlayerStats() {
   saving.value = true
-  
   try {
-    // 1. CÁLCULO DIRETO E INFALÍVEL AQUI DENTRO!
-    let finalOverall = 70
-    if (editForm.value.position === 'Guarda-Redes') {
-      finalOverall = Math.round((
-        Number(editForm.value.diving || 70) +
-        Number(editForm.value.handling || 70) +
-        Number(editForm.value.kicking || 70) +
-        Number(editForm.value.reflexes || 70) +
-        Number(editForm.value.speed || 70) +
-        Number(editForm.value.positioning || 70)
-      ) / 6)
-    } else {
-      finalOverall = Math.round((
-        Number(editForm.value.pace || 70) +
-        Number(editForm.value.shooting || 70) +
-        Number(editForm.value.passing || 70) +
-        Number(editForm.value.dribbling || 70) +
-        Number(editForm.value.defending || 70) +
-        Number(editForm.value.physical || 70)
-      ) / 6)
-    }
+    // 1. CÁLCULO BASEADO NOS PESOS EXATOS
+    let finalOverall = calculateWeightedOVR(editForm.value)
 
     // 2. Prepara os dados para enviar
     const payload = {
-      overall: finalOverall, // <--- Agora usa o cálculo exato feito na hora!
+      overall: finalOverall, 
       position: editForm.value.position,
       specific_position: editForm.value.specific_position,
       pace: Number(editForm.value.pace || 70),
@@ -593,7 +601,7 @@ async function savePlayerStats() {
       positioning: Number(editForm.value.positioning || 70)
     }
 
-    // 3. Grava na Base de Dados
+    // 3. Grava na Base de Dados (Resto da função continua igual)
     let data, error;
     if (selectedPlayer.value.is_virtual) {
       // Os virtuais só existem num clube, atualiza direto

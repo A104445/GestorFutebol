@@ -472,7 +472,7 @@
               v-model="selectedFormation"
               :options="availableFormations"
               dense outlined color="green-9" bg-color="white"
-              emit-value map-options label="Quadro Tático (Mister)"
+              emit-value map-options label="Esquema Tático"
               class="full-width shadow-1"
               style="border-radius: 8px;"
             >
