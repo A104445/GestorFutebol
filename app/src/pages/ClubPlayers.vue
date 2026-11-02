@@ -194,28 +194,113 @@
               </div>
             </template>
 
+            <!-- JOGADORES DE CAMPO -->
             <template v-else>
-              <div v-for="stat in ['pace', 'dribbling', 'shooting', 'defending', 'passing', 'physical']" :key="stat" class="col-12 col-sm-6">
-                <div class="row justify-between text-caption text-weight-bold text-dark q-mb-xs">
-                  <span class="text-capitalize">{{ stat }}</span>
-                  <span v-if="clubSettings.attribute_mode === 'numeric'" class="text-green-9 text-weight-bolder">{{ editForm[stat] }}</span>
+              <!-- MODO SIMPLES (Antigo) -->
+              <template v-if="!clubSettings.detailed_attributes">
+                <div v-for="stat in ['pace', 'dribbling', 'shooting', 'defending', 'passing', 'physical']" :key="stat" class="col-12 col-sm-6">
+                  <div class="row justify-between text-caption text-weight-bold text-dark q-mb-xs">
+                    <span class="text-capitalize">{{ stat }}</span>
+                    <span v-if="clubSettings.attribute_mode === 'numeric'" class="text-green-9 text-weight-bolder">{{ editForm[stat] }}</span>
+                  </div>
+                  <q-slider v-if="clubSettings.attribute_mode === 'numeric'" v-model="editForm[stat]" :min="1" :max="99" color="green-9" dense />
+                  <q-select 
+                    v-else 
+                    :model-value="editForm[stat]"
+                    @update:model-value="val => editForm[stat] = Number(val)"
+                    :options="categoryOptions" 
+                    emit-value 
+                    map-options 
+                    dense 
+                    outlined 
+                    bg-color="grey-1" 
+                    color="green-9" 
+                  />        
                 </div>
-                <q-slider v-if="clubSettings.attribute_mode === 'numeric'" v-model="editForm[stat]" :min="1" :max="99" color="green-9" dense />
-                <q-select 
-                  v-else 
-                  :model-value="editForm[stat]"
-                  @update:model-value="val => editForm[stat] = Number(val)"
-                  :options="categoryOptions" 
-                  emit-value 
-                  map-options 
-                  dense 
-                  outlined 
-                  bg-color="grey-1" 
-                  color="green-9" 
-                />        
-              </div>
-            </template>
-        </div>
+              </template>
+
+              <!-- MODO PRO (FIFA DETAILED - 29 Atributos) -->
+              <template v-else>
+                  <div class="col-12">
+                    <div class="text-caption text-grey-8 q-mb-sm text-center">Modo Pro: Edição Detalhada</div>
+                    <q-list bordered class="rounded-borders bg-white shadow-1">
+                      
+                      <!-- RITMO (Pace) -->
+                      <q-expansion-item expand-separator icon="speed" label="Ritmo (PAC)" :caption="String(Math.round((Number(editForm.att_acceleration) + Number(editForm.att_sprint_speed))/2))" header-class="bg-grey-2 text-weight-bold text-dark">
+                        <q-card><q-card-section class="q-pt-sm bg-grey-1">
+                          <div class="q-mb-sm">
+                            <div class="row justify-between text-caption text-weight-bold">Aceleração <span>{{ editForm.att_acceleration }}</span></div>
+                            <q-slider v-model="editForm.att_acceleration" :min="1" :max="99" color="green-9" dense />
+                          </div>
+                          <div class="q-mb-sm">
+                            <div class="row justify-between text-caption text-weight-bold">Velocidade Sprint <span>{{ editForm.att_sprint_speed }}</span></div>
+                            <q-slider v-model="editForm.att_sprint_speed" :min="1" :max="99" color="green-9" dense />
+                          </div>
+                        </q-card-section></q-card>
+                      </q-expansion-item>
+
+                      <!-- REMATE (Shooting) -->
+                      <q-expansion-item expand-separator icon="sports_soccer" label="Remate (SHO)" :caption="String(Math.round((Number(editForm.att_positioning) + Number(editForm.att_finishing) + Number(editForm.att_shot_power) + Number(editForm.att_long_shots) + Number(editForm.att_volleys) + Number(editForm.att_penalties))/6))" header-class="bg-grey-2 text-weight-bold text-dark">
+                        <q-card><q-card-section class="q-pt-sm bg-grey-1">
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Posicionamento <span>{{ editForm.att_positioning }}</span></div><q-slider v-model="editForm.att_positioning" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Finalização <span>{{ editForm.att_finishing }}</span></div><q-slider v-model="editForm.att_finishing" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Força Remate <span>{{ editForm.att_shot_power }}</span></div><q-slider v-model="editForm.att_shot_power" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Remates Longe <span>{{ editForm.att_long_shots }}</span></div><q-slider v-model="editForm.att_long_shots" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Voleios <span>{{ editForm.att_volleys }}</span></div><q-slider v-model="editForm.att_volleys" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Penaltis <span>{{ editForm.att_penalties }}</span></div><q-slider v-model="editForm.att_penalties" :min="1" :max="99" color="green-9" dense /></div>
+                        </q-card-section></q-card>
+                      </q-expansion-item>
+
+                      <!-- PASSE (Passing) -->
+                      <q-expansion-item expand-separator icon="alt_route" label="Passe (PAS)" :caption="String(Math.round((Number(editForm.att_vision) + Number(editForm.att_crossing) + Number(editForm.att_free_kick) + Number(editForm.att_short_pass) + Number(editForm.att_long_pass) + Number(editForm.att_curve))/6))" header-class="bg-grey-2 text-weight-bold text-dark">
+                        <q-card><q-card-section class="q-pt-sm bg-grey-1">
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Visão de Jogo <span>{{ editForm.att_vision }}</span></div><q-slider v-model="editForm.att_vision" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Cruzamento <span>{{ editForm.att_crossing }}</span></div><q-slider v-model="editForm.att_crossing" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Livre Direto <span>{{ editForm.att_free_kick }}</span></div><q-slider v-model="editForm.att_free_kick" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Passe Curto <span>{{ editForm.att_short_pass }}</span></div><q-slider v-model="editForm.att_short_pass" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Passe Longo <span>{{ editForm.att_long_pass }}</span></div><q-slider v-model="editForm.att_long_pass" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Efeito <span>{{ editForm.att_curve }}</span></div><q-slider v-model="editForm.att_curve" :min="1" :max="99" color="green-9" dense /></div>
+                        </q-card-section></q-card>
+                      </q-expansion-item>
+
+                      <!-- DRIBLE (Dribbling) -->
+                      <q-expansion-item expand-separator icon="moving" label="Drible (DRI)" :caption="String(Math.round((Number(editForm.att_agility) + Number(editForm.att_balance) + Number(editForm.att_reactions) + Number(editForm.att_ball_control) + Number(editForm.att_dribbling) + Number(editForm.att_composure))/6))" header-class="bg-grey-2 text-weight-bold text-dark">
+                        <q-card><q-card-section class="q-pt-sm bg-grey-1">
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Agilidade <span>{{ editForm.att_agility }}</span></div><q-slider v-model="editForm.att_agility" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Equilíbrio <span>{{ editForm.att_balance }}</span></div><q-slider v-model="editForm.att_balance" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Reações <span>{{ editForm.att_reactions }}</span></div><q-slider v-model="editForm.att_reactions" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Controlo de Bola <span>{{ editForm.att_ball_control }}</span></div><q-slider v-model="editForm.att_ball_control" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Drible <span>{{ editForm.att_dribbling }}</span></div><q-slider v-model="editForm.att_dribbling" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Compostura <span>{{ editForm.att_composure }}</span></div><q-slider v-model="editForm.att_composure" :min="1" :max="99" color="green-9" dense /></div>
+                        </q-card-section></q-card>
+                      </q-expansion-item>
+
+                      <!-- DEFESA (Defending) -->
+                      <q-expansion-item expand-separator icon="security" label="Defesa (DEF)" :caption="String(Math.round((Number(editForm.att_interceptions) + Number(editForm.att_heading) + Number(editForm.att_def_awareness) + Number(editForm.att_stand_tackle) + Number(editForm.att_slide_tackle))/5))" header-class="bg-grey-2 text-weight-bold text-dark">
+                        <q-card><q-card-section class="q-pt-sm bg-grey-1">
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Interceções <span>{{ editForm.att_interceptions }}</span></div><q-slider v-model="editForm.att_interceptions" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Precisão Cabeceamento <span>{{ editForm.att_heading }}</span></div><q-slider v-model="editForm.att_heading" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Noção Defensiva <span>{{ editForm.att_def_awareness }}</span></div><q-slider v-model="editForm.att_def_awareness" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Corte em Pé <span>{{ editForm.att_stand_tackle }}</span></div><q-slider v-model="editForm.att_stand_tackle" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Corte Carrinho <span>{{ editForm.att_slide_tackle }}</span></div><q-slider v-model="editForm.att_slide_tackle" :min="1" :max="99" color="green-9" dense /></div>
+                        </q-card-section></q-card>
+                      </q-expansion-item>
+
+                      <!-- FÍSICO (Physical) -->
+                      <q-expansion-item expand-separator icon="fitness_center" label="Físico (PHY)" :caption="String(Math.round((Number(editForm.att_jumping) + Number(editForm.att_stamina) + Number(editForm.att_strength) + Number(editForm.att_aggression))/4))" header-class="bg-grey-2 text-weight-bold text-dark">
+                        <q-card><q-card-section class="q-pt-sm bg-grey-1">
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Impulsão <span>{{ editForm.att_jumping }}</span></div><q-slider v-model="editForm.att_jumping" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Resistência <span>{{ editForm.att_stamina }}</span></div><q-slider v-model="editForm.att_stamina" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Força <span>{{ editForm.att_strength }}</span></div><q-slider v-model="editForm.att_strength" :min="1" :max="99" color="green-9" dense /></div>
+                          <div class="q-mb-sm"><div class="row justify-between text-caption text-weight-bold">Agressividade <span>{{ editForm.att_aggression }}</span></div><q-slider v-model="editForm.att_aggression" :min="1" :max="99" color="green-9" dense /></div>
+                        </q-card-section></q-card>
+                      </q-expansion-item>
+
+                    </q-list>
+                  </div>
+                </template>
+              </template>
+            </div>
         </q-card-section>
         
         <!-- 3. RODAPÉ FIXO (Os botões ficam sempre visíveis em baixo) -->
@@ -282,18 +367,39 @@ const newVirtualPlayer = ref({ name: '', position: 'Médio', specific_position: 
 const editForm = ref({ 
   position: 'Médio', specific_position: '', 
   pace: 70, shooting: 70, passing: 70, dribbling: 70, defending: 70, physical: 70,
-  diving: 70, handling: 70, kicking: 70, reflexes: 70, speed: 70, positioning: 70 
+  diving: 70, handling: 70, kicking: 70, reflexes: 70, speed: 70, positioning: 70,
+  att_acceleration: 70, att_sprint_speed: 70,
+  att_positioning: 70, att_finishing: 70, att_shot_power: 70, att_long_shots: 70, att_volleys: 70, att_penalties: 70,
+  att_vision: 70, att_crossing: 70, att_free_kick: 70, att_short_pass: 70, att_long_pass: 70, att_curve: 70,
+  att_agility: 70, att_balance: 70, att_reactions: 70, att_ball_control: 70, att_dribbling: 70, att_composure: 70,
+  att_interceptions: 70, att_heading: 70, att_def_awareness: 70, att_stand_tackle: 70, att_slide_tackle: 70,
+  att_jumping: 70, att_stamina: 70, att_strength: 70, att_aggression: 70
 })
 
 const groupedMembers = computed(() => {
   const groups = { 'Guarda-Redes': [], 'Defesas': [], 'Médios': [], 'Avançados': [] }
-  members.value.forEach(m => {
+  
+  members.value.forEach(rawMember => {
+    const m = { ...rawMember }
+    
+    // A TUA IDEIA: Se o modo Pro estiver ativo, a carta lê as colunas "pro_" e ignora as normais!
+    if (clubSettings.value.detailed_attributes && m.position !== 'Guarda-Redes') {
+      m.overall = m.pro_overall || 70
+      m.pace = m.pro_pace || 70
+      m.shooting = m.pro_shooting || 70
+      m.passing = m.pro_passing || 70
+      m.dribbling = m.pro_dribbling || 70
+      m.defending = m.pro_defending || 70
+      m.physical = m.pro_physical || 70
+    }
+
     const pos = m.position || 'Médio'
     if (pos === 'Guarda-Redes') groups['Guarda-Redes'].push(m)
     else if (pos === 'Defesa') groups['Defesas'].push(m)
     else if (pos === 'Médio') groups['Médios'].push(m)
     else if (pos === 'Avançado') groups['Avançados'].push(m)
   })
+  
   Object.keys(groups).forEach(key => groups[key].sort((a, b) => b.overall - a.overall))
   return groups
 })
@@ -345,12 +451,24 @@ function calculateWeightedOVR(p) {
   }
 }
 
-// O computed agora apenas chama o nosso motor em tempo real
+// O computed agora interceta os atributos detalhados em tempo real antes de enviar para o motor!
 const computedOverall = computed(() => {
-  return calculateWeightedOVR(editForm.value);
+  const tempForm = { ...editForm.value }
+
+  // Se o Modo Pro estiver ativo, ele calcula as 6 médias dinamicamente para alimentar o OVR em direto
+  if (clubSettings.value.detailed_attributes && tempForm.position !== 'Guarda-Redes') {
+    tempForm.pace = Math.round((Number(tempForm.att_acceleration) + Number(tempForm.att_sprint_speed)) / 2)
+    tempForm.shooting = Math.round((Number(tempForm.att_positioning) + Number(tempForm.att_finishing) + Number(tempForm.att_shot_power) + Number(tempForm.att_long_shots) + Number(tempForm.att_volleys) + Number(tempForm.att_penalties)) / 6)
+    tempForm.passing = Math.round((Number(tempForm.att_vision) + Number(tempForm.att_crossing) + Number(tempForm.att_free_kick) + Number(tempForm.att_short_pass) + Number(tempForm.att_long_pass) + Number(tempForm.att_curve)) / 6)
+    tempForm.dribbling = Math.round((Number(tempForm.att_agility) + Number(tempForm.att_balance) + Number(tempForm.att_reactions) + Number(tempForm.att_ball_control) + Number(tempForm.att_dribbling) + Number(tempForm.att_composure)) / 6)
+    tempForm.defending = Math.round((Number(tempForm.att_interceptions) + Number(tempForm.att_heading) + Number(tempForm.att_def_awareness) + Number(tempForm.att_stand_tackle) + Number(tempForm.att_slide_tackle)) / 5)
+    tempForm.physical = Math.round((Number(tempForm.att_jumping) + Number(tempForm.att_stamina) + Number(tempForm.att_strength) + Number(tempForm.att_aggression)) / 4)
+  }
+
+  return calculateWeightedOVR(tempForm)
 })
 
-const clubSettings = ref({ attribute_mode: 'numeric', hide_attributes_from_members: false })
+const clubSettings = ref({ attribute_mode: 'numeric', hide_attributes_from_members: false, detailed_attributes: false })
 
 // 1. Cria esta propriedade calculada (computed) logo abaixo das tuas variáveis
 const shouldHideStats = computed(() => {
@@ -393,11 +511,13 @@ onMounted(async () => {
     }
   }
 
-  // 4. Carregar a definição de Categórico/Numérico do Clube
-  const { data: settingsData } = await supabase.from('clubs').select('attribute_mode, hide_attributes_from_members').eq('id', props.id).single()
+  // 4. Carregar a definição de Categórico/Numérico e o Modo Pro do Clube
+  const { data: settingsData } = await supabase.from('clubs').select('attribute_mode, hide_attributes_from_members, detailed_attributes').eq('id', props.id).single()
+  
   if (settingsData) {
     clubSettings.value.attribute_mode = settingsData.attribute_mode || 'numeric'
     clubSettings.value.hide_attributes_from_members = settingsData.hide_attributes_from_members || false
+    clubSettings.value.detailed_attributes = settingsData.detailed_attributes || false // <-- FALTAVA LER ISTO DA BD!
   }
 
   // 5. Carregar os jogadores
@@ -425,27 +545,33 @@ function snapToCategory(val) {
   return 40
 }
 
-function openEditModal(member) {
-  // 1. Verificamos se o utilizador tem permissões reais OU se é um Admin a tentar salvar a situação
+function openEditModal(memberFromCard) {
+  // 1. A MAGIA: Vai buscar o jogador PURO à lista original da BD, ignorando as médias que estão no ecrã!
+  const pureMember = members.value.find(m => m.id === memberFromCard.id) || memberFromCard;
+
   const canEdit = clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner || clubStore.currentClub?.role === 'admin'
-  
-  // 2. Se não tiver permissão, agora avisa em vez de morrer em silêncio!
   if (!canEdit) {
     $q.notify({ type: 'warning', icon: 'security', message: 'Apenas a equipa técnica pode editar jogadores.' })
     return
   }
-
-  selectedPlayer.value = member
   
-  // Criar uma cópia do jogador
-  const f = { ...member }
+  selectedPlayer.value = pureMember
+  const f = { ...pureMember }
   
-  // LISTA DE TODOS OS ATRIBUTOS
-  const allStats = ['pace', 'shooting', 'passing', 'dribbling', 'defending', 'physical', 'diving', 'handling', 'kicking', 'reflexes', 'speed', 'positioning']
+  // A LISTA GIGANTE COM TODOS OS 41 ATRIBUTOS (Principais + Secundários + Detalhados)
+  const allStats = [
+    'pace', 'shooting', 'passing', 'dribbling', 'defending', 'physical', 
+    'diving', 'handling', 'kicking', 'reflexes', 'speed', 'positioning',
+    'att_acceleration', 'att_sprint_speed',
+    'att_positioning', 'att_finishing', 'att_shot_power', 'att_long_shots', 'att_volleys', 'att_penalties',
+    'att_vision', 'att_crossing', 'att_free_kick', 'att_short_pass', 'att_long_pass', 'att_curve',
+    'att_agility', 'att_balance', 'att_reactions', 'att_ball_control', 'att_dribbling', 'att_composure',
+    'att_interceptions', 'att_heading', 'att_def_awareness', 'att_stand_tackle', 'att_slide_tackle',
+    'att_jumping', 'att_stamina', 'att_strength', 'att_aggression'
+  ]
   
-  // Garantir que todos existem no objeto ANTES de o passar para o Vue (vital para a reatividade!)
   allStats.forEach(s => {
-    let statValue = f[s] || 70 // Se estiver vazio, assume 70
+    let statValue = f[s] || 70 
     if (clubSettings.value.attribute_mode === 'categorical') {
       f[s] = snapToCategory(statValue)
     } else {
@@ -453,10 +579,7 @@ function openEditModal(member) {
     }
   })
   
-  // Puxar a posição específica
-  f.specific_position = member.specific_position || ''
-  
-  // Agora sim, passamos para o form e o Vue já consegue "espiar" as alterações
+  f.specific_position = pureMember.specific_position || ''
   editForm.value = f
   showEditModal.value = true
 }
@@ -465,32 +588,50 @@ async function fetchAllMembers() {
   loading.value = true
   const list = []
   
-  // 1. A MAGIA AQUI: Lemos os atributos todos diretamente do 'club_members', e só a foto/nome vêm do 'profiles'
+  // 1. QUERY GIGANTE: Pede os 6 principais + os 29 detalhados
   const { data: realUsers } = await supabase.from('club_members')
-  .select('role, is_owner, profile_id, position, specific_position, overall, pace, shooting, passing, dribbling, defending, physical, diving, handling, kicking, reflexes, speed, positioning, profiles(name, avatar_url)')
+  .select(`
+    role, is_owner, profile_id, position, specific_position, overall, 
+    pace, shooting, passing, dribbling, defending, physical, 
+    pro_pace, pro_shooting, pro_passing, pro_dribbling, pro_defending, pro_physical,
+    diving, handling, kicking, reflexes, speed, positioning, 
+    att_acceleration, att_sprint_speed, 
+    att_positioning, att_finishing, att_shot_power, att_long_shots, att_volleys, att_penalties, 
+    att_vision, att_crossing, att_free_kick, att_short_pass, att_long_pass, att_curve, 
+    att_agility, att_balance, att_reactions, att_ball_control, att_dribbling, att_composure, 
+    att_interceptions, att_heading, att_def_awareness, att_stand_tackle, att_slide_tackle, 
+    att_jumping, att_stamina, att_strength, att_aggression, 
+    profiles(name, avatar_url)
+  `)
   .eq('club_id', props.id)
 
   if (realUsers) {
     realUsers.forEach(u => {
       if (u.profiles) {
         list.push({
-          id: u.profile_id, id_type: 'real', 
-          name: u.profiles.name, 
-          avatar_url: u.profiles.avatar_url, 
-          position: u.position || 'Médio', 
-          specific_position: u.specific_position || '',
-          overall: u.overall || 70,
+          id: u.profile_id, id_type: 'real', name: u.profiles.name, avatar_url: u.profiles.avatar_url, 
+          position: u.position || 'Médio', specific_position: u.specific_position || '', overall: u.overall || 70,
           pace: u.pace || 70, shooting: u.shooting || 70, passing: u.passing || 70,
           dribbling: u.dribbling || 70, defending: u.defending || 70, physical: u.physical || 70,
+          pro_pace: u.pro_pace || 70, pro_shooting: u.pro_shooting || 70, pro_passing: u.pro_passing || 70,
+          pro_dribbling: u.pro_dribbling || 70, pro_defending: u.pro_defending || 70, pro_physical: u.pro_physical || 70,
           diving: u.diving || 70, handling: u.handling || 70, kicking: u.kicking || 70,
           reflexes: u.reflexes || 70, speed: u.speed || 70, positioning: u.positioning || 70,
+          
+          att_acceleration: u.att_acceleration || 70, att_sprint_speed: u.att_sprint_speed || 70,
+          att_positioning: u.att_positioning || 70, att_finishing: u.att_finishing || 70, att_shot_power: u.att_shot_power || 70, att_long_shots: u.att_long_shots || 70, att_volleys: u.att_volleys || 70, att_penalties: u.att_penalties || 70,
+          att_vision: u.att_vision || 70, att_crossing: u.att_crossing || 70, att_free_kick: u.att_free_kick || 70, att_short_pass: u.att_short_pass || 70, att_long_pass: u.att_long_pass || 70, att_curve: u.att_curve || 70,
+          att_agility: u.att_agility || 70, att_balance: u.att_balance || 70, att_reactions: u.att_reactions || 70, att_ball_control: u.att_ball_control || 70, att_dribbling: u.att_dribbling || 70, att_composure: u.att_composure || 70,
+          att_interceptions: u.att_interceptions || 70, att_heading: u.att_heading || 70, att_def_awareness: u.att_def_awareness || 70, att_stand_tackle: u.att_stand_tackle || 70, att_slide_tackle: u.att_slide_tackle || 70,
+          att_jumping: u.att_jumping || 70, att_stamina: u.att_stamina || 70, att_strength: u.att_strength || 70, att_aggression: u.att_aggression || 70,
+          
           is_virtual: false, is_owner: u.is_owner, role: u.role
         })
       }
     })
   }
 
-  // 2. Carregar utilizadores virtuais (Mantém-se igual)
+  // 2. Carregar utilizadores virtuais (O select('*') já traz tudo automaticamente da BD)
   const { data: virtualUsers } = await supabase.from('virtual_players').select('*').eq('club_id', props.id)
   if (virtualUsers) {
     virtualUsers.forEach(v => {
@@ -579,26 +720,55 @@ async function calculateInForms() {
 async function savePlayerStats() {
   saving.value = true
   try {
-    // 1. CÁLCULO BASEADO NOS PESOS EXATOS
-    let finalOverall = calculateWeightedOVR(editForm.value)
+    const isPro = clubSettings.value.detailed_attributes && editForm.value.position !== 'Guarda-Redes';
+    
+    let finalOverall = editForm.value.overall || 70;
+    let proOverall = editForm.value.pro_overall || 70;
+    
+    let proPace = editForm.value.pro_pace || 70;
+    let proShooting = editForm.value.pro_shooting || 70;
+    let proPassing = editForm.value.pro_passing || 70;
+    let proDribbling = editForm.value.pro_dribbling || 70;
+    let proDefending = editForm.value.pro_defending || 70;
+    let proPhysical = editForm.value.pro_physical || 70;
 
-    // 2. Prepara os dados para enviar
+    // Se estiver no Modo Pro, calculamos os valores Pro! (Deixando o finalOverall intacto)
+    if (isPro) {
+      proPace = Math.round((Number(editForm.value.att_acceleration) + Number(editForm.value.att_sprint_speed)) / 2) || 70;
+      proShooting = Math.round((Number(editForm.value.att_positioning) + Number(editForm.value.att_finishing) + Number(editForm.value.att_shot_power) + Number(editForm.value.att_long_shots) + Number(editForm.value.att_volleys) + Number(editForm.value.att_penalties)) / 6) || 70;
+      proPassing = Math.round((Number(editForm.value.att_vision) + Number(editForm.value.att_crossing) + Number(editForm.value.att_free_kick) + Number(editForm.value.att_short_pass) + Number(editForm.value.att_long_pass) + Number(editForm.value.att_curve)) / 6) || 70;
+      proDribbling = Math.round((Number(editForm.value.att_agility) + Number(editForm.value.att_balance) + Number(editForm.value.att_reactions) + Number(editForm.value.att_ball_control) + Number(editForm.value.att_dribbling) + Number(editForm.value.att_composure)) / 6) || 70;
+      proDefending = Math.round((Number(editForm.value.att_interceptions) + Number(editForm.value.att_heading) + Number(editForm.value.att_def_awareness) + Number(editForm.value.att_stand_tackle) + Number(editForm.value.att_slide_tackle)) / 5) || 70;
+      proPhysical = Math.round((Number(editForm.value.att_jumping) + Number(editForm.value.att_stamina) + Number(editForm.value.att_strength) + Number(editForm.value.att_aggression)) / 4) || 70;
+      
+      proOverall = calculateWeightedOVR({ ...editForm.value, pace: proPace, shooting: proShooting, passing: proPassing, dribbling: proDribbling, defending: proDefending, physical: proPhysical });
+    } else {
+      // Se estiver no Modo Simples, atualiza o Overall Normal
+      finalOverall = calculateWeightedOVR(editForm.value);
+    }
+
     const payload = {
-      overall: finalOverall, 
-      position: editForm.value.position,
-      specific_position: editForm.value.specific_position,
-      pace: Number(editForm.value.pace || 70),
-      shooting: Number(editForm.value.shooting || 70),
-      passing: Number(editForm.value.passing || 70),
-      dribbling: Number(editForm.value.dribbling || 70),
-      defending: Number(editForm.value.defending || 70),
-      physical: Number(editForm.value.physical || 70),
-      diving: Number(editForm.value.diving || 70),
-      handling: Number(editForm.value.handling || 70),
-      kicking: Number(editForm.value.kicking || 70),
-      reflexes: Number(editForm.value.reflexes || 70),
-      speed: Number(editForm.value.speed || 70),
-      positioning: Number(editForm.value.positioning || 70)
+      position: editForm.value.position, specific_position: editForm.value.specific_position,
+      
+      // COLUNAS SIMPLES (Mantém-se intocáveis se o jogador mexer nas Pro)
+      overall: finalOverall,
+      pace: Number(editForm.value.pace || 70), shooting: Number(editForm.value.shooting || 70), passing: Number(editForm.value.passing || 70),
+      dribbling: Number(editForm.value.dribbling || 70), defending: Number(editForm.value.defending || 70), physical: Number(editForm.value.physical || 70),
+      diving: Number(editForm.value.diving || 70), handling: Number(editForm.value.handling || 70), kicking: Number(editForm.value.kicking || 70),
+      reflexes: Number(editForm.value.reflexes || 70), speed: Number(editForm.value.speed || 70), positioning: Number(editForm.value.positioning || 70),
+      
+      // COLUNAS PRO (A TUA IDEIA)
+      pro_overall: proOverall,
+      pro_pace: proPace, pro_shooting: proShooting, pro_passing: proPassing,
+      pro_dribbling: proDribbling, pro_defending: proDefending, pro_physical: proPhysical,
+      
+      // ENVIA TAMBÉM OS 29!
+      att_acceleration: Number(editForm.value.att_acceleration || 70), att_sprint_speed: Number(editForm.value.att_sprint_speed || 70),
+      att_positioning: Number(editForm.value.att_positioning || 70), att_finishing: Number(editForm.value.att_finishing || 70), att_shot_power: Number(editForm.value.att_shot_power || 70), att_long_shots: Number(editForm.value.att_long_shots || 70), att_volleys: Number(editForm.value.att_volleys || 70), att_penalties: Number(editForm.value.att_penalties || 70),
+      att_vision: Number(editForm.value.att_vision || 70), att_crossing: Number(editForm.value.att_crossing || 70), att_free_kick: Number(editForm.value.att_free_kick || 70), att_short_pass: Number(editForm.value.att_short_pass || 70), att_long_pass: Number(editForm.value.att_long_pass || 70), att_curve: Number(editForm.value.att_curve || 70),
+      att_agility: Number(editForm.value.att_agility || 70), att_balance: Number(editForm.value.att_balance || 70), att_reactions: Number(editForm.value.att_reactions || 70), att_ball_control: Number(editForm.value.att_ball_control || 70), att_dribbling: Number(editForm.value.att_dribbling || 70), att_composure: Number(editForm.value.att_composure || 70),
+      att_interceptions: Number(editForm.value.att_interceptions || 70), att_heading: Number(editForm.value.att_heading || 70), att_def_awareness: Number(editForm.value.att_def_awareness || 70), att_stand_tackle: Number(editForm.value.att_stand_tackle || 70), att_slide_tackle: Number(editForm.value.att_slide_tackle || 70),
+      att_jumping: Number(editForm.value.att_jumping || 70), att_stamina: Number(editForm.value.att_stamina || 70), att_strength: Number(editForm.value.att_strength || 70), att_aggression: Number(editForm.value.att_aggression || 70)
     }
 
     // 3. Grava na Base de Dados (Resto da função continua igual)

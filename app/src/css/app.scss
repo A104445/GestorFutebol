@@ -59,3 +59,8 @@ body {
   /* 65px do teu footer + margem de segurança do iOS + 10px de respiração */
   margin-bottom: calc(env(safe-area-inset-bottom) + 75px) !important;
 }
+
+/* Garante que o fundo de todos os modais da App para exatamente acima do Footer */
+.q-dialog__inner {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 75px) !important;
+}

@@ -518,7 +518,7 @@
                 color="green-9"
                 use-input
                 @filter="filterSquadPlayers"
-                behavior="menu"
+                behavior="dialog"
                 menu-style="max-height: 280px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 10000 !important;"
                 style="max-height: 120px; overflow-y: auto;" 
               >
@@ -905,7 +905,7 @@
     </q-dialog>
 
     <q-dialog v-model="showSettingsModal" transition-show="slide-up" transition-hide="slide-down">
-      <q-card class="modal-safe-footer" style="width: 100%; max-width: 500px; max-height: 85vh; border-radius: 24px; background: #ffffff; display: flex; flex-direction: column; overflow: hidden;">
+      <q-card style="width: 100%; max-width: 500px; max-height: 100%; border-radius: 24px; background: #ffffff; display: flex; flex-direction: column; overflow: hidden;">
 
         <!-- 1. CABEÇALHO PRETO FIXO -->
         <q-card-section class="bg-dark text-white q-py-md" style="flex-shrink: 0;">
@@ -979,6 +979,7 @@
                 <q-toggle v-model="clubSettings.hide_attributes_from_members" color="negative" label="Ocultar Ratings/OVR dos membros" class="text-caption" dense />
                 <q-toggle v-model="clubSettings.enable_voting" color="blue" label="Ativar Votação de MVP pós-jogo" class="text-caption" dense />
                 <q-toggle v-model="clubSettings.single_team_mode" color="yellow-9" label="Modo de Equipa Única" class="text-caption" dense />
+                <q-toggle v-model="clubSettings.detailed_attributes" color="purple-9" label="Ativar Atributos Detalhados" class="text-caption" dense />
               </div>
             </div>
 
@@ -1001,7 +1002,7 @@
                 color="green-9"
                 bg-color="white"
                 style="width: 100%;"
-                behavior="menu"
+                behavior="dialog"
               >
                 <template v-slot:selected-item="scope">
                   <q-chip
@@ -2241,6 +2242,7 @@ const clubSettings = ref({
   attribute_mode: 'numeric', hide_attributes_from_members: false,
   enable_voting: true,
   single_team_mode: false,
+  detailed_attributes: false,
   default_starters_per_team: 11,
   default_team_a_name: 'Equipa A', default_team_b_name: 'Equipa B',
   default_squad: []
@@ -3023,16 +3025,20 @@ async function openPresencesModal(match) {
     .select('id, status, paid, team, created_at, guest_name, virtual_player_id, profile_id, profiles(name), virtual_players(name, overall, position, specific_position)')
     .eq('match_id', match.id)
     
-  // 2. Puxa os dados táticos do clube
-  const { data: membersData } = await supabase.from('club_members').select('profile_id, position, specific_position, overall').eq('club_id', props.id)
+  // 2. Puxa os dados táticos do clube (ADICIONEI O pro_overall AO SELECT)
+  const { data: membersData } = await supabase.from('club_members').select('profile_id, position, specific_position, overall, pro_overall').eq('club_id', props.id)
 
   if (!error && presData) {
     presences.value = presData.map(p => {
        if (p.profile_id) {
            const cm = membersData?.find(m => m.profile_id === p.profile_id)
            p.profiles = p.profiles || {} 
-           p.profiles.overall = cm?.overall || 70 // Injeta o Overall do clube
-           p.profiles.position = cm?.position || 'Médio' // Injeta a Posição do clube
+           
+           // A TUA IDEIA EM AÇÃO NO RELVADO:
+           const isPro = clubSettings.value?.detailed_attributes && cm?.position !== 'Guarda-Redes'
+           p.profiles.overall = isPro ? (cm?.pro_overall || 70) : (cm?.overall || 70)
+           
+           p.profiles.position = cm?.position || 'Médio'
            p.profiles.specific_position = cm?.specific_position || ''
        }
        return p
@@ -3320,6 +3326,7 @@ async function saveClubSettings() {
     hide_attributes_from_members: clubSettings.value.hide_attributes_from_members,
     enable_voting: clubSettings.value.enable_voting, 
     single_team_mode: clubSettings.value.single_team_mode,
+    detailed_attributes: clubSettings.value.detailed_attributes,
     default_starters_per_team: clubSettings.value.default_starters_per_team,
     default_team_a_name: clubSettings.value.default_team_a_name, 
     default_team_b_name: clubSettings.value.default_team_b_name,
@@ -3329,8 +3336,10 @@ async function saveClubSettings() {
   }).eq('id', props.id)
 
   if (!error) {
+    
     $q.notify({ type: 'positive', message: 'Definições do clube guardadas!' })
     showSettingsModal.value = false
+    
     // Atualiza o estado da store para refletir os preços novos imediatamente
     if (clubStore.currentClub) {
       clubStore.currentClub.default_price = clubSettings.value.default_price
