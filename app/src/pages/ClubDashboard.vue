@@ -518,10 +518,10 @@
                 color="green-9"
                 use-input
                 @filter="filterSquadPlayers"
-                behavior="dialog"
-                menu-style="max-height: 280px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 10000 !important;"
-                style="max-height: 120px; overflow-y: auto;" 
-              >
+                behavior="menu"
+                popup-content-style="z-index: 10000 !important; max-height: 280px;"
+                style="max-height: 120px; overflow-y: auto;"
+               >
                 <!-- DESIGN DA LISTA SUSPENSA (Fina e Compacta) -->
                 <template v-slot:option="scope">
                   <q-item v-bind="scope.itemProps" class="q-py-xs" style="border-bottom: 1px solid #f1f5f9; min-height: 36px;">
@@ -994,15 +994,17 @@
                 </q-badge>
               </div>
               <q-select
-                outlined dense multiple use-chips
+                outlined dense multiple use-chips use-input
                 v-model="clubSettings.default_squad"
-                :options="allClubPlayersOptions"
+                :options="clubPlayersOptions"
                 :max-values="clubSettings.default_max_players"
                 label="Selecione os titulares..."
                 color="green-9"
                 bg-color="white"
                 style="width: 100%;"
-                behavior="dialog"
+                behavior="menu"
+                popup-content-style="z-index: 10000 !important; max-height: 280px;"
+                @filter="filterClubPlayers"
               >
                 <template v-slot:selected-item="scope">
                   <q-chip
@@ -1703,6 +1705,39 @@ const filteredMatches = computed(() => {
 
   return []
 })
+
+// A variável que vai alimentar a pesquisa nas Definições
+const clubPlayersOptions = ref([])
+
+// 1. Pesquisa da Convocatória 100% blindada
+function filterSquadPlayers(val, update) {
+  update(() => {
+    if (val === '') {
+      squadOptions.value = allSquadOptions.value
+    } else {
+      const needle = val.toLowerCase()
+      squadOptions.value = allSquadOptions.value.filter(v => {
+        const label = v.label || '' // Previne crash se o nome estiver vazio
+        return label.toLowerCase().includes(needle)
+      })
+    }
+  })
+}
+
+// 2. Pesquisa das Definições (Titulares Fixos) 100% blindada
+function filterClubPlayers(val, update) {
+  update(() => {
+    if (val === '') {
+      clubPlayersOptions.value = allClubPlayersOptions.value
+    } else {
+      const needle = val.toLowerCase()
+      clubPlayersOptions.value = allClubPlayersOptions.value.filter(v => {
+        const label = v.label || ''
+        return label.toLowerCase().includes(needle)
+      })
+    }
+  })
+}
 
 // Memória dos jogos onde o utilizador já votou
 const votedMatches = ref([])
@@ -3090,13 +3125,6 @@ async function loadAvailableSquad() {
   squadOptions.value = options
 }
 
-function filterSquadPlayers(val, update) {
-  update(() => {
-    const needle = val.toLowerCase()
-    squadOptions.value = allSquadOptions.value.filter(v => v.label.toLowerCase().indexOf(needle) > -1)
-  })
-}
-
 async function addSquadPlayerToMatch() {
   // Se a lista estiver vazia, não faz nada
   if (!selectedSquadPlayers.value || selectedSquadPlayers.value.length === 0 || !selectedMatch.value) return
@@ -3367,6 +3395,7 @@ async function loadAllClubPlayers() {
   }
   
   allClubPlayersOptions.value = options
+  clubPlayersOptions.value = options
 }
 
 // Monitoriza a lotação máxima e corta a lista de titulares se necessário
