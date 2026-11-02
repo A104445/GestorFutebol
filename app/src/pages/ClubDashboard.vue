@@ -503,81 +503,17 @@
           </div>
         </q-card-section>
 
+        <!-- BOTÃO MODAL PARA INSCREVER JOGADORES NA CONVOCATÓRIA -->
         <q-card-section v-if="selectedMatch?.status !== 'fechado' && (clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner)" class="q-pa-md bg-grey-3 border-bottom">
           <div class="text-caption text-weight-bold text-grey-8 q-mb-xs">Painel Administrativo: Inscrever Jogador do Plantel</div>
-            <div class="column q-gutter-y-sm">
-              <q-select
-                v-model="selectedSquadPlayers"
-                :options="squadOptions"
-                dense
-                outlined
-                multiple
-                use-chips
-                label="Procurar jogadores (Podes escolher vários)"
-                bg-color="white"
-                color="green-9"
-                use-input
-                @filter="filterSquadPlayers"
-                behavior="menu"
-                popup-content-style="z-index: 10000 !important; max-height: 280px;"
-                style="max-height: 120px; overflow-y: auto;"
-               >
-                <!-- DESIGN DA LISTA SUSPENSA (Fina e Compacta) -->
-                <template v-slot:option="scope">
-                  <q-item v-bind="scope.itemProps" class="q-py-xs" style="border-bottom: 1px solid #f1f5f9; min-height: 36px;">
-                    
-                    <q-item-section avatar style="min-width: 32px; padding-right: 8px;">
-                      <!-- Caixa Escura Encolhida para 26px -->
-                      <div class="column items-center justify-center bg-dark text-white shadow-1" style="border-radius: 6px; width: 26px; height: 26px;">
-                        <span class="text-weight-bolder" style="font-size: 8px; text-transform: uppercase;">
-                          {{ scope.opt.position.substring(0,3) }}
-                        </span>
-                      </div>
-                    </q-item-section>
-
-                    <q-item-section>
-                      <q-item-label class="text-weight-bold text-dark row items-center" style="font-size: 13px;">
-                        {{ scope.opt.label }}
-                        <q-icon v-if="scope.opt.type === 'virtual'" name="construction" color="amber-9" size="xs" class="q-ml-xs" />
-                      </q-item-label>
-                    </q-item-section>
-
-                    <q-item-section side v-if="scope.selected">
-                      <q-icon name="check_circle" color="green-9" size="sm" />
-                    </q-item-section>
-
-                  </q-item>
-                </template>
-
-                <!-- DESIGN DOS NOMES SELECIONADOS NA CAIXA (Chips Miniatura) -->
-                <template v-slot:selected-item="scope">
-                  <q-chip
-                    removable
-                    dense
-                    size="sm"
-                    @remove="scope.removeAtIndex(scope.index)"
-                    :tabindex="scope.tabindex"
-                    color="grey-2"
-                    text-color="dark"
-                    class="text-weight-bold q-ma-none q-mr-xs q-mt-xs"
-                    style="border-radius: 4px; border: 1px solid #e2e8f0;"
-                  >
-                    {{ scope.opt.label.split(' ')[0] }}
-                  </q-chip>
-                </template>
-              </q-select>
-
-              <!-- Botão de Inscrição a ocupar a largura toda -->
-              <q-btn 
-                color="dark" 
-                icon="assignment_turned_in" 
-                label="Convocar Selecionados" 
-                @click="addSquadPlayerToMatch" 
-                unelevated 
-                class="text-weight-bold shadow-1 full-width q-mt-xs" 
-                style="border-radius: 8px; height: 44px;" 
-              />
-            </div>
+          <q-btn
+            icon="person_add"
+            color="dark"
+            label="Selecionar Jogadores do Plantel"
+            class="full-width text-weight-bold shadow-1"
+            style="border-radius: 8px; height: 42px;"
+            @click="showConvokModal = true"
+          />
         </q-card-section>
   
         <!-- LISTA ÚNICA DE JOGADORES (Sem separadores) -->
@@ -989,34 +925,21 @@
                 <span class="text-weight-bold text-dark row items-center text-caption">
                   <q-icon name="stars" color="amber-8" class="q-mr-xs" size="xs" /> Titulares Fixos
                 </span>
-                <q-badge color="grey-3" text-color="dark" class="text-weight-bolder px-sm" style="font-size: 10px;">
+                <q-badge color="grey-3" text-color="dark" class="text-weight-bolder" style="font-size: 10px;">
                   {{ clubSettings.default_squad?.length || 0 }} / {{ clubSettings.default_max_players }}
                 </q-badge>
               </div>
-              <q-select
-                outlined dense multiple use-chips use-input
-                v-model="clubSettings.default_squad"
-                :options="clubPlayersOptions"
-                :max-values="clubSettings.default_max_players"
-                label="Selecione os titulares..."
+
+              <!-- Botão para abrir o Modal Profissional de Titulares -->
+              <q-btn
+                outline
                 color="green-9"
-                bg-color="white"
-                style="width: 100%;"
-                behavior="menu"
-                popup-content-style="z-index: 10000 !important; max-height: 280px;"
-                @filter="filterClubPlayers"
-              >
-                <template v-slot:selected-item="scope">
-                  <q-chip
-                    removable dense size="xs" color="amber-2" text-color="dark"
-                    @remove="scope.removeAtIndex(scope.index)"
-                    :tabindex="scope.tabindex" class="text-weight-bold q-ma-xs"
-                    style="border: 1px solid #fcd34d;"
-                  >
-                    {{ scope.opt.label.split(' ')[0] }}
-                  </q-chip>
-                </template>
-              </q-select>
+                icon="groups"
+                label="Gerir Titulares Fixos"
+                class="full-width text-weight-bold"
+                style="border-radius: 8px;"
+                @click="showSquadModal = true"
+              />
             </div>
           </div>
         </q-card-section>
@@ -1413,6 +1336,131 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- MODAL PROFISSIONAL: CONVOCAR JOGADORES PARA O JOGO -->
+    <q-dialog v-model="showConvokModal" persistent>
+      <q-card style="min-width: 350px; max-width: 480px; width: 100%; border-radius: 20px; overflow: hidden;">
+        <q-card-section class="row items-center bg-dark text-white q-py-md">
+          <div class="text-subtitle1 text-weight-bold row items-center">
+            <q-icon name="person_add" color="primary" class="q-mr-sm" size="sm" />
+            Convocar Jogadores para o Jogo
+          </div>
+          <q-space />
+          <q-btn icon="close" flat round dense color="grey-4" v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="bg-grey-2 q-py-sm">
+          <q-input
+            v-model="convokSearchQuery"
+            dense
+            outlined
+            placeholder="Pesquisar no plantel..."
+            bg-color="white"
+            color="green-9"
+            clearable
+          >
+            <template v-slot:prepend><q-icon name="search" /></template>
+          </q-input>
+        </q-card-section>
+
+        <q-card-section class="q-pa-none bg-white" style="max-height: 50vh; overflow-y: auto;">
+          <q-list separator>
+            <q-item
+              v-for="player in filteredConvokOptions"
+              :key="player.value"
+              clickable
+              v-ripple
+              @click="toggleConvokPlayer(player)"
+              class="q-py-md transition-hover"
+              :class="isConvokSelected(player) ? 'bg-green-1 text-green-9 text-weight-bold' : ''"
+            >
+              <q-item-section avatar>
+                <q-avatar size="32px" :color="isConvokSelected(player) ? 'green-9' : 'grey-3'" :text-color="isConvokSelected(player) ? 'white' : 'dark'">
+                  <q-icon :name="isConvokSelected(player) ? 'check' : 'person'" size="18px" />
+                </q-avatar>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label :class="isConvokSelected(player) ? 'text-green-9 text-weight-bolder' : 'text-dark text-weight-bold'">
+                  {{ player.label }}
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-badge :color="isConvokSelected(player) ? 'green-9' : 'grey-3'" :text-color="isConvokSelected(player) ? 'white' : 'dark'" class="text-weight-bold">
+                  {{ player.position || 'MED' }}
+                </q-badge>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+
+        <q-card-actions align="between" class="bg-grey-1 q-pa-md" style="border-top: 1px solid #e2e8f0;">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn color="primary" label="Convidar Selecionados" unelevated style="border-radius: 8px;" @click="confirmConvokPlayers" :loading="saving" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- MODAL PROFISSIONAL: SELEÇÃO DE TITULARES FIXOS -->
+    <q-dialog v-model="showSquadModal" persistent>
+      <q-card style="min-width: 350px; max-width: 480px; width: 100%; border-radius: 20px; overflow: hidden;">
+        <q-card-section class="row items-center bg-dark text-white q-py-md">
+          <div class="text-subtitle1 text-weight-bold row items-center">
+            <q-icon name="stars" color="amber-8" class="q-mr-sm" size="sm" />
+            Selecionar Titulares Fixos
+          </div>
+          <q-space />
+          <q-btn icon="close" flat round dense color="grey-4" v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="bg-grey-2 q-py-sm">
+          <q-input
+            v-model="squadSearchQuery"
+            dense
+            outlined
+            placeholder="Pesquisar jogador..."
+            bg-color="white"
+            color="green-9"
+            clearable
+          >
+            <template v-slot:prepend><q-icon name="search" /></template>
+          </q-input>
+        </q-card-section>
+
+        <q-card-section class="q-pa-none bg-white" style="max-height: 50vh; overflow-y: auto;">
+          <q-list separator>
+            <q-item
+              v-for="player in filteredSquadOptions"
+              :key="player.value"
+              clickable
+              v-ripple
+              @click="toggleSquadPlayer(player)"
+              class="q-py-md transition-hover"
+              :class="isSquadSelected(player) ? 'bg-green-1 text-green-9 text-weight-bold' : ''"
+            >
+              <q-item-section avatar>
+                <q-avatar size="32px" :color="isSquadSelected(player) ? 'green-9' : 'grey-3'" :text-color="isSquadSelected(player) ? 'white' : 'dark'">
+                  <q-icon :name="isSquadSelected(player) ? 'check' : 'person'" size="18px" />
+                </q-avatar>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label :class="isSquadSelected(player) ? 'text-green-9 text-weight-bolder' : 'text-dark text-weight-bold'">
+                  {{ player.label }}
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-badge :color="isSquadSelected(player) ? 'green-9' : 'grey-3'" :text-color="isSquadSelected(player) ? 'white' : 'dark'" class="text-weight-bold">
+                  {{ player.position || 'MED' }}
+                </q-badge>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+
+        <q-card-actions align="right" class="bg-grey-1 q-pa-md" style="border-top: 1px solid #e2e8f0;">
+          <q-btn color="primary" label="Concluir" unelevated style="border-radius: 8px;" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   
   </q-page>
 </template>
@@ -1706,39 +1754,6 @@ const filteredMatches = computed(() => {
   return []
 })
 
-// A variável que vai alimentar a pesquisa nas Definições
-const clubPlayersOptions = ref([])
-
-// 1. Pesquisa da Convocatória 100% blindada
-function filterSquadPlayers(val, update) {
-  update(() => {
-    if (val === '') {
-      squadOptions.value = allSquadOptions.value
-    } else {
-      const needle = val.toLowerCase()
-      squadOptions.value = allSquadOptions.value.filter(v => {
-        const label = v.label || '' // Previne crash se o nome estiver vazio
-        return label.toLowerCase().includes(needle)
-      })
-    }
-  })
-}
-
-// 2. Pesquisa das Definições (Titulares Fixos) 100% blindada
-function filterClubPlayers(val, update) {
-  update(() => {
-    if (val === '') {
-      clubPlayersOptions.value = allClubPlayersOptions.value
-    } else {
-      const needle = val.toLowerCase()
-      clubPlayersOptions.value = allClubPlayersOptions.value.filter(v => {
-        const label = v.label || ''
-        return label.toLowerCase().includes(needle)
-      })
-    }
-  })
-}
-
 // Memória dos jogos onde o utilizador já votou
 const votedMatches = ref([])
 
@@ -1805,6 +1820,72 @@ async function clearAllTeams() {
     
     balancing.value = false
   })
+}
+
+// --- LÓGICA DO MODAL DE CONVOCATÓRIA ---
+const showConvokModal = ref(false)
+const convokSearchQuery = ref('')
+
+const filteredConvokOptions = computed(() => {
+  if (!convokSearchQuery.value) return squadOptions.value
+  const needle = convokSearchQuery.value.toLowerCase()
+  return squadOptions.value.filter(p => (p.label || '').toLowerCase().includes(needle))
+})
+
+function isConvokSelected(player) {
+  return selectedSquadPlayers.value.some(p => p.value === player.value)
+}
+
+function toggleConvokPlayer(player) {
+  if (!selectedSquadPlayers.value) selectedSquadPlayers.value = []
+  const index = selectedSquadPlayers.value.findIndex(p => p.value === player.value)
+  if (index > -1) {
+    selectedSquadPlayers.value.splice(index, 1)
+  } else {
+    selectedSquadPlayers.value.push(player)
+  }
+}
+
+async function confirmConvokPlayers() {
+  await addSquadPlayerToMatch()
+  showConvokModal.value = false
+}
+
+
+// --- LÓGICA DO MODAL DE TITULARES FIXOS ---
+const showSquadModal = ref(false)
+const squadSearchQuery = ref('')
+
+const filteredSquadOptions = computed(() => {
+  // Garante que usa allClubPlayersOptions preenchido pela função loadAllClubPlayers()
+  const baseList = allClubPlayersOptions.value.length > 0 ? allClubPlayersOptions.value : squadOptions.value
+  if (!squadSearchQuery.value) return baseList
+  const needle = squadSearchQuery.value.toLowerCase()
+  return baseList.filter(p => (p.label || '').toLowerCase().includes(needle))
+})
+
+function isSquadSelected(player) {
+  if (!clubSettings.value.default_squad) return false
+  return clubSettings.value.default_squad.some(p => (typeof p === 'object' ? p.value === player.value : p === player.value))
+}
+
+function toggleSquadPlayer(player) {
+  if (!clubSettings.value.default_squad) {
+    clubSettings.value.default_squad = []
+  }
+  
+  // Normaliza para guardar o objeto completo ou ID dependendo de como tens estruturado
+  const index = clubSettings.value.default_squad.findIndex(p => (typeof p === 'object' ? p.value === player.value : p === player))
+  
+  if (index > -1) {
+    clubSettings.value.default_squad.splice(index, 1)
+  } else {
+    if (clubSettings.value.default_squad.length >= clubSettings.value.default_max_players) {
+      $q.notify({ type: 'warning', message: `Atingiste o limite máximo de ${clubSettings.value.default_max_players} titulares!` })
+      return
+    }
+    clubSettings.value.default_squad.push(player)
+  }
 }
 
 const myClubMemberData = ref(null)
@@ -3089,24 +3170,35 @@ async function loadAvailableSquad() {
   const currentInscribedVirtualIds = presences.value.map(p => p.virtual_player_id).filter(Boolean)
   const options = []
 
-  // Carrega membros com conta
-  const { data: reals } = await supabase.from('club_members').select('profile_id, profiles(name, position, overall)').eq('club_id', props.id)
+  // 1. Carrega membros reais disponíveis
+  const { data: reals } = await supabase
+    .from('club_members')
+    .select('profile_id, position, specific_position')
+    .eq('club_id', props.id)
+    .eq('status', 'approved')
+
   if (reals) {
-    reals.forEach(r => {
-      if (r.profiles && !currentInscribedProfileIds.includes(r.profile_id)) {
-        options.push({ 
-          label: r.profiles.name, // Nome limpo para a pesquisa
-          value: r.profile_id, 
-          type: 'real',
-          position: r.profiles.position || 'MED',
-          overall: r.profiles.overall || 70
-        })
+    for (const r of reals) {
+      if (!currentInscribedProfileIds.includes(r.profile_id)) {
+        const { data: prof } = await supabase.from('profiles').select('name').eq('id', r.profile_id).single()
+        if (prof) {
+          options.push({ 
+            label: prof.name, 
+            value: r.profile_id, 
+            type: 'real',
+            position: r.specific_position || r.position || 'MÉD'
+          })
+        }
       }
-    })
+    }
   }
 
-  // Carrega membros virtuais
-  const { data: virtuals } = await supabase.from('virtual_players').select('id, name, position, overall').eq('club_id', props.id)
+  // 2. Carrega membros virtuais disponíveis
+  const { data: virtuals } = await supabase
+    .from('virtual_players')
+    .select('id, name, position, specific_position')
+    .eq('club_id', props.id)
+
   if (virtuals) {
     virtuals.forEach(v => {
       if (!currentInscribedVirtualIds.includes(v.id)) {
@@ -3114,8 +3206,7 @@ async function loadAvailableSquad() {
           label: v.name, 
           value: v.id, 
           type: 'virtual',
-          position: v.position || 'MED',
-          overall: v.overall || 70
+          position: v.specific_position || v.position || 'MÉD'
         })
       }
     })
@@ -3380,22 +3471,46 @@ async function saveClubSettings() {
 async function loadAllClubPlayers() {
   const options = []
   
-  const { data: reals } = await supabase.from('club_members').select('profile_id, profiles(name, position)').eq('club_id', props.id)
-  if (reals) {
-    reals.forEach(r => {
-      if (r.profiles) options.push({ label: r.profiles.name, value: r.profile_id, type: 'real' })
-    })
+  // 1. Carrega membros reais de forma limpa
+  const { data: reals, error: realErr } = await supabase
+    .from('club_members')
+    .select('profile_id, position, specific_position')
+    .eq('club_id', props.id)
+    .eq('status', 'approved')
+
+  // Separamos a busca do nome dos perfis para evitar erros de join complexos
+  if (reals && !realErr) {
+    for (const r of reals) {
+      const { data: prof } = await supabase.from('profiles').select('name').eq('id', r.profile_id).single()
+      if (prof) {
+        options.push({ 
+          label: prof.name, 
+          value: r.profile_id, 
+          type: 'real',
+          position: r.specific_position || r.position || 'MÉD' 
+        })
+      }
+    }
   }
   
-  const { data: virtuals } = await supabase.from('virtual_players').select('id, name, position').eq('club_id', props.id)
+  // 2. Carrega membros virtuais
+  const { data: virtuals } = await supabase
+    .from('virtual_players')
+    .select('id, name, position, specific_position')
+    .eq('club_id', props.id)
+    
   if (virtuals) {
     virtuals.forEach(v => {
-      options.push({ label: v.name, value: v.id, type: 'virtual' })
+      options.push({ 
+        label: v.name, 
+        value: v.id, 
+        type: 'virtual',
+        position: v.specific_position || v.position || 'MÉD' 
+      })
     })
   }
   
   allClubPlayersOptions.value = options
-  clubPlayersOptions.value = options
 }
 
 // Monitoriza a lotação máxima e corta a lista de titulares se necessário
