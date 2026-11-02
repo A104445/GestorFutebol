@@ -61,6 +61,12 @@
                   <q-item-section avatar><q-icon name="feedback" size="sm" color="orange-8" /></q-item-section>
                   <q-item-section class="text-weight-bold">Enviar Feedback</q-item-section>
                 </q-item>
+
+                <!-- NOVO: Botão de FAQs -->
+                <q-item clickable @click="showFaqModal = true">
+                  <q-item-section avatar><q-icon name="help_outline" size="sm" color="green-8" /></q-item-section>
+                  <q-item-section class="text-weight-bold">FAQs</q-item-section>
+                </q-item>
               </q-list>
             </q-menu>
           </q-btn>
@@ -1461,6 +1467,359 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- MODAL DE FAQS / PERGUNTAS FREQUENTES -->
+    <q-dialog v-model="showFaqModal">
+      <q-card style="min-width: 340px; max-width: 550px; width: 100%; border-radius: 20px; overflow: hidden;">
+        
+        <!-- Cabeçalho -->
+        <q-card-section class="row items-center bg-dark text-white q-py-md">
+          <div class="text-subtitle1 text-weight-bold row items-center">
+            <q-icon name="help_outline" color="green-5" class="q-mr-sm" size="sm" />
+            Perguntas Frequentes (FAQs)
+          </div>
+          <q-space />
+          <q-btn icon="close" flat round dense color="grey-4" v-close-popup />
+        </q-card-section>
+
+        <!-- Conteúdo Expansível das FAQs -->
+        <q-card-section class="q-pa-md bg-grey-1 scroll" style="max-height: 65vh;">
+          <q-list class="q-gutter-y-sm">
+            
+            <q-expansion-item
+              group="faqs"
+              icon="phone_android"
+              label="Como instalar a aplicação no telemóvel (PWA)?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Podes adicionar a aplicação diretamente ao ecrã principal do teu telemóvel para uma experiência rápida e imersiva. No Android, abre o menu do browser e clica em "Instalar aplicação" ou "Adicionar ao ecrã principal". No iPhone (iOS), clica no botão de partilha do Safari e seleciona "Adicionar ao Ecrã Principal".
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="vpn_key"
+              label="Como criar ou entrar num clube de futebol?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  No ecrã de seleção de clubes, podes criar um novo clube definindo o seu nome ou entrar num clube privado existente introduzindo o código de convite de 8 carateres fornecido pelo administrador.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="verified_user"
+              label="O que acontece após enviar o pedido de adesão a um clube?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  O teu pedido fica pendente de aprovação. Os administradores ou o dono do clube receberão um alerta e poderão aprovar ou rejeitar a tua entrada no balneário antes de poderes participar nas peladas.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="manage_accounts"
+              label="Como funciona a Equipa Técnica e as Permissões?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  O dono do clube e os administradores podem gerir permissões granulares para outros membros. É possível atribuir acessos específicos para gerir jogos, gerir o plantel ou assumir o papel de tesoureiro do clube.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="account_circle"
+              label="Como posso personalizar o meu perfil de jogador?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  No menu lateral, clica em "O Meu Perfil". Podes alterar o teu nome de jogador, carregar uma fotografia personalizada para o teu avatar, definir a tua posição geral e específica, o pé preferido e atualizar a tua password de acesso.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="calendar_today"
+              label="Como agendar uma nova pelada ou jogo?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Os administradores podem clicar no botão flutuante '+' no calendário para criar uma nova convocatória. Podes definir a data, hora, local, lotação máxima, número de titulares por equipa, preço por jogador e os nomes das equipas.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="auto_mode"
+              label="Como funciona a geração de jogos para o mês inteiro?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Configurando um dia da semana e hora fixos nas definições do clube, o sistema consegue gerar automaticamente um lote com todas as peladas correspondentes ao mês, pré-inscrevendo de imediato os titulares fixos definidos.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="how_to_reg"
+              label="Como me inscrevo ou desinscrevo de uma pelada?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Nos cartões dos jogos abertos, podes clicar em "Vou Jogar" para garantir o teu lugar no limite das vagas disponíveis. Os administradores também podem inscrever diretamente qualquer elemento do plantel através do modal de convocatória.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="sports_soccer"
+              label="Como funciona o Sorteio Automático de Equipas?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  No modal de convocatória e equipas, os administradores podem clicar no botão "Auto". O algoritmo agrupa os jogadores por setores (defesas, médios, avançados) e equilibra as equipas de forma justa com base no Overall (OVR) de cada atleta.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="sports"
+              label="O que é o Modo de Equipa Única?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Ideal para treinos livres ou quando o grupo não se divide em Equipas A e B. Ao ativar esta opção nas definições, os convocados são geridos entre "Em Campo (Titulares)" com suporte a esquemas táticos (ex: 4-3-3, 4-4-2) e o "Banco de Suplentes".
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="groups_2"
+              label="O que são os Jogadores Virtuais?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  São atletas criados manualmente pelos administradores para preencher vagas na aplicação quando um colega ocasional ainda não tem conta registada na app. Possuem posições e atributos próprios para entrarem nas contas e simulações.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="stars"
+              label="Para que servem os Titulares Fixos?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Nas definições do clube, podes selecionar uma base fixa de jogadores que compõem habitualmente o plantel. Estes jogadores podem ser automaticamente inscritos e contabilizados de forma facilitada ao criar novos eventos.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="sports_esports"
+              label="Como funcionam as Cartas FUT e os Atributos dos Jogadores?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Cada jogador do plantel possui uma carta interativa ao estilo Ultimate Team (FUT). Os administradores podem editar os atributos do jogador, e o sistema calcula automaticamente o Overall (OVR) ponderado com base na posição e nos pesos específicos de cada setor.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="tune"
+              label="Qual é a diferença entre o Modo Simples e o Modo Pro (Detalhado)?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  O Modo Simples gere os 6 atributos principais (Ritmo, Remate, Passe, Drible, Defesa, Físico). O Modo Pro expande para 29 sub-atributos detalhados in-game (como aceleração, finalização, agilidade, desarme). A aplicação utiliza colunas duplas na base de dados, permitindo alternar livremente entre os modos sem apagar dados anteriores.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="visibility_off"
+              label="Posso ocultar os atributos e Ratings dos membros?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Sim. Nas definições do clube existe um botão para "Ocultar Ratings/OVR dos membros". Quando ativado, os jogadores comuns deixam de ver os valores numéricos nas cartas do plantel e nos jogos, mantendo a privacidade, enquanto os administradores continuam a ter acesso total.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="style"
+              label="O que significam os visuais especiais das cartas (Gold, Silver, Bronze, In-Form, Icon)?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  As cores da carta adaptam-se ao tier do Overall (Ouro para OVR 80+, Prata para 70+, Bronze abaixo). Além disso, os três melhores jogadores do mês anterior recebem o estatuto especial "In-Form", e existem edições especiais (Icon) detetadas pelo nome.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="sports_score"
+              label="Como fechar uma partida e registar golos e assistências?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Quando uma pelada termina, um administrador pode clicar em "Fechar Jogo". Abre-se um painel interativo onde é possível ajustar em tempo real os golos e assistências de cada atleta, calculando automaticamente o resultado final da partida.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="how_to_vote"
+              label="Como funciona a Votação de MVP e Avaliação Pós-Jogo?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Após o fecho inicial do jogo por um administrador, abre-se a fase de votação. Cada jogador participante pode atribuir notas de 1 a 10 aos colegas e eleger anonimamente o Homem do Jogo (MVP). No final, o administrador encerra as urnas para apurar os vencedores e atualizar as estatísticas.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="leaderboard"
+              label="Como é calculado o Ranking e as Estatísticas da Época?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  O ecrã de estatísticas compila o desempenho de todos os jogos fechados da época. Cada vitória atribui 3 pontos, o empate 1 ponto e a derrota 0 pontos. Podes ordenar por pontos, golos, assistências, notas médias e número de MVPs, podendo também filtrar os dados mês a mês.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="account_balance_wallet"
+              label="Como funciona o módulo de Tesouraria e Caixas?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  A tesouraria gere dois modelos: o pagamento por jogo para jogadores ocasionais e a gestão de mensalidades para os titulares fixos. O sistema calcula automaticamente o valor esperado com base no número de jogos do mês e permite dar baixa aos pagamentos efetuados.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="notifications_active"
+              label="Como funcionam os Lembretes de Pagamento e Disponibilidade?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Através das notificações Push integradas, os administradores e tesoureiros podem enviar avisos automáticos e segmentados diretamente para o telemóvel dos jogadores que tenham valores em dívida na tesouraria ou lembretes para confirmar a presença nas próximas peladas.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="sync"
+              label="A aplicação funciona offline ou atualiza em tempo real?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  A aplicação utiliza WebSockets e subscrições em tempo real do Supabase. Sempre que alguém se inscreve num jogo, altera uma equipa ou regista um pagamento, o ecrã de todos os utilizadores conectados atualiza instantaneamente sem necessidade de atualizar a página.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="support_agent"
+              label="Como posso contactar o suporte ou enviar sugestões?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  No menu lateral do clube, tens botões diretos dedicados para "Pedir Ajuda" e "Enviar Feedback", abrindo automaticamente o teu cliente de email pré-configurado com o endereço de suporte da aplicação.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="lock_reset"
+              label="O que fazer se perder o acesso à minha conta?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  No ecrã de login, podes utilizar a opção de recuperação de password introduzindo o teu email para receberes instruções de redefinição, ou optar pelo início de sessão rápido através da tua conta Google.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-expansion-item
+              group="faqs"
+              icon="security"
+              label="Os meus dados e as votações estão seguros?"
+              header-class="bg-white text-weight-bold text-dark shadow-1 rounded-borders"
+            >
+              <q-card class="bg-white q-mt-xs">
+                <q-card-section class="text-body2 text-grey-8">
+                  Sim. Toda a aplicação está protegida por políticas rigorosas de segurança ao nível de base de dados (Row Level Security), garantindo que apenas os membros autorizados de cada clube conseguem visualizar e editar as informações do respetivo balneário.
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+          </q-list>
+        </q-card-section>
+
+        <!-- Rodapé -->
+        <q-card-actions align="right" class="bg-grey-2 q-pa-md" style="border-top: 1px solid #e2e8f0;">
+          <q-btn color="primary" label="Entendido" unelevated style="border-radius: 8px;" v-close-popup />
+        </q-card-actions>
+
+      </q-card>
+    </q-dialog>
   
   </q-page>
 </template>
@@ -1487,6 +1846,7 @@ let realtimeChannel
 
 const matchViewMode = ref('next')
 const selectedMonth = ref(null)
+const showFaqModal = ref(false)
 
 // NOVO: Dicionário de posições específicas
 const specificPositionsMap = {
