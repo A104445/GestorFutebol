@@ -16,8 +16,18 @@
             <h5 class="q-my-none text-weight-bolder text-white text-ellipsis" style="letter-spacing: -0.3px; font-size: 1.2rem;">
               {{ clubStore.currentClub?.name || 'Carregando...' }}
             </h5>
-            <div v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" class="text-caption text-grey-4 q-mt-xs text-weight-medium text-ellipsis">
-              Código: <span class="text-green-4 text-weight-bolder">{{ clubStore.currentClub?.invite_code || 'N/A' }}</span>
+            <div v-if="clubStore.currentClub?.role === 'admin' || clubStore.currentClub?.is_owner" class="text-caption text-grey-4 q-mt-xs text-weight-medium row items-center no-wrap">
+              <span>Código: <span class="text-green-4 text-weight-bolder q-mr-xs">{{ clubStore.currentClub?.invite_code || 'N/A' }}</span></span>
+              
+              <!-- Botão Copiar apenas o Código -->
+              <q-btn flat round dense icon="content_copy" size="10px" color="white" class="q-ml-xs" @click="copyInviteCode">
+                <q-tooltip>Copiar Código</q-tooltip>
+              </q-btn>
+              
+              <!-- Botão Partilhar Link Automático -->
+              <q-btn flat round dense icon="share" size="10px" color="white" class="q-ml-xs" @click="shareInviteLink">
+                <q-tooltip>Enviar Convite</q-tooltip>
+              </q-btn>
             </div>
           </div>
         </div>
@@ -4041,6 +4051,44 @@ const canSeeStats = computed(() => {
   const isManager = clubStore.currentClub?.can_manage_teams || clubStore.currentClub?.is_owner
   return !clubSettings.value?.hide_attributes_from_members || isManager
 })
+
+// --- SISTEMA DE CONVITES ---
+function copyInviteCode() {
+  const code = clubStore.currentClub?.invite_code
+  if (code) {
+    navigator.clipboard.writeText(code)
+    $q.notify({ type: 'positive', icon: 'content_copy', message: `Código ${code} copiado! Podes colar no WhatsApp.` })
+  } else {
+    $q.notify({ type: 'warning', message: 'Este clube ainda não tem código de convite.' })
+  }
+}
+
+async function shareInviteLink() {
+  const club = clubStore.currentClub
+  if (!club) return
+
+  // Usa o Vue Router para descobrir o link exato de adesão a este clube
+  const routeData = router.resolve({ name: 'join-club', params: { id: club.id } })
+  const fullLink = window.location.origin + routeData.href
+
+  const msg = `Junta-te ao meu plantel "${club.name}" na MatchDay! ⚽\n\nClica no link para entrares automaticamente:\n${fullLink}\n\n(Se a app pedir, o código é: ${club.invite_code})`
+
+  // Se o dispositivo suportar a partilha nativa (Telemóveis)
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Convite para a MatchDay',
+        text: msg
+      })
+    } catch {
+      console.log('Partilha cancelada pelo utilizador.')
+    }
+  } else {
+    // Fallback para PC: Copia tudo para a área de transferência
+    navigator.clipboard.writeText(msg)
+    $q.notify({ type: 'positive', icon: 'share', message: 'Texto de convite copiado! Cola onde quiseres.' })
+  }
+}
 
 // --- SISTEMA DE NOTIFICAÇÕES PUSH ---
 async function notifyMatchPlayers(matchId, title, message) {
