@@ -587,11 +587,11 @@ function openEditModal(memberFromCard) {
 async function fetchAllMembers() {
   loading.value = true
   const list = []
-  
-  // 1. QUERY GIGANTE: Pede os 6 principais + os 29 detalhados
+
+  // 1. QUERY GIGANTE: Pede os 6 principais + os 29 detalhados + O pro_overall QUE FALTAVA
   const { data: realUsers } = await supabase.from('club_members')
   .select(`
-    role, is_owner, profile_id, position, specific_position, overall, 
+    role, is_owner, profile_id, position, specific_position, overall, pro_overall,
     pace, shooting, passing, dribbling, defending, physical, 
     pro_pace, pro_shooting, pro_passing, pro_dribbling, pro_defending, pro_physical,
     diving, handling, kicking, reflexes, speed, positioning, 
@@ -610,11 +610,17 @@ async function fetchAllMembers() {
       if (u.profiles) {
         list.push({
           id: u.profile_id, id_type: 'real', name: u.profiles.name, avatar_url: u.profiles.avatar_url, 
-          position: u.position || 'Médio', specific_position: u.specific_position || '', overall: u.overall || 70,
+          position: u.position || 'Médio', specific_position: u.specific_position || '', 
+          
+          // O SEGREDO ESTAVA AQUI: Faltava injetar o pro_overall na memória da aplicação!
+          overall: u.overall || 70, pro_overall: u.pro_overall || 70,
+          
           pace: u.pace || 70, shooting: u.shooting || 70, passing: u.passing || 70,
           dribbling: u.dribbling || 70, defending: u.defending || 70, physical: u.physical || 70,
+          
           pro_pace: u.pro_pace || 70, pro_shooting: u.pro_shooting || 70, pro_passing: u.pro_passing || 70,
           pro_dribbling: u.pro_dribbling || 70, pro_defending: u.pro_defending || 70, pro_physical: u.pro_physical || 70,
+          
           diving: u.diving || 70, handling: u.handling || 70, kicking: u.kicking || 70,
           reflexes: u.reflexes || 70, speed: u.speed || 70, positioning: u.positioning || 70,
           
@@ -633,6 +639,7 @@ async function fetchAllMembers() {
 
   // 2. Carregar utilizadores virtuais (O select('*') já traz tudo automaticamente da BD)
   const { data: virtualUsers } = await supabase.from('virtual_players').select('*').eq('club_id', props.id)
+
   if (virtualUsers) {
     virtualUsers.forEach(v => {
       list.push({ ...v, id_type: 'virtual', is_virtual: true })
@@ -761,7 +768,7 @@ async function savePlayerStats() {
       pro_overall: proOverall,
       pro_pace: proPace, pro_shooting: proShooting, pro_passing: proPassing,
       pro_dribbling: proDribbling, pro_defending: proDefending, pro_physical: proPhysical,
-      
+
       // ENVIA TAMBÉM OS 29!
       att_acceleration: Number(editForm.value.att_acceleration || 70), att_sprint_speed: Number(editForm.value.att_sprint_speed || 70),
       att_positioning: Number(editForm.value.att_positioning || 70), att_finishing: Number(editForm.value.att_finishing || 70), att_shot_power: Number(editForm.value.att_shot_power || 70), att_long_shots: Number(editForm.value.att_long_shots || 70), att_volleys: Number(editForm.value.att_volleys || 70), att_penalties: Number(editForm.value.att_penalties || 70),
