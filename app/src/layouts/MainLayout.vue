@@ -1,7 +1,5 @@
 <template>
   <q-layout view="lHh lpr lFf">
-    <!-- O cabeçalho pesado foi removido para uma experiência totalmente imersiva -->
-    
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -15,13 +13,13 @@
               <q-icon name="get_app" size="24px" color="white" />
             </div>
             <div class="col" style="min-width: 0;">
-              <div class="text-weight-bold text-subtitle2">Instalar Aplicação</div>
+              <div class="text-weight-bold text-subtitle2">{{ t('layout.pwa.installTitle') }}</div>
               <div class="text-caption text-grey-4 text-ellipsis">
-                {{ isIOS ? 'Clica em Partilha (📤) e "Adicionar ao Ecrã Principal"' : 'Adiciona ao ecrã para uma experiência rápida!' }}
+                {{ isIOS ? t('layout.pwa.installDescIOS') : t('layout.pwa.installDescAndroid') }}
               </div>
             </div>
             <div class="row q-gutter-x-xs items-center" style="flex-shrink: 0;">
-              <q-btn v-if="!isIOS" unelevated color="primary" label="Instalar" size="sm" class="text-weight-bold" style="border-radius: 8px;" @click="installPwa" />
+              <q-btn v-if="!isIOS" unelevated color="primary" :label="t('layout.pwa.btnInstall')" size="sm" class="text-weight-bold" style="border-radius: 8px;" @click="installPwa" />
               <q-btn flat round dense icon="close" color="grey-4" size="sm" @click="dismissInstall" />
             </div>
           </q-card-section>
@@ -29,7 +27,7 @@
       </div>
     </transition>
 
-    <!-- POP-UP DE NOTIFICAÇÕES (Abaixo da PWA) -->
+    <!-- POP-UP DE NOTIFICAÇÕES -->
     <transition name="slide-up">
       <div v-if="showNotificationPrompt" class="fixed-bottom q-pa-md z-max" style="padding-bottom: 75px;">
         <q-card class="bg-blue-9 text-white shadow-10 q-pa-sm" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.15);">
@@ -38,13 +36,13 @@
               <q-icon name="notifications_active" size="24px" color="white" />
             </div>
             <div class="col" style="min-width: 0;">
-              <div class="text-weight-bold text-subtitle2">Ativar Alertas</div>
+              <div class="text-weight-bold text-subtitle2">{{ t('layout.push.title') }}</div>
               <div class="text-caption text-blue-2 text-ellipsis">
-                Recebe avisos de convocatórias e quotas.
+                {{ t('layout.push.desc') }}
               </div>
             </div>
             <div class="row q-gutter-x-xs items-center" style="flex-shrink: 0;">
-              <q-btn unelevated color="white" text-color="blue-9" label="Ativar" size="sm" class="text-weight-bold" style="border-radius: 8px;" @click="subscribeToPush" :loading="pushLoading" />
+              <q-btn unelevated color="white" text-color="blue-9" :label="t('layout.push.btnEnable')" size="sm" class="text-weight-bold" style="border-radius: 8px;" @click="subscribeToPush" :loading="pushLoading" />
               <q-btn flat round dense icon="close" color="blue-2" size="sm" @click="dismissNotificationPrompt" />
             </div>
           </q-card-section>
@@ -63,10 +61,10 @@
         dense
         style="height: 65px; background: linear-gradient(135deg, #2E7D32 0%, #0A2E0C 100%);"
       >
-        <q-route-tab name="games" icon="calendar_today" label="Jogos" :to="clubLink" exact class="custom-tab" :class="tabClass" />
-        <q-route-tab name="players" icon="groups" label="Plantel" :to="playersLink" exact class="custom-tab" :class="tabClass" />
-        <q-route-tab name="stats" icon="leaderboard" label="Estatísticas" :to="statsLink" exact class="custom-tab" :class="tabClass" />
-        <q-route-tab v-if="isTreasurer" name="finances" icon="account_balance_wallet" label="Caixa" :to="financesLink" exact class="custom-tab col-3" />
+        <q-route-tab name="games" icon="calendar_today" :label="t('layout.tabs.games')" :to="clubLink" exact class="custom-tab" :class="tabClass" />
+        <q-route-tab name="players" icon="groups" :label="t('layout.tabs.players')" :to="playersLink" exact class="custom-tab" :class="tabClass" />
+        <q-route-tab name="stats" icon="leaderboard" :label="t('layout.tabs.stats')" :to="statsLink" exact class="custom-tab" :class="tabClass" />
+        <q-route-tab v-if="isTreasurer" name="finances" icon="account_balance_wallet" :label="t('layout.tabs.finances')" :to="financesLink" exact class="custom-tab col-3" />
       </q-tabs>
     </q-footer>
   </q-layout>
@@ -76,16 +74,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useClubStore } from 'stores/useClubStore'
-import { useAuthStore } from 'stores/useAuthStore' 
-import { supabase } from 'boot/supabase'           
-import { useQuasar } from 'quasar'                 
+import { useAuthStore } from 'stores/useAuthStore'
+import { supabase } from 'boot/supabase'
+import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
 const clubStore = useClubStore()
-const authStore = useAuthStore()                   
-const $q = useQuasar()                             
-const tab = ref('games')
+const authStore = useAuthStore()
+const $q = useQuasar()
+const { t } = useI18n()
 
+const tab = ref('games')
 const clubLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}` : '/selector')
 const playersLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/players` : '/selector')
 const statsLink = computed(() => clubStore.currentClub ? `/club/${clubStore.currentClub.id}/stats` : '/selector')
@@ -101,8 +101,7 @@ const isIOS = ref(false)
 const showNotificationPrompt = ref(false)
 const pushLoading = ref(false)
 
-// 1. A chave pública fica aqui, global
-const publicVapidKey = 'BAIWjICJdFp3yAQbUikAgqlj5AMRA-4leNY4dUZ7YnHoNOYEJZnzEQ-NKCf6ntQRdMJ4Uni4oXA3Evt2ejUCloQ'; 
+const publicVapidKey = 'BAIWjICJdFp3yAQbUikAgqlj5AMRA-4leNY4dUZ7YnHoNOYEJZnzEQ-NKCf6ntQRdMJ4Uni4oXA3Evt2ejUCloQ';
 
 onMounted(async () => {
   const ua = window.navigator.userAgent
@@ -150,75 +149,69 @@ function dismissInstall() {
   localStorage.setItem('pwa_dismissed', 'true')
 }
 
-// 2. Função de conversão
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding)
     .replace(/-/g, '+')
     .replace(/_/g, '/');
+
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
+
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
 }
 
-// 3. A subscrição que já tens feita (Agora com debug para detetar falhas)
 async function subscribeToPush() {
   try {
     pushLoading.value = true
     
-    // 1. Verificar se o browser suporta Notificações
     if (!('Notification' in window)) {
-      $q.notify({ type: 'negative', message: 'O teu browser atual não suporta Notificações Web.' })
+      $q.notify({ type: 'negative', message: t('layout.push.errNotSupported') })
       dismissNotificationPrompt()
       return
     }
 
-    // 2. Pedir Permissão DIRETAMENTE após o clique
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') {
-      $q.notify({ type: 'warning', message: 'Permissão negada. Ativa as notificações nas definições do browser.' })
+      $q.notify({ type: 'warning', message: t('layout.push.errDenied') })
       dismissNotificationPrompt()
       return
     }
 
-    // 3. Verificar se o Service Worker existe
     if (!('serviceWorker' in navigator)) {
-      $q.notify({ type: 'negative', message: 'O Service Worker não está ativo. Estás a correr com "quasar dev -m pwa"?' })
+      $q.notify({ type: 'negative', message: t('layout.push.errNoWorker') })
       return
     }
 
-    // 4. Efetuar a Subscrição
     const registration = await navigator.serviceWorker.ready
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
     })
 
-    // 5. Purificação para envio à Base de Dados
     const subData = subscription.toJSON ? subscription.toJSON() : subscription
 
-    // 6. Gravar
     if (authStore.user) {
       const { error } = await supabase.from('push_subscriptions').insert([{
         profile_id: authStore.user.id,
         subscription: subData
       }])
       
-      if (error && error.code !== '23505') { // Ignora erro de "já existe"
+      if (error && error.code !== '23505') { 
         console.error("Erro Supabase:", error)
         throw error
       }
     }
     
-    $q.notify({ type: 'positive', icon: 'notifications_active', message: 'Alertas ativados com sucesso!' })
+    $q.notify({ type: 'positive', icon: 'notifications_active', message: t('layout.push.successEnabled') })
     showNotificationPrompt.value = false
     
   } catch (err) {
     console.error('Erro no Push:', err)
-    $q.notify({ type: 'negative', message: 'Erro: ' + (err.message || 'Falha ao ativar notificações.') })
+    $q.notify({ type: 'negative', message: t('layout.push.errGeneric') + ' ' + (err.message || '') })
   } finally {
     pushLoading.value = false
   }
@@ -228,13 +221,11 @@ function dismissNotificationPrompt() {
   showNotificationPrompt.value = false
   localStorage.setItem('push_dismissed', 'true')
 }
-
 </script>
 
 <style scoped>
-
 .q-page {
-  padding-bottom: 70px !important; 
+  padding-bottom: 70px !important;
 }
 
 .slide-up-enter-active, .slide-up-leave-active {
@@ -244,6 +235,4 @@ function dismissNotificationPrompt() {
   opacity: 0;
   transform: translateY(30px);
 }
-
 </style>
-

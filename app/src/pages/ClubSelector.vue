@@ -7,8 +7,8 @@
         <div class="bg-white flex flex-center q-mx-auto shadow-2" style="width: 64px; height: 64px; border-radius: 16px; margin-bottom: 12px;">
           <q-icon name="sports_soccer" size="40px" color="green-9" />
         </div>
-        <div class="text-h5 text-weight-bolder" style="letter-spacing: -0.5px;">Os Meus Clubes</div>
-        <div class="text-caption text-green-2">Seleciona o teu balneário</div>
+        <div class="text-h5 text-weight-bolder" style="letter-spacing: -0.5px;">{{ t('selector.myClubsTitle') }}</div>
+        <div class="text-caption text-green-2">{{ t('selector.myClubsSubtitle') }}</div>
       </q-card-section>
 
       <q-card-section class="q-pa-md">
@@ -31,7 +31,9 @@
             
             <q-item-section>
               <q-item-label class="text-weight-bold text-dark">{{ club.name }}</q-item-label>
-              <q-item-label caption class="text-grey-6">{{ club.role === 'admin' ? 'Administrador' : 'Membro' }}</q-item-label>
+              <q-item-label caption class="text-grey-6">
+                {{ club.role === 'admin' ? t('selector.roleAdmin') : t('selector.roleMember') }}
+              </q-item-label>
             </q-item-section>
             
             <q-item-section side>
@@ -41,12 +43,12 @@
         </q-list>
         
         <div v-else class="text-center q-pa-md text-grey-6">
-          Ainda não pertences a nenhum clube.
+          {{ t('selector.noClubs') }}
         </div>
       </q-card-section>
       
       <q-card-actions align="center" class="q-px-md q-pb-md q-pt-none">
-        <q-btn color="amber-8" text-color="dark" icon="add" label="Criar Novo Clube" class="full-width text-weight-bolder shadow-1" style="border-radius: 8px;" unelevated @click="showCreateModal = true" />
+        <q-btn color="amber-8" text-color="dark" icon="add" :label="t('selector.btnCreateClub')" class="full-width text-weight-bolder shadow-1" style="border-radius: 8px;" unelevated @click="showCreateModal = true" />
       </q-card-actions>
     </q-card>
 
@@ -55,17 +57,17 @@
       <q-card-section class="q-pa-md">
         <div class="text-subtitle1 text-weight-bolder text-dark row items-center q-mb-sm">
           <q-icon name="vpn_key" color="green-9" class="q-mr-sm" size="sm" />
-          Entrar com Código
+          {{ t('selector.joinWithCodeTitle') }}
         </div>
-        <p class="text-caption text-grey-6 q-mb-md">Recebeste um convite? Introduz o código para te juntares ao plantel.</p>
+        <p class="text-caption text-grey-6 q-mb-md">{{ t('selector.joinWithCodeSubtitle') }}</p>
         
         <div class="row q-gutter-sm items-center">
           <q-input 
             v-model="inviteCode" 
             dense 
             outlined 
-            label="Código do Clube" 
-            placeholder="Ex: FC-1234"
+            :label="t('selector.inputCodeLabel')" 
+            :placeholder="t('selector.inputCodePlaceholder')"
             class="col" 
             bg-color="grey-1" 
             color="green-9"
@@ -74,7 +76,7 @@
           />
           <q-btn 
             color="green-9" 
-            label="Aderir" 
+            :label="t('selector.btnJoin')" 
             unelevated 
             class="text-weight-bold" 
             :loading="joining" 
@@ -88,20 +90,19 @@
     <q-dialog v-model="showCreateModal">
       <q-card style="min-width: 350px;">
         <q-card-section>
-          <div class="text-h6">Novo Clube</div>
+          <div class="text-h6">{{ t('selector.modalCreateTitle') }}</div>
         </q-card-section>
 
         <q-card-section class="q-pt-none">
-          <q-input filled v-model="newClubName" label="Nome do Clube" autofocus @keyup.enter="createClub" />
+          <q-input filled v-model="newClubName" :label="t('selector.inputClubName')" autofocus @keyup.enter="createClub" />
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn color="primary" label="Criar" @click="createClub" :loading="saving" />
+          <q-btn flat :label="t('selector.btnCancel')" v-close-popup />
+          <q-btn color="primary" :label="t('selector.btnCreate')" @click="createClub" :loading="saving" />
         </q-card-actions>
       </q-card>
     </q-dialog>
-
   </q-page>
 </template>
 
@@ -112,17 +113,18 @@ import { useClubStore } from 'stores/useClubStore'
 import { useAuthStore } from 'stores/useAuthStore'
 import { supabase } from 'boot/supabase'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n' // <-- INCLUSÃO DA I18N
 
 const router = useRouter()
 const clubStore = useClubStore()
 const authStore = useAuthStore()
 const $q = useQuasar()
+const { t } = useI18n() // <-- ATIVAÇÃO DA TRADUÇÃO
 
 const showCreateModal = ref(false)
 const newClubName = ref('')
 const saving = ref(false)
 
-// Variáveis para o Código de Convite
 const inviteCode = ref('')
 const joining = ref(false)
 
@@ -132,7 +134,7 @@ onMounted(() => {
 
 function selectClub(club) {
   clubStore.setClub(club)
-  router.push(`/club/${club.id}`) // Navega para o dashboard do clube
+  router.push(`/club/${club.id}`)
 }
 
 function generateComplexCode() {
@@ -152,33 +154,32 @@ async function createClub() {
     .from('clubs')
     .insert([{ 
       name: newClubName.value,
-      invite_code: generateComplexCode() // <-- GERA E GUARDA O CÓDIGO
+      invite_code: generateComplexCode()
     }])
     .select()
     .single()
 
   if (clubError) {
-    $q.notify({ type: 'negative', message: 'Erro ao criar clube: ' + clubError.message})
+    $q.notify({ type: 'negative', message: t('selector.errCreateClub') + clubError.message})
     saving.value = false
     return
   }
 
-  // 2. Adiciona o utilizador que criou como 'admin' E 'is_owner' na tabela 'club_members'
   const { error: memberError } = await supabase
     .from('club_members')
     .insert([{ 
       club_id: clubData.id, 
       profile_id: authStore.user.id, 
       role: 'admin',
-      is_owner: true,                
-      can_manage_matches: true,      
-      can_manage_teams: true,        
-      can_manage_finances: true,     
-      status: 'approved'             
+      is_owner: true,
+      can_manage_matches: true,
+      can_manage_teams: true,
+      can_manage_finances: true,
+      status: 'approved'
     }])
 
   if (!memberError) {
-    $q.notify({ type: 'positive', message: 'Clube criado com sucesso!' })
+    $q.notify({ type: 'positive', message: t('selector.msgClubCreated') })
     showCreateModal.value = false
     newClubName.value = ''
     await clubStore.fetchUserClubs()
@@ -186,17 +187,15 @@ async function createClub() {
   saving.value = false
 }
 
-// Nova função para processar a adesão via código
 async function joinClubByCode() {
   const code = inviteCode.value.trim().toUpperCase()
   if (!code) {
-    $q.notify({ type: 'warning', message: 'Por favor, introduz um código.' })
+    $q.notify({ type: 'warning', message: t('selector.warnEnterCode') })
     return
   }
 
   joining.value = true
 
-  // 1. Procurar se existe algum clube com este código
   const { data: club, error: clubError } = await supabase
     .from('clubs')
     .select('id, name')
@@ -204,12 +203,11 @@ async function joinClubByCode() {
     .maybeSingle()
 
   if (clubError || !club) {
-    $q.notify({ type: 'negative', message: 'Código inválido! Confirma com o administrador do clube.' })
+    $q.notify({ type: 'negative', message: t('selector.errInvalidCode') })
     joining.value = false
     return
   }
 
-  // 2. Tentar inserir o utilizador no clube (COM STATUS PENDING)
   const { error: joinError } = await supabase
     .from('club_members')
     .insert([{
@@ -217,28 +215,26 @@ async function joinClubByCode() {
       profile_id: authStore.user.id,
       role: 'member', 
       is_owner: false,
-      status: 'pending' // <-- OBRIGA A FICAR PENDENTE
+      status: 'pending'
     }])
 
   if (joinError) {
-    // Código de erro Postgres para chave duplicada (já é membro ou já pediu para entrar)
     if (joinError.code === '23505') {
-      $q.notify({ type: 'info', message: `Já fazes parte ou já tens um pedido pendente no clube ${club.name}!` })
-      // Tenta atualizar a lista de clubes para ver se já está aprovado
-      await clubStore.fetchUserClubs() 
+      // Usa interpolação para incluir o nome do clube traduzido
+      $q.notify({ type: 'info', message: t('selector.infoAlreadyMember', { clubName: club.name }) })
+      await clubStore.fetchUserClubs()
     } else {
-      $q.notify({ type: 'negative', message: 'Erro ao entrar no clube: ' + joinError.message })
+      $q.notify({ type: 'negative', message: t('selector.errJoinClub') + joinError.message })
     }
   } else {
-    // SEGUNDA ALTERAÇÃO: Não redirecionamos para o clube, mostramos apenas a mensagem!
     $q.notify({ 
       type: 'positive', 
       icon: 'hourglass_empty', 
-      message: `Pedido de adesão enviado para o ${club.name}! Aguarda aprovação da equipa técnica.` 
+      message: t('selector.msgJoinSuccess', { clubName: club.name }) 
     })
     inviteCode.value = ''
   }
-
+  
   joining.value = false
 }
 </script>
@@ -250,7 +246,7 @@ async function joinClubByCode() {
 }
 .club-header-block {
   background: linear-gradient(135deg, #2E7D32 0%, #0A2E0C 100%);
-  border-radius: 16px 16px 0 0; /* Arredonda só o topo no seletor */
+  border-radius: 16px 16px 0 0;
 }
 .match-card-light {
   background-color: #ffffff;
