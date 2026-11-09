@@ -455,12 +455,12 @@
     </q-dialog>
 
     <q-dialog v-model="showCloseModal" persistent>
-      <q-card class="modal-safe-footer" style="min-width: 340px; max-width: 600px; width: 100%; border-radius: 16px; background: #ffffff;">
-        <q-card-section class="row items-center club-header-block text-white">
+      <q-card class="modal-safe-footer column no-wrap" style="min-width: 340px; max-width: 600px; width: 100%; border-radius: 16px; background: #ffffff; max-height: 85vh;">
+        <q-card-section class="row items-center col-auto club-header-block text-white">
           <div class="text-subtitle1 text-weight-bold"><q-icon name="sports" size="sm" class="q-mr-sm"/> {{ t('dashboard.modals.closeMatchTitle') }}</div>
           <q-space /><q-btn icon="close" flat round dense color="white" v-close-popup />
         </q-card-section>
-        <q-card-section class="q-pa-md" style="max-height: 65vh; overflow-y: auto;">
+        <q-card-section class="col q-pa-md" style="overflow-y: auto; overflow-x: hidden;">
           <div v-if="loadingPresences" class="text-center q-pa-md"><q-spinner color="green-9" size="30px" /></div>
           <div v-else>
             <div class="row items-center justify-center text-center q-mb-lg bg-grey-1 q-pa-sm shadow-1" style="border-radius: 12px; border: 1px solid #e2e8f0;">
@@ -528,7 +528,7 @@
             </template>
           </div>
         </q-card-section>
-        <q-card-actions align="between" class="q-pa-md bg-grey-1" style="border-top: 1px solid #e2e8f0;">
+        <q-card-actions align="between" class="bg-grey-1 col-auto q-pa-md" style="border-top: 1px solid #e2e8f0;">
           <q-btn v-if="clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner" :label="t('dashboard.modals.btnSaveLive')" color="blue-8" icon="save" unelevated style="border-radius: 8px;" :loading="saving" @click="saveLiveStats" />
           <q-btn v-if="clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner" :label="t('dashboard.modals.btnCloseMatch')" color="amber-8" text-color="dark" class="text-weight-bolder shadow-1" style="border-radius: 8px;" unelevated :loading="saving" @click="closeMatch" />
         </q-card-actions>
@@ -650,7 +650,7 @@
             </div>
             <div>
               <div class="text-caption text-weight-bold text-grey-8 q-mb-xs">{{ t('dashboard.modals.tabRoutine') }}</div>
-              <q-select outlined dense emit-value map-options v-model="clubSettings.recurring_day_of_week" :options="t('days')" :label="t('dashboard.modals.matchDay')" class="q-mb-sm" bg-color="white" />
+              <q-select outlined dense emit-value map-options v-model="clubSettings.recurring_day_of_week" :options="tm('days')" :label="t('dashboard.modals.matchDay')" class="q-mb-sm" bg-color="white" />
               <q-input outlined dense type="time" v-model="clubSettings.recurring_time" :label="t('dashboard.modals.matchTime')" bg-color="white" />
             </div>
             <div>
@@ -693,7 +693,11 @@
           <div v-else>
             <div v-for="p in votingPlayers" :key="p.id" class="q-mb-md bg-grey-1 q-pa-sm shadow-1" style="border-radius: 8px; border: 1px solid #f1f5f9;">
               <div class="row justify-between items-center q-mb-sm">
-                <div class="text-weight-bold text-dark text-ellipsis" style="max-width: 65%;"><q-icon name="person" color="grey-6" class="q-mr-xs" /> {{ p.name }}</div>
+                <div class="text-weight-bold text-dark text-ellipsis" style="max-width: 65%;">
+                  <q-icon name="person" color="grey-6" class="q-mr-xs" /> {{ p.name }}
+                  <span v-if="p.goals > 0" class="text-green-9 text-caption text-weight-bolder q-ml-xs"><q-icon name="sports_soccer" size="xs"/>{{ p.goals }}</span>
+                  <span v-if="p.assists > 0" class="text-blue-9 text-caption text-weight-bolder q-ml-xs"><q-icon name="handshake" size="xs"/>{{ p.assists }}</span>
+                </div>
                 <q-radio v-model="selectedMVP" :val="p.id" color="amber-8" :label="t('dashboard.modals.labelMVP')" class="text-weight-bolder text-amber-9" dense />
               </div>
               <div class="row items-center q-gutter-x-md q-px-sm">
@@ -2101,7 +2105,7 @@ async function openVotingModal(match) {
   loadingVotes.value = true
   selectedMVP.value = null
   
-  const { data, error } = await supabase.from('match_presences').select('id, profile_id, virtual_player_id, guest_name, profiles(name), virtual_players(name)').eq('match_id', match.id).eq('status', 'confirmed')
+  const { data, error } = await supabase.from('match_presences').select('id, profile_id, virtual_player_id, guest_name, goals, assists, profiles(name), virtual_players(name)').eq('match_id', match.id).eq('status', 'confirmed')
   
   if (data && !error) {
     votingPlayers.value = data.map(p => ({
@@ -2109,6 +2113,8 @@ async function openVotingModal(match) {
       profile_id: p.profile_id,
       virtual_player_id: p.virtual_player_id,
       name: p.profiles?.name || p.virtual_players?.name || p.guest_name || 'Convidado',
+      goals: p.goals || 0,       
+      assists: p.assists || 0,
       rating: 6 
     }))
   }
