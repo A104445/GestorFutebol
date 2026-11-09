@@ -369,7 +369,18 @@ const groupedMembers = computed(() => {
   members.value.forEach(rawMember => {
     const m = { ...rawMember }
     
-    // Se o modo Pro estiver ativo, a carta lê as colunas "pro_" e ignora as normais!
+    // 1. Traduzimos a posição da Base de Dados para o idioma atual ANTES de fazer verificações
+    let bdPos = m.position || 'Médio'
+    let translatedPos = tm('positions')[2]
+    
+    if (bdPos === 'Guarda-Redes') translatedPos = tm('positions')[0]
+    else if (bdPos === 'Defesa') translatedPos = tm('positions')[1]
+    else if (bdPos === 'Avançado') translatedPos = tm('positions')[3]
+    
+    // Substitui a posição original pela traduzida para que o HTML a consiga ler em qualquer língua
+    m.position = translatedPos
+
+    // 2. Agora esta verificação do Modo Pro funciona em todos os idiomas
     if (clubSettings.value.detailed_attributes && m.position !== tm('positions')[0]) {
       m.overall = m.pro_overall || 70
       m.pace = m.pro_pace || 70
@@ -380,14 +391,7 @@ const groupedMembers = computed(() => {
       m.physical = m.pro_physical || 70
     }
 
-    // Traduções compatíveis com a Base de Dados
-    let pos = m.position || 'Médio'
-    if (pos === 'Guarda-Redes') pos = tm('positions')[0]
-    else if (pos === 'Defesa') pos = tm('positions')[1]
-    else if (pos === 'Médio') pos = tm('positions')[2]
-    else if (pos === 'Avançado') pos = tm('positions')[3]
-
-    if (groups[pos]) groups[pos].push(m)
+    if (groups[translatedPos]) groups[translatedPos].push(m)
   })
 
   Object.keys(groups).forEach(key => groups[key].sort((a, b) => b.overall - a.overall))
