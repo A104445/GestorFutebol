@@ -1,0 +1,9 @@
+{
+  "name": "MatchDay",
+  "short_name": "MatchDay",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2E7D32",
+  "icons": []
+}
