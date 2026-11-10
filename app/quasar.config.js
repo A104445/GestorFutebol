@@ -168,44 +168,37 @@ export default defineConfig((/* ctx */) => {
           {
             src: "/Jogos.png",
             sizes: "387x833",
-            type: "image/png",
-            form_factor: "narrow"
+            type: "image/png"
           },
           {
             src: "/Plantel.png",
             sizes: "387x833",
-            type: "image/png",
-            form_factor: "narrow"
+            type: "image/png"
           },
           {
             src: "/Tatica.png",
             sizes: "387x833",
-            type: "image/png",
-            form_factor: "narrow"
+            type: "image/png"
           },
           {
             src: "/ResumoEquipas.png",
             sizes: "387x833",
-            type: "image/png",
-            form_factor: "narrow"
+            type: "image/png"
           },
           {
             src: "/Tesouraria.png",
             sizes: "387x833",
-            type: "image/png",
-            form_factor: "narrow"
+            type: "image/png"
           },
           {
             src: "/Estatisticas.png",
             sizes: "387x833",
-            type: "image/png",
-            form_factor: "narrow"
+            type: "image/png"
           },
           {
             src: "/JogosVazio.png",
             sizes: "387x833",
-            type: "image/png",
-            form_factor: "narrow"
+            type: "image/png"
           }
         ],
 
