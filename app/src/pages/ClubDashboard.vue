@@ -2160,15 +2160,18 @@ async function openVotingModal(match) {
   const { data, error } = await supabase.from('match_presences').select('id, profile_id, virtual_player_id, guest_name, goals, assists, profiles(name), virtual_players(name)').eq('match_id', match.id).eq('status', 'confirmed')
   
   if (data && !error) {
-    votingPlayers.value = data.map(p => ({
-      id: p.id, 
-      profile_id: p.profile_id,
-      virtual_player_id: p.virtual_player_id,
-      name: p.profiles?.name || p.virtual_players?.name || p.guest_name || 'Convidado',
-      goals: p.goals || 0,       
-      assists: p.assists || 0,
-      rating: 6 
-    }))
+    votingPlayers.value = data
+      // 👇 AQUI ESTÁ A MAGIA: Filtra e remove o jogador que está a usar a app
+      .filter(p => p.profile_id !== authStore.user.id) 
+      .map(p => ({
+        id: p.id, 
+        profile_id: p.profile_id,
+        virtual_player_id: p.virtual_player_id,
+        name: p.profiles?.name || p.virtual_players?.name || p.guest_name || 'Convidado',
+        goals: p.goals || 0,       
+        assists: p.assists || 0,
+        rating: 6 
+      }))
   }
   loadingVotes.value = false
 }
