@@ -1,9 +1,85 @@
 {
   "name": "MatchDay",
   "short_name": "MatchDay",
+  "description": "Gestão profissional de peladas e equipas de futebol.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2E7D32",
-  "icons": []
+  "orientation": "portrait",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "categories": [
+    "sports",
+    "health",
+    "lifestyle"
+  ],
+  "prefer_related_applications": false,
+  "screenshots": [
+    {
+      "src": "/Jogos.png",
+      "sizes": "387x833",
+      "type": "image/png"
+    },
+    {
+      "src": "/Plantel.png",
+      "sizes": "387x833",
+      "type": "image/png"
+    },
+    {
+      "src": "/Tatica.png",
+      "sizes": "387x833",
+      "type": "image/png"
+    },
+    {
+      "src": "/ResumoEquipas.png",
+      "sizes": "387x833",
+      "type": "image/png"
+    },
+    {
+      "src": "/Tesouraria.png",
+      "sizes": "387x833",
+      "type": "image/png"
+    },
+    {
+      "src": "/Estatisticas.png",
+      "sizes": "387x833",
+      "type": "image/png"
+    },
+    {
+      "src": "/JogosVazio.png",
+      "sizes": "387x833",
+      "type": "image/png"
+    }
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable" 
+    },
+    {
+      "src": "icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
