@@ -156,6 +156,59 @@ export default defineConfig((/* ctx */) => {
         orientation: 'portrait',
         background_color: '#121212',  // Mantém a cor escura para o ecrã de load
         theme_color: '#121212',       // Pinta a barra de bateria/horas do telemóvel de escuro
+        
+        // 👇 1. Adiciona as Categorias (Aviso Azul 1)
+        categories: ["sports", "health", "lifestyle"],
+        
+        // 👇 2. Adiciona a ligação a Apps Nativas (Aviso Azul 2 e 3)
+        prefer_related_applications: false,
+        
+        // 👇 3. Adiciona as Capturas de Ecrã (Aviso Laranja 2)
+        screenshots: [
+          {
+            src: "Jogos.png",
+            sizes: "387x833",
+            type: "image/png",
+            form_factor: "narrow"
+          },
+          {
+            src: "Plantel.png",
+            sizes: "387x833",
+            type: "image/png",
+            form_factor: "narrow"
+          },
+          {
+            src: "Tatica.png",
+            sizes: "387x833",
+            type: "image/png",
+            form_factor: "narrow"
+          },
+          {
+            src: "ResumoEquipas.png",
+            sizes: "387x833",
+            type: "image/png",
+            form_factor: "narrow"
+          },
+          {
+            src: "Tesouraria.png",
+            sizes: "387x833",
+            type: "image/png",
+            form_factor: "narrow"
+          },
+          {
+            src: "Estatisticas.png",
+            sizes: "387x833",
+            type: "image/png",
+            form_factor: "narrow"
+          },
+          {
+            src: "JogosVazio.png",
+            sizes: "387x833",
+            type: "image/png",
+            form_factor: "narrow"
+          }
+        ],
+
         icons: [
           {
             src: 'icons/icon-128x128.png',

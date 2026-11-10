@@ -842,28 +842,50 @@
     </q-dialog>
 
     <q-dialog v-model="showProfileModal" persistent>
-      <q-card class="modal-safe-footer" style="min-width: 340px; max-width: 450px; width: 100%; border-radius: 16px;">
-        <q-card-section class="row items-center bg-dark text-white q-py-md">
+      <!-- 👇 ADICIONADO: column no-wrap e max-height: 85vh 👇 -->
+      <q-card class="modal-safe-footer column no-wrap" style="min-width: 340px; max-width: 450px; width: 100%; border-radius: 16px; max-height: 85vh;">
+        
+        <!-- 👇 ADICIONADO: col-auto para proteger o cabeçalho 👇 -->
+        <q-card-section class="row items-center col-auto bg-dark text-white q-py-md">
           <div class="text-subtitle1 text-weight-bold row items-center"><q-icon name="badge" class="q-mr-sm text-primary" size="sm" /> {{ t('dashboard.modals.profileTitle') }}</div>
           <q-space /><q-btn icon="close" flat round dense color="grey-5" v-close-popup />
         </q-card-section>
-        <q-card-section class="q-pa-md scroll" style="max-height: 70vh;">
+        
+        <!-- 👇 ADICIONADO: 'col' para fazer scroll suave só no meio 👇 -->
+        <q-card-section class="col q-pa-md" style="overflow-y: auto; overflow-x: hidden;">
           <div class="column q-gutter-y-md">
+            
             <div class="column items-center q-mb-sm">
               <q-avatar size="90px" class="shadow-3 bg-grey-3 relative-position">
                 <img v-if="computedAvatar" :src="computedAvatar" />
                 <q-icon v-else name="person" size="60px" color="grey-5" />
-                <q-badge v-if="computedAvatar" color="negative" rounded class="absolute shadow-2 cursor-pointer" style="padding: 6px; left: -4px; top: -4px; z-index: 2;" @click="clearAvatar"><q-icon name="delete" size="sm" /></q-badge>
-                <q-badge color="primary" rounded class="absolute shadow-2 cursor-pointer" style="padding: 6px; right: -4px; top: -4px; z-index: 2;" @click="$refs.filePicker.pickFiles()"><q-icon :name="computedAvatar ? 'edit' : 'add_a_photo'" size="sm" /></q-badge>
+                
+                <q-badge v-if="computedAvatar" color="negative" rounded class="absolute shadow-2 cursor-pointer" style="padding: 6px; left: -4px; top: -4px; z-index: 2;" @click="clearAvatar">
+                  <q-icon name="delete" size="sm" />
+                </q-badge>
+                
+                <q-badge color="primary" rounded class="absolute shadow-2 cursor-pointer" style="padding: 6px; right: -4px; top: -4px; z-index: 2;" @click="triggerFilePicker">
+                  <q-icon :name="computedAvatar ? 'edit' : 'add_a_photo'" size="sm" />
+                </q-badge>
               </q-avatar>
-              <q-file v-show="false" ref="filePicker" v-model="profileForm.avatarFile" accept="image/*" @update:model-value="onAvatarSelected" />
+              
+              <!-- 👇 SUBSTITUÍDO PELO INPUT NATIVO DO HTML 👇 -->
+              <input 
+                type="file" 
+                ref="filePicker" 
+                accept="image/*" 
+                style="display: none;" 
+                @change="handleNativeAvatar" 
+              />
             </div>
+            
             <div class="text-caption text-weight-bold text-grey-8">{{ t('dashboard.modals.personalData') }}</div>
             <q-input outlined dense v-model="profileForm.name" :label="t('dashboard.modals.playerName')" color="primary" bg-color="grey-1">
               <template v-slot:prepend><q-icon name="person" color="grey-7" /></template>
             </q-input>
+
             <q-separator class="q-my-sm" />
-            <!-- NOVO SELETOR MULTILINGUE -->
+
             <div class="text-caption text-weight-bold text-grey-8">{{ t('common.language') }}</div>
             <q-select 
               outlined dense 
@@ -884,10 +906,12 @@
             </q-select>
 
             <q-separator class="q-my-sm" />
+            
             <div class="text-caption text-weight-bold text-grey-8">{{ t('dashboard.modals.fieldPrefs') }}</div>
             <div class="row q-col-gutter-sm">
               <div class="col-12 col-sm-6">
-                <q-select outlined dense v-model="profileForm.position" :options="t('positions')" :label="t('dashboard.modals.genPosition')" color="primary" bg-color="grey-1" @update:model-value="profileForm.specific_position = ''">
+                <!-- Usado tm('positions') para evitar erros -->
+                <q-select outlined dense v-model="profileForm.position" :options="tm('positions')" :label="t('dashboard.modals.genPosition')" color="primary" bg-color="grey-1" @update:model-value="profileForm.specific_position = ''">
                   <template v-slot:prepend><q-icon name="sports_soccer" color="grey-7" size="xs" /></template>
                 </q-select>
               </div>
@@ -897,12 +921,15 @@
                 </q-select>
               </div>
               <div class="col-12">
-                <q-select outlined dense v-model="profileForm.preferred_foot" :options="t('feet')" :label="t('dashboard.modals.prefFoot')" color="primary" bg-color="grey-1">
+                <!-- Usado tm('feet') -->
+                <q-select outlined dense v-model="profileForm.preferred_foot" :options="tm('feet')" :label="t('dashboard.modals.prefFoot')" color="primary" bg-color="grey-1">
                   <template v-slot:prepend><q-icon name="do_not_step" color="grey-7" size="xs" /></template>
                 </q-select>
               </div>
             </div>
+            
             <q-separator class="q-my-sm" />
+            
             <div class="text-caption text-weight-bold text-grey-8">{{ t('dashboard.modals.security') }}</div>
             <q-input outlined dense v-model="profileForm.newPassword" :type="isPwdProfile1 ? 'password' : 'text'" :label="t('dashboard.modals.newPassword')" :placeholder="t('dashboard.modals.newPasswordPlaceholder')" color="primary" bg-color="grey-1">
               <template v-slot:prepend><q-icon name="lock" color="grey-7" /></template>
@@ -914,7 +941,9 @@
             </q-input>
           </div>
         </q-card-section>
-        <q-card-actions align="right" class="bg-grey-1 q-pa-md" style="border-top: 1px solid #e2e8f0;">
+        
+        <!-- 👇 ADICIONADO: col-auto para manter os botões 100% visíveis 👇 -->
+        <q-card-actions align="right" class="bg-grey-1 col-auto q-pa-md" style="border-top: 1px solid #e2e8f0;">
           <q-btn flat :label="t('dashboard.modals.btnCancel')" color="grey-7" v-close-popup />
           <q-btn color="primary" :label="t('dashboard.modals.btnSaveProfile')" unelevated style="border-radius: 8px;" @click="saveProfile" :loading="savingProfile" />
         </q-card-actions>
@@ -1099,10 +1128,47 @@ const savingProfile = ref(false)
 const isPwdProfile1 = ref(true)
 const isPwdProfile2 = ref(true)
 
-function onAvatarSelected(file) {
-  if (file) {
-    profileForm.value.previewUrl = URL.createObjectURL(file)
+const filePicker = ref(null)
+
+// 1. Clica no input fantasma
+function triggerFilePicker() {
+  if (filePicker.value) {
+    filePicker.value.click() // Agora usamos o .click() normal do HTML!
   }
+}
+
+// 1. A função de selecionar (Guarda TUDO de fresco e anula a intenção de apagar)
+function handleNativeAvatar(event) {
+  const file = event.target.files[0]
+  if (file) {
+    profileForm.value.avatarFile = file
+    profileForm.value.previewUrl = URL.createObjectURL(file)
+    
+    // 👇 CRÍTICO: Anula qualquer ordem anterior de apagar a foto!
+    profileForm.value.removeAvatar = false 
+  }
+  // Limpa o input logo a seguir para poderes escolher a mesma imagem várias vezes
+  event.target.value = '' 
+}
+
+// 2. A função de apagar (Zera ABSOLUTAMENTE TUDO)
+function clearAvatar() {
+  $q.dialog({
+    title: t('dashboard.notify.removePhotoTitle'),
+    message: t('dashboard.notify.removePhotoMsg'),
+    cancel: { label: t('dashboard.modals.btnCancel'), flat: true, color: 'grey-7' },
+    ok: { label: t('dashboard.notify.btnYesRemovePhoto'), color: 'negative', unelevated: true },
+    persistent: true
+  }).onOk(() => {
+    profileForm.value.avatarFile = null
+    profileForm.value.previewUrl = null
+    profileForm.value.removeAvatar = true
+    
+    // 👇 CRÍTICO: Limpa o input fantasma para o navegador não bloquear
+    if (filePicker.value) {
+      filePicker.value.value = ''
+    }
+  })
 }
 
 function openProfileModal() {
@@ -1196,20 +1262,6 @@ async function saveProfile() {
   } finally {
     savingProfile.value = false
   }
-}
-
-function clearAvatar() {
-  $q.dialog({
-    title: t('dashboard.notify.removePhotoTitle'),
-    message: t('dashboard.notify.removePhotoMsg'),
-    cancel: { label: t('dashboard.modals.btnCancel'), flat: true, color: 'grey-7' },
-    ok: { label: t('dashboard.notify.btnYesRemovePhoto'), color: 'negative', unelevated: true },
-    persistent: true
-  }).onOk(() => {
-    profileForm.value.avatarFile = null
-    profileForm.value.previewUrl = null
-    profileForm.value.removeAvatar = true
-  })
 }
 
 const computedAvatar = computed(() => {
