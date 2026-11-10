@@ -166,43 +166,43 @@ export default defineConfig((/* ctx */) => {
         // 👇 3. Adiciona as Capturas de Ecrã (Aviso Laranja 2)
         screenshots: [
           {
-            src: "Jogos.png",
+            src: "/Jogos.png",
             sizes: "387x833",
             type: "image/png",
             form_factor: "narrow"
           },
           {
-            src: "Plantel.png",
+            src: "/Plantel.png",
             sizes: "387x833",
             type: "image/png",
             form_factor: "narrow"
           },
           {
-            src: "Tatica.png",
+            src: "/Tatica.png",
             sizes: "387x833",
             type: "image/png",
             form_factor: "narrow"
           },
           {
-            src: "ResumoEquipas.png",
+            src: "/ResumoEquipas.png",
             sizes: "387x833",
             type: "image/png",
             form_factor: "narrow"
           },
           {
-            src: "Tesouraria.png",
+            src: "/Tesouraria.png",
             sizes: "387x833",
             type: "image/png",
             form_factor: "narrow"
           },
           {
-            src: "Estatisticas.png",
+            src: "/Estatisticas.png",
             sizes: "387x833",
             type: "image/png",
             form_factor: "narrow"
           },
           {
-            src: "JogosVazio.png",
+            src: "/JogosVazio.png",
             sizes: "387x833",
             type: "image/png",
             form_factor: "narrow"
