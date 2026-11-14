@@ -174,19 +174,22 @@
                    
         <q-card-section class="q-pa-none bg-grey-1" style="max-height: 60vh; overflow-y: auto;">
           <q-list separator>
-            <q-item v-for="t in titularesAtivos" :key="t.id" class="q-py-md bg-white">
+            <!-- Mudamos de "t" para "titular" -->
+            <q-item v-for="titular in titularesAtivos" :key="titular.id" class="q-py-md bg-white">
               <q-item-section>
-                <q-item-label class="text-weight-bold">{{ t.name }}</q-item-label>
+                <q-item-label class="text-weight-bold">{{ titular.name }}</q-item-label>
               </q-item-section>
+              
               <q-item-section side>
                   <q-select
-                   :model-value="t.billing_mode"
-                   :options="[{label: t('finances.configModal.optMonthly'), value:'monthly'}, {label: t('finances.configModal.optPerMatch'), value:'per_match'}]"
-                   emit-value map-options dense outlined color="green-9" style="width: 120px; font-size: 11px;"
-                   @update:model-value="(val) => updateBillingMode(t, val)"
-                   />
+                  :model-value="titular.billing_mode"
+                  :options="[{label: t('finances.configModal.optMonthly'), value:'monthly'}, {label: t('finances.configModal.optPerMatch'), value:'per_match'}]"
+                  emit-value map-options dense outlined color="green-9" style="width: 120px; font-size: 11px;"
+                  @update:model-value="(val) => updateBillingMode(titular, val)"
+                  />
               </q-item-section>
             </q-item>
+            
             <div v-if="titularesAtivos.length === 0" class="q-pa-md text-center text-grey-6">
               {{ t('finances.configModal.noStartersDef') }}
             </div>
