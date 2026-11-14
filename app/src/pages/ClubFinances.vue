@@ -435,20 +435,51 @@ async function updateBillingMode(member, newMode) {
 async function toggleMonthPayment(memberId) {
   const member = titularesAtivos.value.find(m => m.id === memberId)
   if (!member) return
-  
   const [year, month] = selectedMonthStr.value.split('-')
   const existingPayment = paymentsList.value.find(p => member.is_virtual ? p.virtual_player_id === member.id : p.profile_id === member.id)
-       
+  
+  let newPaidStatus = true
+
+  // 1. Atualizar o estado da Mensalidade
   if (existingPayment) {
-    const newStatus = !existingPayment.paid
-    const { error } = await supabase.from('club_monthly_payments').update({ paid: newStatus }).eq('id', existingPayment.id)
-    if (!error) existingPayment.paid = newStatus
+    newPaidStatus = !existingPayment.paid
+    const { error } = await supabase.from('club_monthly_payments').update({ paid: newPaidStatus }).eq('id', existingPayment.id)
+    if (!error) existingPayment.paid = newPaidStatus
   } else {
     const payload = { club_id: props.id, year: Number(year), month: Number(month), paid: true, billing_mode: 'monthly' }
     if (member.is_virtual) payload.virtual_player_id = member.id; else payload.profile_id = member.id
     const { data, error } = await supabase.from('club_monthly_payments').insert([payload]).select().single()
     if (!error && data) paymentsList.value.push(data)
   }
+
+  // --- NOVO: Sincronizar com os jogos individuais deste mês ---
+  // Descobre o primeiro e o último dia do mês selecionado
+  const startDate = `${year}-${month}-01T00:00:00.000Z`
+  const lastDay = new Date(year, month, 0).getDate()
+  const endDate = `${year}-${month}-${lastDay}T23:59:59.999Z`
+
+  // Vai buscar os IDs de todos os jogos do clube para este mês
+  const { data: monthMatches } = await supabase
+    .from('matches')
+    .select('id')
+    .eq('club_id', props.id)
+    .gte('date', startDate)
+    .lte('date', endDate)
+
+  if (monthMatches && monthMatches.length > 0) {
+    const matchIds = monthMatches.map(m => m.id)
+    const column = member.is_virtual ? 'virtual_player_id' : 'profile_id'
+
+    // Atualiza a presença (match_presences) desse jogador especificamente em todos esses jogos
+    await supabase
+      .from('match_presences')
+      .update({ paid: newPaidStatus })
+      .in('match_id', matchIds)
+      .eq(column, member.id)
+  }
+
+  // Recarrega as finanças para garantir que a aba "Partidas" também se atualiza visualmente
+  await fetchFinances()
 }
 
 async function markPlayerPaid(match, presenceId) {
