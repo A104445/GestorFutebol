@@ -754,6 +754,17 @@
           <q-tab name="campo" icon="sports_soccer" :label="t('dashboard.modals.tabPitch')" class="text-weight-bold col" />
         </q-tabs>
         <q-separator />
+        <div class="row justify-end bg-white q-px-md q-py-xs">
+          <q-btn
+            flat
+            dense
+            color="green-9"
+            icon="content_copy"
+            label="Copiar"
+            class="text-weight-bold"
+            @click="copyTactics"
+          />
+        </div>
         <q-tab-panels v-model="summaryTab" animated class="bg-grey-1">
           <q-tab-panel name="lista" class="q-pa-md">
             <div class="q-mb-lg">
@@ -1039,7 +1050,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from 'stores/useAuthStore'
 import { useClubStore } from 'stores/useClubStore'
 import { supabase } from 'boot/supabase'
-import { useQuasar } from 'quasar'
+import { useQuasar, copyToClipboard } from 'quasar'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -1221,10 +1232,20 @@ async function saveProfile() {
     }
 
     // Reverter posição ao idioma de base da BD para não causar conflitos
+    const defPositions = ['DC', 'LD', 'LE', 'AD', 'AE']
+    const midPositions = ['MDC', 'MC', 'MCO', 'MD', 'ME']
+    const attPositions = ['PL', 'SA', 'ED', 'EE']
+
     let internalPos = 'Médio'
-    if (profileForm.value.position === tm('positions')[0]) internalPos = 'Guarda-Redes'
-    else if (profileForm.value.position === tm('positions')[1]) internalPos = 'Defesa'
-    else if (profileForm.value.position === tm('positions')[3]) internalPos = 'Avançado'
+    if (profileForm.value.specific_position === 'GR' || profileForm.value.position === tm('positions')[0]) {
+      internalPos = 'Guarda-Redes'
+    } else if (defPositions.includes(profileForm.value.specific_position) || profileForm.value.position === tm('positions')[1]) {
+      internalPos = 'Defesa'
+    } else if (attPositions.includes(profileForm.value.specific_position) || profileForm.value.position === tm('positions')[3]) {
+      internalPos = 'Avançado'
+    } else if (midPositions.includes(profileForm.value.specific_position) || profileForm.value.position === tm('positions')[2]) {
+      internalPos = 'Médio'
+    }
 
     const profileUpdates = { name: profileForm.value.name.trim(), preferred_foot: profileForm.value.preferred_foot, avatar_url: finalAvatarUrl }
     const clubUpdates = { position: internalPos, specific_position: profileForm.value.specific_position }
@@ -1617,6 +1638,87 @@ function sendAvailabilityReminder(match) {
   })
 }
 
+function getPresencePlayerName(p) {
+  return p.profiles?.name || p.virtual_players?.name || p.guest_name || t('stats.unknownPlayer')
+}
+
+function getPresencePlayerSpecificOrShortPos(p) {
+  return (
+    p.profiles?.specific_position ||
+    p.virtual_players?.specific_position ||
+    (p.profiles?.position || p.virtual_players?.position || 'MED').substring(0, 3)
+  )
+}
+
+function getPresencePlayerOvr(p) {
+  return p.profiles?.overall || p.virtual_players?.overall || 70
+}
+
+function copyTactics() {
+  if (!selectedMatch.value) return
+
+  const dateText = formatDate(selectedMatch.value.date)
+  const locationText = selectedMatch.value.location ? `📍 ${selectedMatch.value.location}\n` : ''
+
+  const formatOrderedBySectorAndOvr = (players) => {
+    if (!players || players.length === 0) return '_Sem jogadores_'
+
+    const sectors = getTeamSectors(players)
+    const lines = []
+    let counter = 1
+
+    sectors.forEach((sector) => {
+      sector.players.forEach((p) => {
+        const pos = getPresencePlayerSpecificOrShortPos(p)
+        const ovrPart = canSeeStats.value ? ` (${getPresencePlayerOvr(p)})` : ''
+        lines.push(`${counter}. [${pos}] ${getPresencePlayerName(p)}${ovrPart}`)
+        counter++
+      })
+    })
+
+    return lines.join('\n')
+  }
+
+  let message = `⚽ *TÁTICA / EQUIPAS*\n📅 ${dateText}\n${locationText}\n`
+
+  if (clubSettings.value?.single_team_mode) {
+    const titleA = t('dashboard.modals.teamTitulares')
+    const titleB = t('dashboard.modals.teamBanco')
+    const ovrA = canSeeStats.value ? ` — ${t('dashboard.modals.avgOvr')} ${teamASummary.value.avgOVR}` : ''
+    const ovrB = canSeeStats.value ? ` — ${t('dashboard.modals.avgOvr')} ${teamBSummary.value.avgOVR}` : ''
+
+    message += `🟢 *${titleA}*${ovrA}\n${formatOrderedBySectorAndOvr(teamASummary.value.players)}\n\n`
+    if (teamBSummary.value.players.length > 0) {
+      message += `🟡 *${titleB}*${ovrB}\n${formatOrderedBySectorAndOvr(teamBSummary.value.players)}\n\n`
+    }
+  } else {
+    const nameA = selectedMatch.value.team_a_name || clubSettings.value?.default_team_a_name || t('dashboard.modals.teamAName')
+    const nameB = selectedMatch.value.team_b_name || clubSettings.value?.default_team_b_name || t('dashboard.modals.teamBName')
+    const ovrA = canSeeStats.value ? ` — ${t('dashboard.modals.avgOvr')} ${teamASummary.value.avgOVR}` : ''
+    const ovrB = canSeeStats.value ? ` — ${t('dashboard.modals.avgOvr')} ${teamBSummary.value.avgOVR}` : ''
+
+    message += `🔵 *${nameA}*${ovrA}\n${formatOrderedBySectorAndOvr(teamASummary.value.players)}\n\n`
+    message += `🟠 *${nameB}*${ovrB}\n${formatOrderedBySectorAndOvr(teamBSummary.value.players)}\n\n`
+  }
+
+  message += `💬 O que acham das equipas?`
+
+  copyToClipboard(message)
+    .then(() => {
+      $q.notify({
+        type: 'positive',
+        icon: 'content_copy',
+        message: 'Tática copiada para a área de transferência! Já podes colar no WhatsApp.'
+      })
+    })
+    .catch(() => {
+      $q.notify({
+        type: 'negative',
+        message: 'Não foi possível copiar a tática.'
+      })
+    })
+}
+
 async function saveMatch() {
   saving.value = true
   const targetDateStr = new Date(newMatch.value.date).toLocaleDateString('pt-PT')
@@ -1684,8 +1786,27 @@ async function executeSaveMatch() {
 
     if (!error) {
       if (useDefaultSettings.value && clubSettings.value.default_squad?.length > 0) {
+        const matchDate = new Date(newMatchData.date)
+        const matchMonth = matchDate.getMonth() + 1
+        const matchYear = matchDate.getFullYear()
+
+        const { data: paidMonthRows } = await supabase
+          .from('club_monthly_payments')
+          .select('profile_id, virtual_player_id')
+          .eq('club_id', clubStore.currentClub.id)
+          .eq('month', matchMonth)
+          .eq('year', matchYear)
+          .eq('paid', true)
+
+        const paidProfileIds = new Set((paidMonthRows || []).map(r => r.profile_id).filter(Boolean))
+        const paidVirtualIds = new Set((paidMonthRows || []).map(r => r.virtual_player_id).filter(Boolean))
+
         const autoPresences = clubSettings.value.default_squad.map(p => ({
-          match_id: newMatchData.id, status: 'confirmed', profile_id: p.type === 'real' ? p.value : null, virtual_player_id: p.type === 'virtual' ? p.value : null
+          match_id: newMatchData.id,
+          status: 'confirmed',
+          profile_id: p.type === 'real' ? p.value : null,
+          virtual_player_id: p.type === 'virtual' ? p.value : null,
+          paid: p.type === 'real' ? paidProfileIds.has(p.value) : paidVirtualIds.has(p.value)
         }))
         await supabase.from('match_presences').insert(autoPresences)
       }
@@ -2019,27 +2140,57 @@ function getFormationReversed(players) {
 async function joinMatch(match) {
   if (!authStore.user) return
   const matchDate = new Date(match.date)
-  const matchMonth = matchDate.getMonth() + 1 
+  const matchMonth = matchDate.getMonth() + 1
   const matchYear = matchDate.getFullYear()
 
-  const { data: memberStatus } = await supabase.from('club_members').select('billing_mode').eq('club_id', props.id).eq('profile_id', authStore.user.id).single()
+  const { data: memberStatus } = await supabase
+    .from('club_members')
+    .select('billing_mode')
+    .eq('club_id', props.id)
+    .eq('profile_id', authStore.user.id)
+    .maybeSingle()
 
   let shouldDefaultToPaid = false
   if (memberStatus?.billing_mode === 'monthly') {
-    const { data: monthCheck } = await supabase.from('club_monthly_payments').select('paid').eq('club_id', props.id).eq('profile_id', authStore.user.id).eq('month', matchMonth).eq('year', matchYear).maybeSingle()
-    if (monthCheck?.paid === true) shouldDefaultToPaid = true 
+    const { data: monthCheck } = await supabase
+      .from('club_monthly_payments')
+      .select('paid')
+      .eq('club_id', props.id)
+      .eq('profile_id', authStore.user.id)
+      .eq('month', matchMonth)
+      .eq('year', matchYear)
+      .maybeSingle()
+
+    if (monthCheck?.paid === true) shouldDefaultToPaid = true
   }
 
-  const { count } = await supabase.from('match_presences').select('*', { count: 'exact', head: true }).eq('match_id', match.id).eq('status', 'confirmed')
+  const { count } = await supabase
+    .from('match_presences')
+    .select('*', { count: 'exact', head: true })
+    .eq('match_id', match.id)
+    .eq('status', 'confirmed')
 
   if (count >= match.max_players) {
     $q.notify({ type: 'negative', message: t('dashboard.notify.capacityFull', { count: match.max_players }) })
-    return 
+    return
   }
 
-  const { error } = await supabase.from('match_presences').insert([{ match_id: match.id, profile_id: authStore.user.id, status: 'confirmed', paid: shouldDefaultToPaid }])
+  const { error } = await supabase
+    .from('match_presences')
+    .insert([{
+      match_id: match.id,
+      profile_id: authStore.user.id,
+      status: 'confirmed',
+      paid: shouldDefaultToPaid
+    }])
+
   if (!error) {
-    $q.notify({ type: 'positive', message: shouldDefaultToPaid ? t('dashboard.notify.paymentConfirmed') : t('dashboard.notify.playersConvoked', { count: 1 }) })
+    $q.notify({
+      type: 'positive',
+      message: shouldDefaultToPaid
+        ? t('dashboard.notify.paymentConfirmed')
+        : t('dashboard.notify.playersConvoked', { count: 1 })
+    })
     await fetchMatches()
   }
 }
@@ -2419,12 +2570,38 @@ async function addSquadPlayerToMatch() {
   const tryingToAdd = selectedSquadPlayers.value.length
 
   if (currentlyConfirmed + tryingToAdd > selectedMatch.value.max_players) {
-    $q.notify({ type: 'negative', message: t('dashboard.notify.capacityFull', { count: (selectedMatch.value.max_players - currentlyConfirmed) }) })
+    $q.notify({
+      type: 'negative',
+      message: t('dashboard.notify.capacityFull', { count: (selectedMatch.value.max_players - currentlyConfirmed) })
+    })
     return
   }
 
+  const matchDate = new Date(selectedMatch.value.date)
+  const matchMonth = matchDate.getMonth() + 1
+  const matchYear = matchDate.getFullYear()
+
+  const { data: paidMonthRows } = await supabase
+    .from('club_monthly_payments')
+    .select('profile_id, virtual_player_id')
+    .eq('club_id', props.id)
+    .eq('month', matchMonth)
+    .eq('year', matchYear)
+    .eq('paid', true)
+
+  const paidProfileIds = new Set((paidMonthRows || []).map(r => r.profile_id).filter(Boolean))
+  const paidVirtualIds = new Set((paidMonthRows || []).map(r => r.virtual_player_id).filter(Boolean))
+
   const payloads = selectedSquadPlayers.value.map(p => {
-    const payload = { match_id: selectedMatch.value.id, status: 'confirmed' }
+    const isAlreadyPaid = p.type === 'real'
+      ? paidProfileIds.has(p.value)
+      : paidVirtualIds.has(p.value)
+
+    const payload = {
+      match_id: selectedMatch.value.id,
+      status: 'confirmed',
+      paid: isAlreadyPaid
+    }
     if (p.type === 'real') payload.profile_id = p.value
     else payload.virtual_player_id = p.value
     return payload
@@ -2434,13 +2611,13 @@ async function addSquadPlayerToMatch() {
 
   if (!error) {
     $q.notify({ type: 'positive', message: t('dashboard.notify.playersConvoked', { count: tryingToAdd }) })
-    selectedSquadPlayers.value = [] 
+    selectedSquadPlayers.value = []
     await openPresencesModal(selectedMatch.value)
   } else {
     $q.notify({ type: 'negative', message: t('dashboard.notify.errSaveData') + error.message })
   }
 }
-  
+
 async function togglePayment(presence) {
   const nextPaidStatus = !presence.paid
   const { error } = await supabase.from('match_presences').update({ paid: nextPaidStatus }).eq('id', presence.id)
@@ -2676,9 +2853,39 @@ async function executeBulkInsert(batchInserts) {
   if (!error) {
     if (clubSettings.value.default_squad?.length > 0) {
       const allPresences = []
+      const paidCache = {}
+
       for (const m of insertedMatches) {
+        const matchDate = new Date(m.date)
+        const matchMonth = matchDate.getMonth() + 1
+        const matchYear = matchDate.getFullYear()
+        const cacheKey = `${matchYear}-${matchMonth}`
+
+        if (!paidCache[cacheKey]) {
+          const { data: paidMonthRows } = await supabase
+            .from('club_monthly_payments')
+            .select('profile_id, virtual_player_id')
+            .eq('club_id', clubStore.currentClub.id)
+            .eq('month', matchMonth)
+            .eq('year', matchYear)
+            .eq('paid', true)
+
+          paidCache[cacheKey] = {
+            profiles: new Set((paidMonthRows || []).map(r => r.profile_id).filter(Boolean)),
+            virtuals: new Set((paidMonthRows || []).map(r => r.virtual_player_id).filter(Boolean))
+          }
+        }
+
         clubSettings.value.default_squad.forEach(p => {
-          allPresences.push({ match_id: m.id, status: 'confirmed', profile_id: p.type === 'real' ? p.value : null, virtual_player_id: p.type === 'virtual' ? p.value : null })
+          allPresences.push({
+            match_id: m.id,
+            status: 'confirmed',
+            profile_id: p.type === 'real' ? p.value : null,
+            virtual_player_id: p.type === 'virtual' ? p.value : null,
+            paid: p.type === 'real'
+              ? paidCache[cacheKey].profiles.has(p.value)
+              : paidCache[cacheKey].virtuals.has(p.value)
+          })
         })
       }
       if (allPresences.length > 0) await supabase.from('match_presences').insert(allPresences)

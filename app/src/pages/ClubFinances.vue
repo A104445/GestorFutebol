@@ -318,13 +318,23 @@ async function fetchFinances() {
   if (matchesData) {
     for (const m of matchesData) {
       const matchMonthStr = m.date.substring(0, 7)
-      const { data: historicalPayments } = await supabase.from('club_monthly_payments').select('profile_id, virtual_player_id, billing_mode').eq('club_id', props.id).eq('year', matchMonthStr.split('-')[0]).eq('month', matchMonthStr.split('-')[1])
+      const { data: historicalPayments } = await supabase
+        .from('club_monthly_payments')
+        .select('profile_id, virtual_player_id, billing_mode, paid')
+        .eq('club_id', props.id)
+        .eq('year', matchMonthStr.split('-')[0])
+        .eq('month', matchMonthStr.split('-')[1])
       
       const unpaid = m.match_presences.filter(p => {
         if (p.status !== 'confirmed' || p.paid) return false
         const memberId = p.profile_id || p.virtual_player_id
+        const histPay = historicalPayments?.find(hp =>
+          p.virtual_player_id ? hp.virtual_player_id === memberId : hp.profile_id === memberId
+        )
+
+        if (histPay?.paid === true) return false
+
         if (titularIds.value.includes(memberId)) {
-          const histPay = historicalPayments?.find(hp => p.virtual_player_id ? hp.virtual_player_id === memberId : hp.profile_id === memberId)
           const modeAtTheTime = histPay ? histPay.billing_mode : 'monthly'
           if (modeAtTheTime === 'monthly') return false
         }

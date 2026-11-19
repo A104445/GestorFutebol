@@ -592,18 +592,28 @@ async function createVirtualPlayer() {
   if (!newVirtualPlayer.value.name.trim()) return
   saving.value = true
 
-  // Traduz o Dropdown de volta para a Base de Dados
   let bdPos = 'Médio'
   if (newVirtualPlayer.value.position === tm('positions')[0]) bdPos = 'Guarda-Redes'
   else if (newVirtualPlayer.value.position === tm('positions')[1]) bdPos = 'Defesa'
   else if (newVirtualPlayer.value.position === tm('positions')[3]) bdPos = 'Avançado'
 
-  const { error } = await supabase.from('virtual_players').insert([{ club_id: props.id, name: newVirtualPlayer.value.name.trim(), position: bdPos, specific_position: newVirtualPlayer.value.specific_position }])
+  const { error } = await supabase
+    .from('virtual_players')
+    .insert([{
+      club_id: props.id,
+      name: newVirtualPlayer.value.name.trim(),
+      position: bdPos,
+      specific_position: newVirtualPlayer.value.specific_position
+    }])
+
   if (!error) {
     $q.notify({ type: 'positive', message: t('players.notify.virtualHired') })
     showCreateVirtualModal.value = false
-    newVirtualPlayer.value = { name: '', position: tm('positions')[2] }
+    newVirtualPlayer.value = { name: '', position: tm('positions')[2], specific_position: '' }
     await fetchAllMembers()
+  } else {
+    console.error('Erro ao criar jogador virtual:', error)
+    $q.notify({ type: 'negative', message: t('players.notify.errSave') + error.message })
   }
   saving.value = false
 }
