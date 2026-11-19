@@ -313,14 +313,19 @@ async function fetchFinances() {
     .order('date', { ascending: false })
     .limit(30)
 
+  const now = new Date()
   const debts = []
+
   if (matchesData) {
     for (const m of matchesData) {
       if (!m.match_presences || m.match_presences.length === 0) continue
 
-      const d = new Date(m.date)
-      const matchYear = d.getFullYear()
-      const matchMonth = d.getMonth() + 1
+      const matchDateObj = new Date(m.date)
+      const hasAlreadyHappened = matchDateObj <= now || m.status === 'fechado'
+      if (!hasAlreadyHappened) continue
+
+      const matchYear = matchDateObj.getFullYear()
+      const matchMonth = matchDateObj.getMonth() + 1
 
       const { data: historicalPayments } = await supabase
         .from('club_monthly_payments')
@@ -336,10 +341,10 @@ async function fetchFinances() {
           p.virtual_player_id ? hp.virtual_player_id === memberId : hp.profile_id === memberId
         )
 
-        // Se já pagou o mês, não aparece como dívida de jogo
+        // Se já pagou o mês, não entra como dívida de jogo
         if (histPay?.paid === true) return false
 
-        // Se é titular e o modo neste mês é 'monthly', paga na aba Mensalidades e não aqui
+        // Se é titular e o modo neste mês é 'monthly', entra na aba Mensalidades e não aqui
         if (memberId && titularIds.value.includes(memberId)) {
           const modeAtTheTime = histPay?.billing_mode || 'monthly'
           if (modeAtTheTime === 'monthly') return false
