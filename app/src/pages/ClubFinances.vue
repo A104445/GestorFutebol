@@ -308,43 +308,57 @@ async function fetchFinances() {
 
   const { data: matchesData } = await supabase
     .from('matches')
-    .select('id, date, location, price_per_player, paid, match_presences(id, paid, status, profile_id, virtual_player_id, guest_name, profiles(name), virtual_players(name))')
+    .select('id, date, location, price_per_player, paid, status, match_presences(id, paid, status, profile_id, virtual_player_id, guest_name, profiles(name), virtual_players(name))')
     .eq('club_id', props.id)
-    .eq('paid', false)
     .order('date', { ascending: false })
-    .limit(20)
+    .limit(30)
 
   const debts = []
   if (matchesData) {
     for (const m of matchesData) {
-      const matchMonthStr = m.date.substring(0, 7)
+      if (!m.match_presences || m.match_presences.length === 0) continue
+
+      const d = new Date(m.date)
+      const matchYear = d.getFullYear()
+      const matchMonth = d.getMonth() + 1
+
       const { data: historicalPayments } = await supabase
         .from('club_monthly_payments')
         .select('profile_id, virtual_player_id, billing_mode, paid')
         .eq('club_id', props.id)
-        .eq('year', matchMonthStr.split('-')[0])
-        .eq('month', matchMonthStr.split('-')[1])
-      
+        .eq('year', matchYear)
+        .eq('month', matchMonth)
+
       const unpaid = m.match_presences.filter(p => {
-        if (p.status !== 'confirmed' || p.paid) return false
+        if (p.status !== 'confirmed' || p.paid === true) return false
         const memberId = p.profile_id || p.virtual_player_id
         const histPay = historicalPayments?.find(hp =>
           p.virtual_player_id ? hp.virtual_player_id === memberId : hp.profile_id === memberId
         )
 
+        // Se já pagou o mês, não aparece como dívida de jogo
         if (histPay?.paid === true) return false
 
-        if (titularIds.value.includes(memberId)) {
-          const modeAtTheTime = histPay ? histPay.billing_mode : 'monthly'
+        // Se é titular e o modo neste mês é 'monthly', paga na aba Mensalidades e não aqui
+        if (memberId && titularIds.value.includes(memberId)) {
+          const modeAtTheTime = histPay?.billing_mode || 'monthly'
           if (modeAtTheTime === 'monthly') return false
         }
+
         return true
       })
-      if (unpaid.length > 0) debts.push({ ...m, unpaid_players: unpaid })
-      else if (m.match_presences.length > 0) await supabase.from('matches').update({ paid: true }).eq('id', m.id)
+
+      if (unpaid.length > 0) {
+        debts.push({ ...m, unpaid_players: unpaid })
+        if (m.paid === true) {
+          await supabase.from('matches').update({ paid: false }).eq('id', m.id)
+        }
+      } else if (m.status === 'fechado' && m.paid !== true) {
+        await supabase.from('matches').update({ paid: true }).eq('id', m.id)
+      }
     }
   }
-  
+
   groupedDebts.value = debts
   loading.value = false
 }

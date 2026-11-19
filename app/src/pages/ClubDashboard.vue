@@ -1777,9 +1777,16 @@ async function executeSaveMatch() {
     showCreateModal.value = false
   } else {
     const matchToInsert = { 
-      date: dateToSave, location: newMatch.value.location, max_players: newMatch.value.max_players, 
-      starters_per_team: newMatch.value.starters_per_team, price_per_player: newMatch.value.price_per_player,
-      team_a_name: newMatch.value.team_a_name, team_b_name: newMatch.value.team_b_name, club_id: clubStore.currentClub.id, status: 'aberto' 
+      date: dateToSave,
+      location: newMatch.value.location,
+      max_players: newMatch.value.max_players, 
+      starters_per_team: newMatch.value.starters_per_team,
+      price_per_player: newMatch.value.price_per_player,
+      team_a_name: newMatch.value.team_a_name,
+      team_b_name: newMatch.value.team_b_name,
+      club_id: clubStore.currentClub.id,
+      status: 'aberto',
+      paid: false
     }
     
     const { data: newMatchData, error } = await supabase.from('matches').insert([matchToInsert]).select().single()
