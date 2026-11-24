@@ -176,6 +176,7 @@ export default {
           pollsClosed: 'Polls closed! MVP tallied successfully.',
           pushTitleResults: '🏆 Final Results',
           pushMsgResults: 'The polls are closed! Find out who the MVP is and the match ratings.',
+          votingOpened: 'Match closed! Voting (MVP and ratings) is now open.',
           teamsSorted: 'Team sorting completed!',
           errGenerateTeams: 'Error generating teams.',
           memberPromoted: 'Member promoted to Administrator!',

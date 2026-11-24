@@ -176,6 +176,7 @@ export default {
         pollsClosed: '¡Urnas cerradas! MVP calculado con éxito.',
         pushTitleResults: '🏆 Resultados Finales',
         pushMsgResults: '¡Las urnas se han cerrado! Descubre quién ha sido el MVP y las notas del partido.',
+        votingOpened: '¡Partido cerrado! Las votaciones (MVP y puntuaciones) ya están abiertas.',
         teamsSorted: '¡Sorteo de equipos completado!',
         errGenerateTeams: 'Error al generar los equipos.',
         memberPromoted: '¡Miembro ascendido a Administrador!',

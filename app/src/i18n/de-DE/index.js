@@ -176,6 +176,7 @@ export default {
         pollsClosed: 'Abstimmung geschlossen! MVP erfolgreich berechnet.',
         pushTitleResults: '🏆 Endergebnisse',
         pushMsgResults: 'Die Abstimmung ist beendet! Finde heraus, wer der MVP ist und wie die Spielernoten lauten.',
+        votingOpened: 'Spiel beendet! Die Abstimmung (MVP und Bewertungen) ist jetzt geöffnet.',
         teamsSorted: 'Teamauslosung abgeschlossen!',
         errGenerateTeams: 'Fehler beim Erstellen der Teams.',
         memberPromoted: 'Mitglied zum Administrator befördert!',

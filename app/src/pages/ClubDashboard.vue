@@ -527,6 +527,40 @@
               </div>
             </template>
           </div>
+          
+          <div v-if="!clubSettings?.single_team_mode" class="q-mt-lg bg-grey-1 q-pa-md shadow-1" style="border-radius: 12px; border: 1px solid #e2e8f0;">
+            <div class="text-caption text-weight-bolder text-grey-8 text-uppercase q-mb-sm">
+              Autogolos por Equipa
+            </div>
+
+            <div class="row q-col-gutter-md">
+              <div class="col-6">
+                <div class="column items-center bg-white q-pa-sm" style="border-radius: 10px; border: 1px solid #f1f5f9;">
+                  <div class="text-caption text-weight-bold text-ellipsis full-width text-center q-mb-xs">
+                    {{ matchToClose?.team_a_name || clubSettings?.default_team_a_name || 'Equipa A' }}
+                  </div>
+                  <div class="row items-center no-wrap bg-grey-2" style="border-radius: 20px; padding: 2px;">
+                    <q-btn round dense flat icon="remove" size="10px" :color="ownGoalsA > 0 ? 'dark' : 'grey-4'" :disable="ownGoalsA <= 0" @click="ownGoalsA--" />
+                    <div class="text-weight-bolder text-dark text-center" style="width: 22px; font-size: 14px;">{{ ownGoalsA }}</div>
+                    <q-btn round dense flat icon="add" size="10px" color="dark" @click="ownGoalsA++" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="column items-center bg-white q-pa-sm" style="border-radius: 10px; border: 1px solid #f1f5f9;">
+                  <div class="text-caption text-weight-bold text-ellipsis full-width text-center q-mb-xs">
+                    {{ matchToClose?.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
+                  </div>
+                  <div class="row items-center no-wrap bg-grey-2" style="border-radius: 20px; padding: 2px;">
+                    <q-btn round dense flat icon="remove" size="10px" :color="ownGoalsB > 0 ? 'dark' : 'grey-4'" :disable="ownGoalsB <= 0" @click="ownGoalsB--" />
+                    <div class="text-weight-bolder text-dark text-center" style="width: 22px; font-size: 14px;">{{ ownGoalsB }}</div>
+                    <q-btn round dense flat icon="add" size="10px" color="dark" @click="ownGoalsB++" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </q-card-section>
         <q-card-actions align="between" class="bg-grey-1 col-auto q-pa-md" style="border-top: 1px solid #e2e8f0;">
           <q-btn v-if="clubStore.currentClub?.can_manage_matches || clubStore.currentClub?.is_owner" :label="t('dashboard.modals.btnSaveLive')" color="blue-8" icon="save" unelevated style="border-radius: 8px;" :loading="saving" @click="saveLiveStats" />
@@ -685,6 +719,18 @@
           <div class="text-subtitle1 text-weight-bold row items-center"><q-icon name="how_to_vote" class="q-mr-sm" size="sm" /> {{ t('dashboard.modals.votingTitle') }}</div>
           <q-space /><q-btn icon="close" flat round dense color="white" v-close-popup />
         </q-card-section>
+        <!-- Resultado da partida no topo da votação -->
+        <div v-if="votingMatch" class="row items-center justify-center text-center q-mb-md bg-grey-1 q-pa-sm shadow-1" style="border-radius: 12px; border: 1px solid #e2e8f0;">
+          <div class="col-4 text-ellipsis text-weight-bold text-dark" style="font-size: 12px;">
+            {{ votingMatch.team_a_name || clubSettings?.default_team_a_name || 'Equipa A' }}
+          </div>
+          <div class="col-4 text-h6 text-weight-bolder text-green-9">
+            {{ votingMatch.team_a_goals ?? 0 }} - {{ votingMatch.team_b_goals ?? 0 }}
+          </div>
+          <div class="col-4 text-ellipsis text-weight-bold text-dark" style="font-size: 12px;">
+            {{ votingMatch.team_b_name || clubSettings?.default_team_b_name || 'Equipa B' }}
+          </div>
+        </div>
         <q-card-section class="col q-pa-md" style="overflow-y: auto; overflow-x: hidden;">
           <div class="text-caption text-grey-8 q-mb-md text-weight-medium">
             {{ t('dashboard.modals.votingDesc') }} <span class="text-blue-8 text-weight-bold">{{ t('dashboard.modals.votingAnonInfo') }}</span>
@@ -695,6 +741,14 @@
               <div class="row justify-between items-center q-mb-sm">
                 <div class="text-weight-bold text-dark text-ellipsis" style="max-width: 65%;">
                   <q-icon name="person" color="grey-6" class="q-mr-xs" /> {{ p.name }}
+                  <q-badge
+                    v-if="p.team"
+                    :color="p.team === 'A' ? (clubSettings?.default_team_a_color || 'blue') : (clubSettings?.default_team_b_color || 'orange')"
+                    text-color="white"
+                    class="q-ml-xs text-weight-bold"
+                  >
+                    {{ p.team === 'A' ? (votingMatch?.team_a_name || clubSettings?.default_team_a_name || 'A') : (votingMatch?.team_b_name || clubSettings?.default_team_b_name || 'B') }}
+                  </q-badge>
                   <span v-if="p.goals > 0" class="text-green-9 text-caption text-weight-bolder q-ml-xs"><q-icon name="sports_soccer" size="xs"/>{{ p.goals }}</span>
                   <span v-if="p.assists > 0" class="text-blue-9 text-caption text-weight-bolder q-ml-xs"><q-icon name="handshake" size="xs"/>{{ p.assists }}</span>
                 </div>
@@ -2207,16 +2261,33 @@ const showCloseModal = ref(false)
 const matchToClose = ref(null)
 const matchPlayersStats = ref({ teamA: [], teamB: [] })
 
-const computedScoreA = computed(() => matchPlayersStats.value.teamA.reduce((sum, p) => sum + (p.goals || 0), 0))
-const computedScoreB = computed(() => matchPlayersStats.value.teamB.reduce((sum, p) => sum + (p.goals || 0), 0))
+const ownGoalsA = ref(0)
+const ownGoalsB = ref(0)
+
+const computedScoreA = computed(() => {
+  const goalsA = (matchPlayersStats.value.teamA || []).reduce((sum, p) => sum + (Number(p.goals) || 0), 0)
+  return goalsA + (Number(ownGoalsB.value) || 0)
+})
+
+const computedScoreB = computed(() => {
+  const goalsB = (matchPlayersStats.value.teamB || []).reduce((sum, p) => sum + (Number(p.goals) || 0), 0)
+  return goalsB + (Number(ownGoalsA.value) || 0)
+})
 
 async function openCloseModal(match) {
   matchToClose.value = match
   showCloseModal.value = true
   loadingPresences.value = true
-  
-  const { data, error } = await supabase.from('match_presences').select('id, team, guest_name, goals, assists, profiles(name), virtual_players(name)').eq('match_id', match.id).eq('status', 'confirmed').not('team', 'is', null)
-    
+  ownGoalsA.value = Number(match?.own_goals_a) || 0
+  ownGoalsB.value = Number(match?.own_goals_b) || 0
+
+  const { data, error } = await supabase
+    .from('match_presences')
+    .select('id, team, guest_name, goals, assists, profiles(name), virtual_players(name)')
+    .eq('match_id', match.id)
+    .eq('status', 'confirmed')
+    .not('team', 'is', null)
+
   if (!error && data) {
     const teamA = []
     const teamB = []
@@ -2243,34 +2314,42 @@ async function closeMatch() {
     for (const p of allPlayers) {
       const goalsVal = parseInt(p.goals) || 0
       const assistsVal = parseInt(p.assists) || 0
-      const { error: pError } = await supabase.from('match_presences').update({ goals: goalsVal, assists: assistsVal }).eq('id', p.id)
+      const { error: pError } = await supabase
+        .from('match_presences')
+        .update({ goals: goalsVal, assists: assistsVal })
+        .eq('id', p.id)
+
       if (pError) {
         $q.notify({ type: 'negative', message: t('dashboard.notify.errSaveData') + ` ${p.name}: ${pError.message}` })
         saving.value = false
-        return 
+        return
       }
     }
 
-    const finalScoreA = teamAPlayers.reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0)
-    const finalScoreB = teamBPlayers.reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0)
+    const finalScoreA = teamAPlayers.reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0) + (parseInt(ownGoalsB.value) || 0)
+    const finalScoreB = teamBPlayers.reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0) + (parseInt(ownGoalsA.value) || 0)
 
-  const nextStatus = clubSettings.value?.enable_voting === true ? 'votacao' : 'fechado'
+    const nextStatus = clubSettings.value?.enable_voting === true ? 'votacao' : 'fechado'
 
-  if (nextStatus === 'votacao') {
-    notifyMatchPlayers(matchToClose.value.id, t('dashboard.notify.pushTitleResults'), t('dashboard.notify.pushMsgResults'));
-  }
-    const { error: matchError } = await supabase.from('matches').update({ status: nextStatus, team_a_goals: finalScoreA, team_b_goals: finalScoreB }).eq('id', matchToClose.value.id)
+    if (nextStatus === 'votacao') {
+      notifyMatchPlayers(matchToClose.value.id, t('dashboard.notify.pushTitleResults'), t('dashboard.notify.pushMsgResults'))
+    }
+
+    const { error: matchError } = await supabase
+      .from('matches')
+      .update({ status: nextStatus, team_a_goals: finalScoreA, team_b_goals: finalScoreB })
+      .eq('id', matchToClose.value.id)
 
     if (matchError) {
       $q.notify({ type: 'negative', message: t('dashboard.notify.errSaveData') + matchError.message })
     } else {
-      $q.notify({ 
-         type: 'positive', 
-         icon: nextStatus === 'votacao' ? 'how_to_vote' : 'sports_score', 
-         message: nextStatus === 'votacao' ? t('dashboard.notify.pollsClosed') : t('dashboard.notify.matchUpdated') 
-       })
+      $q.notify({
+        type: 'positive',
+        icon: nextStatus === 'votacao' ? 'how_to_vote' : 'sports_score',
+        message: nextStatus === 'votacao' ? t('dashboard.notify.votingOpened') : t('dashboard.notify.matchUpdated')
+      })
       showCloseModal.value = false
-      await fetchMatches(true) 
+      await fetchMatches(true)
     }
   } catch {
     $q.notify({ type: 'negative', message: t('dashboard.notify.errSaveData') })
@@ -2282,7 +2361,7 @@ async function closeMatch() {
 async function saveLiveStats() {
   if (!matchToClose.value) return
   saving.value = true
-  
+
   try {
     const allPlayers = [...(matchPlayersStats.value.teamA || []), ...(matchPlayersStats.value.teamB || [])]
     for (const p of allPlayers) {
@@ -2290,8 +2369,10 @@ async function saveLiveStats() {
       const assistsVal = parseInt(p.assists) || 0
       await supabase.from('match_presences').update({ goals: goalsVal, assists: assistsVal }).eq('id', p.id)
     }
-    const finalScoreA = matchPlayersStats.value.teamA.reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0)
-    const finalScoreB = matchPlayersStats.value.teamB.reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0)
+
+    const finalScoreA = (matchPlayersStats.value.teamA || []).reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0) + (parseInt(ownGoalsB.value) || 0)
+    const finalScoreB = (matchPlayersStats.value.teamB || []).reduce((sum, p) => sum + (parseInt(p.goals) || 0), 0) + (parseInt(ownGoalsA.value) || 0)
+
     await supabase.from('matches').update({ team_a_goals: finalScoreA, team_b_goals: finalScoreB }).eq('id', matchToClose.value.id)
     $q.notify({ type: 'positive', icon: 'sync', message: t('dashboard.notify.statsSavedLive') })
   } catch {
@@ -2315,20 +2396,24 @@ async function openVotingModal(match) {
   loadingVotes.value = true
   selectedMVP.value = null
   
-  const { data, error } = await supabase.from('match_presences').select('id, profile_id, virtual_player_id, guest_name, goals, assists, profiles(name), virtual_players(name)').eq('match_id', match.id).eq('status', 'confirmed')
-  
+  const { data, error } = await supabase
+    .from('match_presences')
+    .select('id, profile_id, virtual_player_id, guest_name, team, goals, assists, profiles(name), virtual_players(name)')
+    .eq('match_id', match.id)
+    .eq('status', 'confirmed')
+
   if (data && !error) {
     votingPlayers.value = data
-      // 👇 AQUI ESTÁ A MAGIA: Filtra e remove o jogador que está a usar a app
-      .filter(p => p.profile_id !== authStore.user.id) 
+      .filter(p => p.profile_id !== authStore.user.id)
       .map(p => ({
-        id: p.id, 
+        id: p.id,
         profile_id: p.profile_id,
         virtual_player_id: p.virtual_player_id,
+        team: p.team,
         name: p.profiles?.name || p.virtual_players?.name || p.guest_name || 'Convidado',
-        goals: p.goals || 0,       
+        goals: p.goals || 0,
         assists: p.assists || 0,
-        rating: 6 
+        rating: 6
       }))
   }
   loadingVotes.value = false
@@ -2513,21 +2598,34 @@ async function openPresencesModal(match) {
   showPresencesModal.value = true
   loadingPresences.value = true
   
-  const { data: presData, error } = await supabase.from('match_presences').select('id, status, paid, team, created_at, guest_name, virtual_player_id, profile_id, profiles(name), virtual_players(name, overall, position, specific_position)').eq('match_id', match.id)
-  const { data: membersData } = await supabase.from('club_members').select('profile_id, position, specific_position, overall, pro_overall').eq('club_id', props.id)
+  const { data: presData, error } = await supabase
+    .from('match_presences')
+    .select('id, status, paid, team, created_at, guest_name, virtual_player_id, profile_id, profiles(name), virtual_players(name, overall, position, specific_position)')
+    .eq('match_id', match.id)
+
+  const { data: membersData } = await supabase
+    .from('club_members')
+    .select('profile_id, position, specific_position, overall, pro_overall')
+    .eq('club_id', props.id)
 
   if (!error && presData) {
-    presences.value = presData.map(p => {
-       if (p.profile_id) {
-           const cm = membersData?.find(m => m.profile_id === p.profile_id)
-           p.profiles = p.profiles || {} 
-           const isPro = clubSettings.value?.detailed_attributes && cm?.position !== 'Guarda-Redes'
-           p.profiles.overall = isPro ? (cm?.pro_overall || 70) : (cm?.overall || 70)
-           p.profiles.position = cm?.position || 'Médio'
-           p.profiles.specific_position = cm?.specific_position || ''
-       }
-       return p
-    })
+    presences.value = presData
+      .map(p => {
+        if (p.profile_id) {
+          const cm = membersData?.find(m => m.profile_id === p.profile_id)
+          p.profiles = p.profiles || {}
+          const isPro = clubSettings.value?.detailed_attributes && cm?.position !== 'Guarda-Redes'
+          p.profiles.overall = isPro ? (cm?.pro_overall || 70) : (cm?.overall || 70)
+          p.profiles.position = cm?.position || 'Médio'
+          p.profiles.specific_position = cm?.specific_position || ''
+        }
+        return p
+      })
+      .sort((a, b) => {
+        const nameA = a.profiles?.name || a.virtual_players?.name || a.guest_name || ''
+        const nameB = b.profiles?.name || b.virtual_players?.name || b.guest_name || ''
+        return nameA.localeCompare(nameB, locale.value, { sensitivity: 'base' })
+      })
   }
   
   await loadAvailableSquad()
@@ -2959,15 +3057,48 @@ async function shareInviteLink() {
 
 async function notifyMatchPlayers(matchId, title, message) {
   try {
-    const { data: presences } = await supabase.from('match_presences').select('profile_id').eq('match_id', matchId).eq('status', 'confirmed').not('profile_id', 'is', null)
+    const { data: presences } = await supabase
+      .from('match_presences')
+      .select('profile_id')
+      .eq('match_id', matchId)
+      .eq('status', 'confirmed')
+      .not('profile_id', 'is', null)
+
     if (!presences || presences.length === 0) return
-    const profileIds = presences.map(p => p.profile_id)
-    const { data: subs } = await supabase.from('push_subscriptions').select('subscription').in('profile_id', profileIds)
+
+    const profileIds = [...new Set(presences.map(p => p.profile_id).filter(Boolean))]
+    const { data: subs } = await supabase
+      .from('push_subscriptions')
+      .select('id, profile_id, subscription')
+      .in('profile_id', profileIds)
+
     if (!subs || subs.length === 0) return
+
     for (const row of subs) {
-      supabase.functions.invoke('send-push', { body: { subscription: row.subscription, title: title, message: message, url: `/club/${props.id}` } })
+      if (!row.subscription) continue
+
+      const { error } = await supabase.functions.invoke('send-push', {
+        body: {
+          subscription: row.subscription,
+          title,
+          message,
+          url: `/club/${props.id}`
+        }
+      })
+
+      if (error) {
+        const isGone =
+          error.context?.status === 410 ||
+          String(error.message || '').includes('410')
+
+        if (isGone && row.id) {
+          await supabase.from('push_subscriptions').delete().eq('id', row.id)
+        }
+      }
     }
-  } catch (err) { console.error('Erro ao notificar:', err) }
+  } catch (err) {
+    console.warn('Falha ao enviar notificação push:', err)
+  }
 }
 
 async function refreshPage(done) {
